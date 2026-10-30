@@ -1,0 +1,88 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --font-sans: var(--app-font-sans);
+  --font-serif: var(--app-font-serif);
+  --font-mono: var(--app-font-mono);
+  --radius-md: var(--radius);
+}
+
+:root {
+  --background: 42 42% 95%;
+  --foreground: 164 24% 17%;
+  --card: 42 38% 98%;
+  --card-foreground: 164 24% 17%;
+  --border: 42 17% 82%;
+  --input: 42 17% 82%;
+  --primary: 165 34% 27%;
+  --primary-foreground: 42 45% 96%;
+  --secondary: 39 34% 88%;
+  --secondary-foreground: 164 24% 17%;
+  --muted: 41 24% 90%;
+  --muted-foreground: 164 10% 43%;
+  --accent: 16 59% 57%;
+  --accent-foreground: 36 50% 98%;
+  --destructive: 2 61% 49%;
+  --destructive-foreground: 0 0% 100%;
+  --ring: 165 34% 27%;
+  --radius: 0.7rem;
+  --app-font-sans: 'Segoe UI', 'Avenir Next', Arial, sans-serif;
+  --app-font-serif: Georgia, 'Times New Roman', serif;
+  --app-font-mono: Consolas, 'Cascadia Mono', monospace;
+  --sidebar: 42 38% 98%;
+  --sidebar-foreground: 164 24% 17%;
+  --sidebar-border: 42 17% 82%;
+  --sidebar-primary: 165 34% 27%;
+  --sidebar-primary-foreground: 42 45% 96%;
+  --sidebar-accent: 41 24% 90%;
+  --sidebar-accent-foreground: 164 24% 17%;
+  --popover: 42 38% 98%;
+  --popover-foreground: 164 24% 17%;
+  --chart-1: 165 34% 27%;
+  --chart-2: 16 59% 57%;
+  --chart-3: 42 46% 57%;
+  --chart-4: 197 25% 53%;
+  --chart-5: 91 23% 46%;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  min-width: 320px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--app-font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #c07850; outline-offset: 2px; }
+.mono { font-family: var(--app-font-mono); }
+.serif { font-family: var(--app-font-serif); }
+.fade-up { animation: fadeUp .45s cubic-bezier(.2,.7,.25,1) both; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+::selection { background: #d7a88d; color: #17372e; }
+
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .fade-up { animation: none; } }

@@ -1,0 +1,62 @@
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [
+      -70.708,
+      -30.031,
+      2185.68
+    ]
+  },
+  "properties": {
+    "parameter": {
+      "PRECTOTCORR": {
+        "20250101": 0.0,
+        "20250102": 0.0,
+        "20250103": 0.01,
+        "20250104": 0.0,
+        "20250105": 0.01,
+        "20250106": 0.0,
+        "20250107": 0.0
+      },
+      "T2M": {
+        "20250101": 18.26,
+        "20250102": 18.36,
+        "20250103": 18.42,
+        "20250104": 17.65,
+        "20250105": 18.57,
+        "20250106": 20.07,
+        "20250107": 19.04
+      }
+    }
+  },
+  "header": {
+    "title": "NASA/POWER Source Native Resolution Daily Data",
+    "api": {
+      "version": "v2.10.0",
+      "name": "POWER Daily API"
+    },
+    "sources": [
+      "MERRA2"
+    ],
+    "fill_value": -999.0,
+    "time_standard": "UTC",
+    "start": "20250101",
+    "end": "20250107"
+  },
+  "messages": [],
+  "parameters": {
+    "PRECTOTCORR": {
+      "units": "mm/day",
+      "longname": "Precipitation Corrected"
+    },
+    "T2M": {
+      "units": "C",
+      "longname": "Temperature at 2 Meters"
+    }
+  },
+  "times": {
+    "data": 0.319,
+    "process": 0.01
+  }
+}
