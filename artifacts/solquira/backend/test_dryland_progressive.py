@@ -16,6 +16,7 @@ import studio_api
 import studio_service
 from dryland_brief import golden_payload, fallback_brief, compose_brief, MODEL
 from dryland_progressive import ValidatedFields, parse_compact, compact_messages
+from dryland_references import REFERENCE_SITES, reference_payload
 from studio_budget import BudgetLedger, BudgetPolicy, PersistentBudgetProvider
 from solquira_agent import NebiusProvider
 
@@ -249,4 +250,100 @@ class StreamingLifetimeTests(unittest.TestCase):
         self.exercise(disconnect=False)
 
 
+PARAPHRASES = {
+    'zai_pits': 'Mark pocket sites before disturbing soil.',
+    'half_moons': 'Trace contour flow before runoff concentrates.',
+    'living_cover': 'Keep suitable residues over bare ground.',
+    'mulch': 'Retain suitable residues over bare ground.',
+    'biocrust_check': 'Inspect living crust and avoid trampling.',
+    'delay_sowing': 'Check for returning rain and moist soil.',
+}
+
+
+def paraphrase_set(payload, overrides=None):
+    baseline = fallback_brief(payload)
+    chosen = [a for a in baseline.actions if a.id.value == 'biocrust_check'][:1]
+    chosen += [a for a in baseline.actions if a.id.value != 'biocrust_check'][:2]
+    details = dict(PARAPHRASES)
+    details.update(overrides or {})
+    return {'actions': [{'id': a.id.value, 'detail': details[a.id.value]}
+                        for a in chosen]}
+
+
+class GroundedWordingTests(unittest.TestCase):
+    """Trusted Python meaning reaches the wording model; unsafe wording falls back."""
+
+    def test_every_reference_case_carries_approved_meaning(self):
+        for place in REFERENCE_SITES:
+            for scenario in ('dry', 'rain'):
+                payload = reference_payload(place, scenario)
+                baseline = fallback_brief(payload)
+                messages = compact_messages(payload)
+                decoded = json.loads(messages[1]['content'])
+                self.assertEqual(set(decoded['context']),
+                                 {'soc_band', 'awc_band', 'rain_phrase', 'dry_days_ahead'})
+                self.assertEqual([a['id'] for a in decoded['allowed_actions']],
+                                 [a.id.value for a in baseline.actions])
+                for record, action in zip(decoded['allowed_actions'], baseline.actions):
+                    self.assertEqual(set(record), {'id', 'title', 'detail'})
+                    self.assertEqual(record['title'], action.title)
+                    self.assertEqual(record['detail'], action.detail)
+                content = messages[1]['content']
+                self.assertNotIn('lat', content)
+                self.assertNotIn('lon', content)
+                self.assertLess(len(content.encode('utf-8')), 2200)
+
+    def test_valid_paraphrases_keep_python_owned_fields(self):
+        for place in REFERENCE_SITES:
+            for scenario in ('dry', 'rain'):
+                payload = reference_payload(place, scenario)
+                original = fallback_brief(payload)
+                data = paraphrase_set(payload)
+                self.assertEqual(len(data['actions']), 3)
+                brief = parse_compact(json.dumps(data), payload)
+                self.assertEqual(brief.source, 'model')
+                self.assertEqual([a.id for a in brief.actions],
+                                 [a.id for a in original.actions])
+                self.assertEqual([a.labor for a in brief.actions],
+                                 [a.labor for a in original.actions])
+                self.assertEqual([a.title for a in brief.actions],
+                                 [a.title for a in original.actions])
+                self.assertEqual(brief.vital_signs, original.vital_signs)
+                self.assertEqual(brief.pathways, original.pathways)
+                self.assertTrue(all(not action.done for action in brief.actions))
+                changed = {item['id'] for item in data['actions']}
+                for action in brief.actions:
+                    expected = PARAPHRASES[action.id.value] if action.id.value in changed \
+                        else next(a.detail for a in original.actions if a.id == action.id)
+                    self.assertEqual(action.detail, expected)
+
+    def test_observed_temperature_and_threshold_claims_reject(self):
+        cases = (('coquimbo', 'dry', 'delay_sowing', 'Wait until soil warms enough'),
+                 ('east_african_plateau', 'dry', 'delay_sowing',
+                  'Wait until soil moisture improves'))
+        for place, scenario, action_id, detail in cases:
+            payload = reference_payload(place, scenario)
+            with self.assertRaises(ValueError):
+                parse_compact(json.dumps(paraphrase_set(payload, {action_id: detail})), payload)
+
+    def test_observed_planning_to_fieldwork_escalation_rejects(self):
+        cases = (('coquimbo', 'dry', 'zai_pits', 'Dig shallow pits, fill with mulch'),
+                 ('andalusia', 'rain', 'mulch', 'Spread mulch to shield crust'),
+                 ('andalusia', 'rain', 'half_moons', 'Create half-moon depressions'))
+        for place, scenario, action_id, detail in cases:
+            payload = reference_payload(place, scenario)
+            with self.assertRaises(ValueError):
+                parse_compact(json.dumps(paraphrase_set(payload, {action_id: detail})), payload)
+
+    def test_stream_preview_rolls_back_before_unsafe_detail(self):
+        payload = reference_payload('coquimbo', 'dry')
+        events = []
+        stream = ValidatedFields(payload, lambda *v: events.append(v))
+        stream.feed(json.dumps(paraphrase_set(
+            payload, {'zai_pits': 'Dig shallow pits, fill with mulch'})))
+        self.assertEqual(events[-1], ('degraded', {'path': 'brief', 'reason': 'rejected'}))
+        self.assertTrue(stream.closed)
+
+
 if __name__ == '__main__': unittest.main()
+
