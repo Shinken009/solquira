@@ -51,6 +51,7 @@ import {
 } from "./types";
 
 import "./studio.css";
+import "./terrain-study.css";
 
 import FieldContext from "./geo/FieldContext";
 
@@ -108,7 +109,7 @@ function TerrainStudy() {
       <div className="qs-terrain-frame">
         <img
           className="qs-terrain-art"
-          src={`${import.meta.env.BASE_URL}magnific__a-flat-minimalist-vector-illustration-of-a-rural-l__95844.svg`}
+          src={`${import.meta.env.BASE_URL}solquira-rural-landscape.svg`}
           alt="A grower tending crop paths beside a river in a planted valley"
           width={2048}
           height={1152}
@@ -652,10 +653,17 @@ export default function Studio() {
     mode === "offline"
       ? "Sample workspace"
       : connecting
-        ? "Connecting to Studio"
+        ? "Connecting…"
         : bootstrap
-          ? "Studio connected"
+          ? "Demo · prepared examples"
           : "Local workspace";
+
+  // The chip used to describe an internal transport state ("Studio connected").
+  // It now states what the visitor is actually looking at, and the full
+  // explanation travels with it for assistive tech and hover.
+  const sourceHint = bootstrap
+    ? "Connected to the Solquira Studio with prepared teaching examples. No real parcel data."
+    : undefined;
 
   const returnedTools = agentResult?.run.trace ?? [];
 
@@ -772,6 +780,8 @@ export default function Studio() {
           <span
             data-testid="connection-mode"
             className={`qs-connection ${mode === "offline" ? "qs-is-offline" : ""}`}
+            title={sourceHint}
+            aria-label={sourceHint}
           >
             {mode === "offline" ? <Layers3 size={14} /> : <Wifi size={14} />}
             <span>{sourceMode}</span>

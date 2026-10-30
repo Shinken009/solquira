@@ -60,7 +60,33 @@ export default function FieldContext({
     [imageryState, setImageryState] = useState("off");
   const controller = useRef<AbortController | null>(null),
     revision = useRef(0),
-    mounted = useRef(true);
+    mounted = useRef(true),
+    sectionRef = useRef<HTMLElement>(null),
+    autoOpened = useRef(false),
+    autoLoaded = useRef(false),
+    pointRef = useRef(point);
+  pointRef.current = point;
+  useEffect(() => {
+    const node = sectionRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") {
+      setOpened(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        if (!autoOpened.current) {
+          autoOpened.current = true;
+          setOpened(true);
+        }
+      },
+      { threshold: 0.3, rootMargin: "0px 0px -8% 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, offline, csrfToken]);
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -181,6 +207,16 @@ export default function FieldContext({
         setBusy(false);
     }
   };
+  // Onboarding: when the landscape section scrolls into view, the map opens and
+  // the default point loads its forecast once, so the location is visible without
+  // an extra click. The person can still change the point or reload context.
+  useEffect(() => {
+    if (!opened || !enabled || offline || !csrfToken) return;
+    if (data || busy || autoLoaded.current) return;
+    autoLoaded.current = true;
+    void requestForecast(roundedPoint(pointRef.current));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened, enabled, offline, csrfToken, data, busy]);
   const load = async (event: FormEvent) => {
     event.preventDefault();
     const selected = current();
@@ -237,6 +273,7 @@ export default function FieldContext({
   );
   return (
     <section
+      ref={sectionRef}
       className="qg-section"
       id="qs-landscape"
       tabIndex={-1}
@@ -608,34 +645,51 @@ export default function FieldContext({
               </div>
             )}
             <div className="qg-layer-line">
-              <span>
+              <span className="qg-coordinates">
                 <MapPin size={14} />
                 {point.latitude.toFixed(3)}, {point.longitude.toFixed(3)}
               </span>
-              <label>
+              <label className="qg-layer-toggle">
                 <input
                   type="checkbox"
                   data-testid="geo-nasa-toggle"
+                  aria-describedby="qg-layer-detail"
                   checked={nasa}
                   disabled={!opened || data?.imagery.state !== "ready_to_load"}
                   onChange={(e) => {
                     setNasa(e.target.checked);
                     setImageryState(e.target.checked ? "loading" : "off");
                   }}
-                />{" "}
-                NASA satellite imagery
+                />
+                <span>
+                  <strong>NASA MODIS detail</strong>
+                  <small>250 m regional / date shown</small>
+                </span>
               </label>
             </div>
-            {nasa && (
-              <p className="qg-source-note" role="status">
-                NASA EOSDIS GIBS · MODIS Terra · {data?.imagery.date} ·{" "}
-                {imageryState === "received"
-                  ? "Imagery received"
-                  : imageryState === "unavailable"
-                    ? "Imagery is off; the local basemap still works"
-                    : "Loading regional imagery…"}
-              </p>
-            )}
+            <p
+              id="qg-layer-detail"
+              className={nasa ? "qg-source-note" : "qg-layer-hint"}
+              role="status"
+            >
+              {nasa ? (
+                <>
+                  NASA EOSDIS GIBS / MODIS Terra /{" "}
+                  {data?.imagery.date ?? "date pending"} / regional 250 m;
+                  clouds and availability vary.{" "}
+                  {imageryState === "received"
+                    ? "Imagery received."
+                    : imageryState === "unavailable"
+                      ? "Imagery is off; the Natural Earth basemap still works."
+                      : "Loading regional imagery?"}
+                </>
+              ) : (
+                <>
+                  Natural Earth is a coarse regional basemap. Enable NASA MODIS
+                  for 250 m regional detail; clouds, date and availability vary.
+                </>
+              )}
+            </p>
           </div>
         </div>
       </div>

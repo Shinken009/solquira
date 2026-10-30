@@ -1,0 +1,10 @@
+/* Soft rounded frame for the rural landscape study. The artwork itself is not edited. */
+.qs-terrain-frame {
+  border-radius: 24px;
+}
+
+@media (max-width: 480px) {
+  .qs-terrain-frame {
+    border-radius: 18px;
+  }
+}

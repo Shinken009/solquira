@@ -116,3 +116,18 @@
 }
 
 .qg-location-state{font-size:12px;line-height:1.5;color:#7a4a14;background:#fdf4e3;border-left:3px solid #d09d24;padding:8px 10px;border-radius:6px;margin:0 0 14px}
+
+/* Compact detail-layer control: explicit coarse basemap vs optional NASA detail. */
+.qg-layer-line { align-items: center; row-gap: 8px; }
+.qg-coordinates { display: inline-flex; align-items: center; gap: 6px; min-width: 0; flex-wrap: wrap; }
+.qg-layer-toggle { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 2px 0; cursor: pointer; }
+.qg-layer-toggle input { inline-size: 20px; block-size: 20px; margin: 0; flex: 0 0 auto; }
+.qg-layer-toggle span { display: flex; flex-direction: column; gap: 1px; line-height: 1.25; }
+.qg-layer-toggle strong { font-size: 12px; font-weight: 700; }
+.qg-layer-toggle small { font-size: 11px; color: #30483f; }
+.qg-layer-hint { font-size: 12px; line-height: 1.55; color: #30483f; margin: 6px 0 0 !important; max-width: 70ch; }
+.qg-source-note { max-width: 75ch; }
+@media (max-width: 480px) {
+  .qg-layer-line { align-items: flex-start; flex-direction: column; }
+  .qg-layer-toggle { width: 100%; }
+}

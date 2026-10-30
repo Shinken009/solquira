@@ -247,14 +247,20 @@
   overflow: hidden;
   background: #f9f4e9;
 }
+/* The artwork is drawn as a rounded-corner card (r ~= 58 user units) on a flat
+   #f9f4e9 canvas inside a 2048x1152 viewBox. Cropping exactly to that card left
+   the empty canvas showing as a light wedge in all four corners, which read as a
+   white border. Crop window = 1050 x 924.98 user units centred on the card, which
+   clears the corner radius on every edge, so only illustration pixels reach the
+   frame border. Derived from the SVG: width% = 2048/1050, translate = -(cropX/2048). */
 .qs-terrain-art {
   position: absolute;
-  width: 188.956%;
+  width: 195.048%;
   height: auto;
   max-width: none;
   left: 0;
   top: 0;
-  transform: translate(-40.645%, -8.459%);
+  transform: translate(-41.455%, -9.766%);
   display: block;
 }
 
@@ -3997,5 +4003,124 @@
   .qs-connections,
   .qs-assistant {
     padding-inline: 16px;
+  }
+}
+
+/* Hero balance: the headline leads, the landscape study supports it.
+   One knob for the illustration width on desktop. */
+@media (min-width: 900px) {
+  .qs-intro {
+    grid-template-columns: 1.14fr 0.9fr;
+    gap: 44px;
+  }
+  .qs-terrain {
+    width: 100%;
+    max-width: var(--hero-art-max, 560px);
+    justify-self: end;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Mobile density pass — 2026-10-30
+   Scope: max-width 767px only. Goal: keep the primary CTA
+   ("Start with a place") inside the first screen at 360×640.
+   Desktop is protected by construction: every declaration below lives inside
+   this query, and no base/shared rule (>=768px) is modified anywhere.
+   Placed last on purpose so it wins the cascade over the 620px block above.
+   ────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  /* Header: the 83px bar + 28px wordmark cost ~12% of a 640px screen.
+     The 620px block pins the status group to a full second row
+     (width:100%); overriding that is what actually recovers the height. */
+  .qs-header {
+    min-height: 0;
+    padding: 8px 16px;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .qs-brand {
+    font-size: 22px;
+    gap: 8px;
+  }
+  .qs-brand-symbol {
+    width: 34px;
+    height: 34px;
+  }
+  /* The tagline repeats what the kicker already says; remove the noise. */
+  .qs-brand small {
+    display: none;
+  }
+  .qs-header-status {
+    width: auto;
+    flex: 0 0 auto;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+  }
+  .qs-about-link {
+    min-height: 24px;
+    margin: 0;
+    font-size: 10px;
+  }
+  .qs-connection {
+    font-size: 10px;
+    padding: 0;
+  }
+
+  /* Intro: tighten the vertical rhythm without shrinking hit targets. */
+  .qs-intro {
+    padding: 14px 0 16px;
+  }
+  .qs-kicker {
+    font-size: 9.5px;
+    margin-bottom: 0;
+  }
+  .qs-intro h1 {
+    font-size: 32px;
+    line-height: 1.1;
+    letter-spacing: -1.1px;
+    margin: 12px 0 10px;
+  }
+  .qs-intro-copy > p {
+    font-size: 14px;
+    line-height: 1.5;
+    max-width: 34ch;
+  }
+
+  /* Actions: full-width primary control, thumb-reachable, no sticky bar. */
+  .qs-hero-actions {
+    margin-top: 12px;
+    gap: 6px;
+  }
+  .qs-hero-cta {
+    width: 100%;
+  }
+  .qs-hero-secondary {
+    min-height: 36px;
+  }
+
+  /* Illustration: 16/9 keeps the landscape recognisable at ~182px instead of
+     ~285px. The art is recentred vertically so the shorter crop takes the
+     middle band of the drawing, not just the sky. */
+  .qs-terrain-frame {
+    aspect-ratio: 16 / 9;
+  }
+  .qs-terrain-art {
+    top: 50%;
+    transform: translate(-41.455%, -50%);
+  }
+  .qs-terrain figcaption {
+    font-size: 9px;
+  }
+}
+
+/* Under 380px the brand + About + chip no longer fit on one row without
+   shrinking type below the readable floor. About Solquira stays reachable
+   from the footer ("Our purpose", #qs-about). */
+@media (max-width: 380px) {
+  .qs-header-status .qs-about-link {
+    display: none;
   }
 }

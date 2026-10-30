@@ -77,7 +77,7 @@ async function submit() {
 try {
   await page.goto(target.href, { waitUntil: 'networkidle' });
   await page.getByTestId('studio-ready').waitFor();
-  if (!(await page.getByTestId('connection-mode').innerText()).includes('Studio connected')) throw new Error('Hosted-safe Studio status missing.');
+  if (!(await page.getByTestId('connection-mode').innerText()).includes('Demo · prepared examples')) throw new Error('Hosted-safe Studio status missing.');
   await attach();
   await page.getByTestId('water-input').fill('70');
   if (await page.getByTestId('plan-row').count()) throw new Error('Changed example retained a comparison.');

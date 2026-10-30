@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Cartesian2, Cartesian3, Cartographic, CesiumWidget, Color, Credit, EllipsoidTerrainProvider, PointPrimitiveCollection, WebMercatorTilingScheme, Math as CesiumMath, ScreenSpaceEventHandler, ScreenSpaceEventType, TileMapServiceImageryProvider, UrlTemplateImageryProvider, type ImageryLayer, type PointPrimitive } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import type { Imagery, Point } from './client';
+import { wrapRequestImage } from './rasterLoad';
 
 export default function CesiumFieldMap({ point, onPick, imagery, nasaEnabled, onImageryState }: { point: Point; onPick: (p: Point) => void; imagery: Imagery | null; nasaEnabled: boolean; onImageryState: (state: string) => void }) {
   const container = useRef<HTMLDivElement>(null), viewer = useRef<CesiumWidget | null>(null), marker = useRef<PointPrimitive | null>(null);
@@ -10,7 +11,8 @@ export default function CesiumFieldMap({ point, onPick, imagery, nasaEnabled, on
   const [state, setState] = useState('loading'), [flat, setFlat] = useState(false);
   const recenter = () => { const p = latestPoint.current; viewer.current?.camera.setView({ destination: Cartesian3.fromDegrees(p.longitude,p.latitude,650000) }); viewer.current?.scene.requestRender(); };
   useEffect(() => {
-    let disposed = false, instance: CesiumWidget | undefined, handler: ScreenSpaceEventHandler | undefined;
+    let disposed = false, instance: CesiumWidget | undefined, handler: ScreenSpaceEventHandler | undefined,
+      removePostRender: (() => void) | undefined, loadTimer: number | undefined;
     const initialize = async () => {
       try {
         if (!container.current) return;
@@ -24,7 +26,26 @@ export default function CesiumFieldMap({ point, onPick, imagery, nasaEnabled, on
         instance.resolutionScale = Math.min(window.devicePixelRatio, 1.5);
         const provider = await TileMapServiceImageryProvider.fromUrl(`${import.meta.env.BASE_URL}cesium/Assets/Textures/NaturalEarthII`, { credit: new Credit('Natural Earth') });
         if (disposed) return;
+        let rasterLoaded = false;
+        provider.requestImage = wrapRequestImage(provider.requestImage.bind(provider), {
+          isActive: () => !disposed,
+          onFirstRaster: () => {
+            const widget = instance;
+            if (disposed || rasterLoaded || !widget) return;
+            rasterLoaded = true;
+            removePostRender = widget.scene.postRender.addEventListener(() => {
+              removePostRender?.();
+              removePostRender = undefined;
+              if (loadTimer !== undefined) { window.clearTimeout(loadTimer); loadTimer = undefined; }
+              if (!disposed) setState('ready');
+            });
+            widget.scene.requestRender();
+          },
+        });
         instance.imageryLayers.addImageryProvider(provider);
+        loadTimer = window.setTimeout(() => {
+          if (!disposed) setState(current => current === 'loading' ? 'unavailable' : current);
+        }, 12000);
         const p = latestPoint.current;
         const points = instance.scene.primitives.add(new PointPrimitiveCollection()) as PointPrimitiveCollection;
         marker.current = points.add({ id:'selected-context-point', position:Cartesian3.fromDegrees(p.longitude,p.latitude), pixelSize:14,color:Color.fromCssColorString('#efbb39'),outlineColor:Color.fromCssColorString('#173d36'),outlineWidth:3,disableDepthTestDistance:Infinity });
@@ -33,11 +54,11 @@ export default function CesiumFieldMap({ point, onPick, imagery, nasaEnabled, on
           const value = instance?.camera.pickEllipsoid(event.position,instance.scene.globe.ellipsoid);
           if (value) { const position = Cartographic.fromCartesian(value); pick.current({ latitude:CesiumMath.toDegrees(position.latitude),longitude:CesiumMath.toDegrees(position.longitude) }); }
         },ScreenSpaceEventType.LEFT_CLICK);
-        recenter(); setState('ready');
+        recenter();
       } catch { if (!disposed) { setState('unavailable'); if (instance && !instance.isDestroyed()) instance.destroy(); viewer.current=null; marker.current=null; } }
     };
     void initialize();
-    return () => { disposed=true; handler?.destroy(); if (instance && !instance.isDestroyed()) instance.destroy(); viewer.current=null; marker.current=null; };
+    return () => { disposed=true; if (loadTimer !== undefined) window.clearTimeout(loadTimer); removePostRender?.(); handler?.destroy(); if (instance && !instance.isDestroyed()) instance.destroy(); viewer.current=null; marker.current=null; };
   }, []);
   useEffect(() => {
     const instance=viewer.current;
@@ -61,8 +82,8 @@ export default function CesiumFieldMap({ point, onPick, imagery, nasaEnabled, on
     layer=instance.imageryLayers.addImageryProvider(provider);instance.scene.requestRender();
     return () => { active=false; if (!instance.isDestroyed() && layer) { instance.imageryLayers.remove(layer,true);instance.scene.requestRender(); } };
   },[nasaEnabled,imagery?.url_template,state]);
-  return <div className="qg-map-wrap" data-testid="geo-map-state" data-state={state}>
+  return <div className="qg-map-wrap" data-testid="geo-map-state" data-state={state} data-raster-state={state === 'ready' ? 'rendered' : state === 'loading' ? 'pending' : 'unavailable'} aria-busy={state === 'loading'}>
     <div className="qg-map" ref={container} aria-label="Interactive Cesium landscape: select a point, zoom or use the coordinate form"/>
-    {state === 'unavailable' ? <div className="qg-map-fallback" role="status"><strong>This device cannot render 3D.</strong><p>You can still select coordinates and read their forecast below.</p></div> : <div className="qg-map-toolbar"><span>{state === 'ready' ? 'Cesium landscape' : 'Opening the globe…'}</span><button type="button" disabled={state!=='ready'} onClick={recenter}>Back to point</button><button type="button" disabled={state!=='ready'} onClick={() => { const v=viewer.current;if(v){ if(flat)v.scene.morphTo3D(0);else v.scene.morphTo2D(0);setFlat(!flat);recenter();v.scene.requestRender(); } }}>{flat ? '3D view' : '2D view'}</button></div>}
+    {state === 'unavailable' ? <div className="qg-map-fallback" role="status"><strong>This device cannot render 3D.</strong><p>You can still select coordinates and read their forecast below.</p></div> : <div className="qg-map-toolbar"><span>{state === 'ready' ? (nasaEnabled ? 'NASA regional detail' : 'Regional basemap') : 'Opening the globe.'}</span><button type="button" disabled={state!=='ready'} onClick={recenter}>Back to point</button><button type="button" disabled={state!=='ready'} onClick={() => { const v=viewer.current;if(v){ if(flat)v.scene.morphTo3D(0);else v.scene.morphTo2D(0);setFlat(!flat);recenter();v.scene.requestRender(); } }}>{flat ? '3D view' : '2D view'}</button></div>}
   </div>;
 }
