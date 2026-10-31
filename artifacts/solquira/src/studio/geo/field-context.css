@@ -131,3 +131,17 @@
   .qg-layer-line { align-items: flex-start; flex-direction: column; }
   .qg-layer-toggle { width: 100%; }
 }
+
+/* Responsive Cesium canvas: leave room for controls and attribution. */
+.qg-map-wrap { min-width:0; }
+.qg-map { height:clamp(350px, 41vw, 520px); min-width:0; }
+.qg-map-toolbar { display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:8px; }
+.qg-map-toolbar > span { min-width:0; margin-right:0; overflow-wrap:anywhere; }
+.qg-map-toolbar button { min-height:44px; padding:9px 12px; font-size:12px; }
+.qg-map .cesium-widget-credits { max-width:100%; }
+@media (max-width:720px) {
+  .qg-map { height:clamp(300px, 62dvh, 390px); }
+  .qg-map-toolbar { top:8px; left:8px; right:8px; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:6px; }
+  .qg-map-toolbar > span { grid-column:1/-1; }
+  .qg-map-toolbar button { width:100%; min-width:0; padding:8px 6px; }
+}
