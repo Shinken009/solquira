@@ -100,6 +100,7 @@ La barra de herramientas ocupa 76–80 px en móvil (<25 % de la altura del mapa
 - `artifacts/solquira/src/studio/geo/field-context.css` — créditos, avisos, tipografía móvil y tablet.
 - `artifacts/solquira/.env.example` — configuración de proveedor sin secretos.
 - `vercel.json` — CSP para OSM y MapTiler; se conserva `Referrer-Policy`.
+- `README.md` — el recorrido público ahora empieza por la ubicación y describe el mapa de referencia con respaldo Natural Earth.
 - `docs/release/SOLQUIRA-MAP-VALIDATION-2026-10-31.md` — este informe.
 
 ## 4. Pruebas ejecutadas
@@ -134,7 +135,7 @@ Matriz automatizada:
 | NASA caída -> mapa de referencia intacto                                          | PASS                         |
 | Build estático con CSP de `vercel.json`                                           | PASS, 0 errores CSP/JS       |
 
-La verificación visual con teselas reales de OSM se hizo por separado en 390 px y 1366 px; las pruebas de matriz usan teselas locales para no cargar los servidores públicos de OSM.
+La verificación visual con teselas reales de OSM se hizo por separado en 390 px y 1366 px: 50 solicitudes y 0 errores de página en escritorio; 26 solicitudes y 0 errores en móvil; canvas de 951 px CSS en escritorio y 474 px de bitmap en 390 px con DPR 3 (resolutionScale 1,5×). Las pruebas de matriz usan teselas locales para no cargar los servidores públicos de OSM.
 
 ## 5. Límites y pendientes
 
