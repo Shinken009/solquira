@@ -411,8 +411,8 @@ export default function FieldContext({
           <details className="qg-method" data-testid="geo-methods">
             <summary>Sources & map details</summary>
             <p>
-              The Cesium globe uses the Natural Earth regional basemap and an
-              ellipsoid, not surveyed terrain. The selected point and forecast
+              The Cesium view uses OpenStreetMap reference tiles, with Natural
+              Earth as a coarse fallback, and an ellipsoid, not surveyed terrain. The selected point and forecast
               are independent of the synthetic crop example below.
             </p>
             <p>
@@ -663,7 +663,7 @@ export default function FieldContext({
                 />
                 <span>
                   <strong>NASA MODIS detail</strong>
-                  <small>250 m regional / date shown</small>
+                  <small>{data?.imagery.state === "ready_to_load" ? `250 m regional / ${data.imagery.date}` : "Load local context to enable"}</small>
                 </span>
               </label>
             </div>
@@ -680,13 +680,14 @@ export default function FieldContext({
                   {imageryState === "received"
                     ? "Imagery received."
                     : imageryState === "unavailable"
-                      ? "Imagery is off; the Natural Earth basemap still works."
+                      ? "Satellite tiles are unavailable; the reference map remains available."
                       : "Loading regional imagery?"}
                 </>
               ) : (
                 <>
-                  Natural Earth is a coarse regional basemap. Enable NASA MODIS
-                  for 250 m regional detail; clouds, date and availability vary.
+                  OpenStreetMap provides a detailed reference map (not satellite imagery).
+                  NASA MODIS offers optional 250 m regional imagery once local
+                  context loads; clouds, date and availability vary.
                 </>
               )}
             </p>
