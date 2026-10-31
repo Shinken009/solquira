@@ -5,13 +5,15 @@ Solquira turns a field question into a readable brief: understand the context, i
 and prepare the next visit. Its purpose is to support work that reduces desertification and
 strengthens local livelihoods.
 
-Prepared for the **Nebius × NVIDIA Global AI Hackathon**, Best Apps and Agents track (track proposed; submission fields pending). Existing prototype, significantly updated for this submission.
+Built for the **Nebius × NVIDIA Global AI Hackathon**, Best Apps and Agents track. Public demo; validation limits are documented below.
 
 ## The experience
 
-1. **Start with a place.** Select a reference landscape or enter coordinates. An optional Cesium
-   globe and NASA GIBS imagery provide geographic context. With `--geodata`, the server loads a
-   seven-day Open-Meteo forecast: rainfall, reference ET₀ and temperature, in UTC.
+1. **Start with a place.** Allow location to center the map on you, select a reference
+   landscape or enter coordinates. The optional Cesium view combines a detailed
+   OpenStreetMap reference layer with a bundled Natural Earth fallback and optional
+   NASA GIBS imagery. With `--geodata`, the server loads a seven-day Open-Meteo
+   forecast: rainfall, reference ET₀ and temperature, in UTC.
 2. **Explore a field question.** The forecast can be attached to a question in the context panel.
    This forecast-linked workflow is separate from the reference scenarios below.
 3. **Build a field brief.** Four map-linked reference profiles provide distinct soil-life and
