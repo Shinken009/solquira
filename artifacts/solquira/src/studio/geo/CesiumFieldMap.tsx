@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Cartesian2, Cartesian3, Cartographic, CesiumWidget, Color, Credit, EllipsoidTerrainProvider, PointPrimitiveCollection, WebMercatorTilingScheme, Math as CesiumMath, ScreenSpaceEventHandler, ScreenSpaceEventType, TileMapServiceImageryProvider, UrlTemplateImageryProvider, type ImageryLayer, type PointPrimitive } from 'cesium';
+import { Cartesian2, Cartesian3, Cartographic, CesiumWidget, Color, Credit, EllipsoidTerrainProvider, PointPrimitiveCollection, OpenStreetMapImageryProvider, SceneMode, WebMercatorTilingScheme, Math as CesiumMath, ScreenSpaceEventHandler, ScreenSpaceEventType, TileMapServiceImageryProvider, UrlTemplateImageryProvider, type ImageryLayer, type PointPrimitive } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import type { Imagery, Point } from './client';
 import { wrapRequestImage } from './rasterLoad';
@@ -8,22 +8,39 @@ export default function CesiumFieldMap({ point, onPick, imagery, nasaEnabled, on
   const container = useRef<HTMLDivElement>(null), viewer = useRef<CesiumWidget | null>(null), marker = useRef<PointPrimitive | null>(null);
   const pick = useRef(onPick), latestPoint = useRef(point), imageryState = useRef(onImageryState);
   pick.current = onPick; latestPoint.current = point; imageryState.current = onImageryState;
-  const [state, setState] = useState('loading'), [flat, setFlat] = useState(false);
-  const recenter = () => { const p = latestPoint.current; viewer.current?.camera.setView({ destination: Cartesian3.fromDegrees(p.longitude,p.latitude,650000) }); viewer.current?.scene.requestRender(); };
+  const mobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 720px)').matches;
+  const [state, setState] = useState('loading'), [flat, setFlat] = useState(mobile), [detailed, setDetailed] = useState(false);
+  const recenter = () => {
+    const p = latestPoint.current;
+    const height = window.matchMedia('(max-width: 720px)').matches ? 230000 : 340000;
+    viewer.current?.camera.setView({ destination: Cartesian3.fromDegrees(p.longitude,p.latitude,height) });
+    viewer.current?.scene.requestRender();
+  };
   useEffect(() => {
     let disposed = false, instance: CesiumWidget | undefined, handler: ScreenSpaceEventHandler | undefined,
-      removePostRender: (() => void) | undefined, loadTimer: number | undefined;
+      removePostRender: (() => void) | undefined, loadTimer: number | undefined, resizeObserver: ResizeObserver | undefined;
     const initialize = async () => {
       try {
         if (!container.current) return;
         // Our own toolbar owns interaction. Avoid Viewer/Knockout's import-time
         // dynamic evaluation, so the landscape works without CSP unsafe-eval.
-        instance = new CesiumWidget(container.current, { baseLayer:false, skyBox:false, skyAtmosphere:false,
-          terrainProvider:new EllipsoidTerrainProvider(), requestRenderMode:true, maximumRenderTimeChange:Infinity, shouldAnimate:false });
+        instance = new CesiumWidget(container.current, {
+          baseLayer:false, skyBox:false, skyAtmosphere:false, sceneMode: mobile ? SceneMode.SCENE2D : SceneMode.SCENE3D,
+          useBrowserRecommendedResolution:false, msaaSamples:mobile ? 1 : 2,
+          terrainProvider:new EllipsoidTerrainProvider(), requestRenderMode:true, maximumRenderTimeChange:Infinity, shouldAnimate:false
+        });
         viewer.current = instance;
-        instance.scene.globe.tileCacheSize = 64;
-        instance.scene.globe.maximumScreenSpaceError = 1.5;
-        instance.resolutionScale = Math.min(window.devicePixelRatio, 1.5);
+        instance.scene.globe.tileCacheSize = mobile ? 32 : 64;
+        instance.scene.globe.maximumScreenSpaceError = mobile ? 2 : 1.5;
+        // Limit physical canvas resolution for high-DPI phones and laptops.
+        const dpr = Math.max(1, window.devicePixelRatio || 1);
+        instance.resolutionScale = Math.min(1, (mobile ? 2 : 1.5) / dpr);
+        if (typeof ResizeObserver !== 'undefined') {
+          resizeObserver = new ResizeObserver(() => {
+            if (instance && !instance.isDestroyed()) { instance.resize(); instance.scene.requestRender(); }
+          });
+          resizeObserver.observe(container.current);
+        }
         const provider = await TileMapServiceImageryProvider.fromUrl(`${import.meta.env.BASE_URL}cesium/Assets/Textures/NaturalEarthII`, { credit: new Credit('Natural Earth') });
         if (disposed) return;
         let rasterLoaded = false;
@@ -43,6 +60,23 @@ export default function CesiumFieldMap({ point, onPick, imagery, nasaEnabled, on
           },
         });
         instance.imageryLayers.addImageryProvider(provider);
+        // Natural Earth remains beneath the detailed map as an offline fallback.
+        try {
+          const osm = new OpenStreetMapImageryProvider({
+            url: 'https://tile.openstreetmap.org/',
+            maximumLevel: 16,
+            credit: new Credit('<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a>', true),
+          });
+          osm.requestImage = wrapRequestImage(osm.requestImage.bind(osm), {
+            isActive: () => !disposed,
+            onFirstRaster: () => {
+              if (!disposed) { setDetailed(true); instance?.scene.requestRender(); }
+            },
+          });
+          instance.imageryLayers.addImageryProvider(osm);
+        } catch {
+          // The bundled fallback is still usable if the remote provider fails.
+        }
         loadTimer = window.setTimeout(() => {
           if (!disposed) setState(current => current === 'loading' ? 'unavailable' : current);
         }, 12000);
@@ -58,7 +92,7 @@ export default function CesiumFieldMap({ point, onPick, imagery, nasaEnabled, on
       } catch { if (!disposed) { setState('unavailable'); if (instance && !instance.isDestroyed()) instance.destroy(); viewer.current=null; marker.current=null; } }
     };
     void initialize();
-    return () => { disposed=true; if (loadTimer !== undefined) window.clearTimeout(loadTimer); removePostRender?.(); handler?.destroy(); if (instance && !instance.isDestroyed()) instance.destroy(); viewer.current=null; marker.current=null; };
+    return () => { disposed=true; resizeObserver?.disconnect(); if (loadTimer !== undefined) window.clearTimeout(loadTimer); removePostRender?.(); handler?.destroy(); if (instance && !instance.isDestroyed()) instance.destroy(); viewer.current=null; marker.current=null; };
   }, []);
   useEffect(() => {
     const instance=viewer.current;
@@ -84,6 +118,6 @@ export default function CesiumFieldMap({ point, onPick, imagery, nasaEnabled, on
   },[nasaEnabled,imagery?.url_template,state]);
   return <div className="qg-map-wrap" data-testid="geo-map-state" data-state={state} data-raster-state={state === 'ready' ? 'rendered' : state === 'loading' ? 'pending' : 'unavailable'} aria-busy={state === 'loading'}>
     <div className="qg-map" ref={container} aria-label="Interactive Cesium landscape: select a point, zoom or use the coordinate form"/>
-    {state === 'unavailable' ? <div className="qg-map-fallback" role="status"><strong>This device cannot render 3D.</strong><p>You can still select coordinates and read their forecast below.</p></div> : <div className="qg-map-toolbar"><span>{state === 'ready' ? (nasaEnabled ? 'NASA regional detail' : 'Regional basemap') : 'Opening the globe.'}</span><button type="button" disabled={state!=='ready'} onClick={recenter}>Back to point</button><button type="button" disabled={state!=='ready'} onClick={() => { const v=viewer.current;if(v){ if(flat)v.scene.morphTo3D(0);else v.scene.morphTo2D(0);setFlat(!flat);recenter();v.scene.requestRender(); } }}>{flat ? '3D view' : '2D view'}</button></div>}
+    {state === 'unavailable' ? <div className="qg-map-fallback" role="status"><strong>This device cannot render 3D.</strong><p>You can still select coordinates and read their forecast below.</p></div> : <div className="qg-map-toolbar"><span>{state === 'ready' ? (nasaEnabled ? 'NASA regional detail' : detailed ? 'Detailed regional map' : 'Regional map · limited detail') : 'Opening the map…'}</span><button type="button" disabled={state!=='ready'} onClick={recenter}>Back to point</button><button type="button" disabled={state!=='ready'} onClick={() => { const v=viewer.current;if(v && !v.isDestroyed()){ const nextFlat=!flat;setFlat(nextFlat);if(nextFlat)v.scene.morphTo2D(0);else v.scene.morphTo3D(0);window.requestAnimationFrame(() => { if(!v.isDestroyed()){v.resize();recenter();v.scene.requestRender();} }); } }}>{flat ? '3D view' : '2D view'}</button></div>}
   </div>;
 }
