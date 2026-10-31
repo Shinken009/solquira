@@ -145,3 +145,43 @@
   .qg-map-toolbar > span { grid-column:1/-1; }
   .qg-map-toolbar button { width:100%; min-width:0; padding:8px 6px; }
 }
+
+/* International start point, map status and always-visible attribution. */
+.qg-location-note { margin: 0 0 12px; padding: 8px 10px; border-left: 3px solid #b58a2a; border-radius: 5px; background: #fbf5e8; color: #5b4212; font-size: 12px; line-height: 1.5; }
+.qg-location-source { display: inline-block; margin-left: 2px; padding-left: 7px; border-left: 1px solid #a8bdae; color: #4d645d; font-size: 10px; font-weight: 600; letter-spacing: .02em; white-space: nowrap; }
+.qg-map-wrap { isolation: isolate; }
+.qg-map { overscroll-behavior: contain; }
+.qg-map canvas { display: block; }
+.qg-map-credits { position: relative; z-index: 3; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; min-height: 26px; padding: 4px 10px; border-top: 1px solid #d5e3d9; background: #fbfdf9; color: #30483f; font-size: 11px; line-height: 1.45; }
+.qg-map-credits:empty { display: none; }
+.qg-map-credits a { color: #173d36; text-underline-offset: 2px; }
+.qg-map-credits .cesium-widget-credits { position: static; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; padding: 0; background: transparent; color: inherit; font-size: inherit; }
+.qg-map-credits .cesium-credit-display { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; }
+.qg-map-credits .cesium-credit-textContainer,
+.qg-map-credits .cesium-credit-logoContainer { display: inline-flex; align-items: center; gap: 4px; }
+.qg-map-credits .cesium-credit-logoContainer img { width: auto; height: 18px; vertical-align: middle; }
+.qg-map-credits .cesium-credit-wrapper { display: inline-flex; align-items: center; }
+.qg-map-credits .cesium-credit-text { font-size: 11px; }
+.qg-map-credits .cesium-credit-expand-link { color: #173d36; font-size: 11px; }
+.qg-map-notice { margin: 0; padding: 6px 10px; border-top: 1px solid #ecd9b7; background: #fdf4e3; color: #5b4212; font-size: 11px; line-height: 1.5; }
+.qg-map-toolbar > span { line-height: 1.35; }
+@media (max-width: 720px) {
+  .qg-coordinate-inputs input { font-size: 16px; }
+  .qg-map-toolbar { padding: 6px; background: #fffef9f2; font-size: 13px; }
+  .qg-map-toolbar > span { font-size: 13px; }
+  .qg-map-toolbar button { min-height: 44px; font-size: 13px; padding: 8px; }
+  .qg-map-credits { font-size: 11px; padding: 5px 8px; }
+  .qg-map-credits .cesium-credit-text,
+  .qg-map-credits .cesium-credit-expand-link { font-size: 11px; }
+}
+@media (max-width: 380px) {
+  .qg-map-toolbar { padding: 5px; }
+  .qg-map-toolbar > span { font-size: 12px; }
+  .qg-map-toolbar button { font-size: 12px; }
+}
+
+/* A 768 px tablet should not inherit the narrow desktop sidebar. Give the map
+   the full content width instead of leaving it in a 390 px column. */
+@media (min-width: 721px) and (max-width: 900px) {
+  .qg-grid { grid-template-columns: 1fr; }
+}

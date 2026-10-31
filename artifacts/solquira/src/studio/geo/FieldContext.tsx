@@ -26,6 +26,7 @@ import {
 import { REFERENCE_PLACES } from "../dryland-client";
 import "./field-context.css";
 const Landscape = lazy(() => import("./CesiumFieldMap"));
+type LocationSource = "none" | "geolocation" | "reference" | "manual" | "map";
 const examples = REFERENCE_PLACES.map((item) => ({
   label: item.label,
   latitude: item.latitude,
@@ -48,24 +49,26 @@ export default function FieldContext({
   onPointChange?: (point: Point | null) => void;
   externalPoint?: Point | null;
 }) {
-  const [latitude, setLatitude] = useState("-30.03"),
-    [longitude, setLongitude] = useState("-70.71"),
-    [point, setPoint] = useState<Point>(examples[1]);
+  const [latitude, setLatitude] = useState(""),
+    [longitude, setLongitude] = useState("");
+  const [point, setPoint] = useState<Point | null>(null);
   const [opened, setOpened] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
+    [locationNote, setLocationNote] = useState(""),
     [locating, setLocating] = useState(false);
   const [data, setData] = useState<FieldContextData | null>(null),
     [nasa, setNasa] = useState(false),
-    [imageryState, setImageryState] = useState("off");
+    [imageryState, setImageryState] = useState("off"),
+    [locationSource, setLocationSource] = useState<LocationSource>("none");
   const controller = useRef<AbortController | null>(null),
     revision = useRef(0),
     mounted = useRef(true),
     sectionRef = useRef<HTMLElement>(null),
     autoOpened = useRef(false),
-    autoLoaded = useRef(false),
-    pointRef = useRef(point);
-  pointRef.current = point;
+    autoLoadedFor = useRef(""),
+    locationAsked = useRef(false),
+    manualSelection = useRef(false);
   useEffect(() => {
     const node = sectionRef.current;
     if (!node || typeof IntersectionObserver === "undefined") {
@@ -97,6 +100,7 @@ export default function FieldContext({
   useEffect(() => {
     controller.current?.abort();
     revision.current++;
+    autoLoadedFor.current = "";
     setBusy(false);
     setData(null);
     setNasa(false);
@@ -113,10 +117,13 @@ export default function FieldContext({
     setImageryState("off");
     onAttach(null);
   };
-  const select = (value: Point) => {
+  const select = (value: Point, source: LocationSource = "manual") => {
     const next = roundedPoint(value);
     invalidate();
+    if (source !== "geolocation") manualSelection.current = true;
     setPoint(next);
+    setLocationSource(source);
+    setLocationNote("");
     onPointChange?.(next);
     setLatitude(String(next.latitude));
     setLongitude(String(next.longitude));
@@ -124,50 +131,59 @@ export default function FieldContext({
   // The brief can choose one of the four prepared profiles; the map follows that choice.
   useEffect(() => {
     if (!externalPoint) return;
-    if (samePoint(point, externalPoint)) return;
-    select(externalPoint);
+    if (point && samePoint(point, externalPoint)) return;
+    select(externalPoint, "reference");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalPoint?.latitude, externalPoint?.longitude]);
-  // Adapt to the person without a surprise permission dialog: only a location the
-  // browser has already allowed is used, and it never becomes a soil profile.
+  // The map starts at the person's approximate location, never at a fixed
+  // reference region. The browser owns the permission prompt; a denial leaves
+  // the map in a neutral world view and the reference landscapes remain optional.
   useEffect(() => {
-    if (offline) return;
-    const geolocation = navigator.geolocation,
-      permissions = navigator.permissions;
-    if (!geolocation || !permissions?.query) return;
-    let cancelled = false;
-    const take = () => {
-      geolocation.getCurrentPosition(
-        (value) => {
-          if (!cancelled && mounted.current)
-            select({
-              latitude: value.coords.latitude,
-              longitude: value.coords.longitude,
-            });
-        },
-        () => undefined,
-        {
-          enableHighAccuracy: false,
-          timeout: 10000,
-          maximumAge: 300000,
-        },
+    if (!opened || offline || locationAsked.current) return;
+    locationAsked.current = true;
+    const geolocation = navigator.geolocation;
+    if (!geolocation) {
+      setLocationNote(
+        "This browser cannot share a location. Choose a point on the map, a reference landscape, or enter coordinates.",
       );
-    };
-    permissions
-      .query({ name: "geolocation" })
-      .then((result) => {
-        if (cancelled) return;
-        if (result.state === "granted") take();
-        result.addEventListener?.("change", () => {
-          if (!cancelled && result.state === "granted") take();
-        });
-      })
-      .catch(() => undefined);
+      return;
+    }
+    let cancelled = false;
+    geolocation.getCurrentPosition(
+      (value) => {
+        if (cancelled || !mounted.current || manualSelection.current) return;
+        select(
+          {
+            latitude: value.coords.latitude,
+            longitude: value.coords.longitude,
+          },
+          "geolocation",
+        );
+      },
+      (failure) => {
+        if (cancelled || !mounted.current) return;
+        setLocationSource("none");
+        if (failure.code === failure.PERMISSION_DENIED) {
+          setLocationNote(
+            "Location was not shared. Choose a point on the map, a reference landscape, or enter coordinates.",
+          );
+        } else {
+          setLocationNote(
+            "Your location could not be read. Choose a point on the map, a reference landscape, or enter coordinates.",
+          );
+        }
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 300000,
+      },
+    );
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [offline]);
+  }, [opened, offline]);
   const current = (): Point | null => {
     if (!latitude.trim() || !longitude.trim()) return null;
     const p = { latitude: Number(latitude), longitude: Number(longitude) };
@@ -207,16 +223,18 @@ export default function FieldContext({
         setBusy(false);
     }
   };
-  // Onboarding: when the landscape section scrolls into view, the map opens and
-  // the default point loads its forecast once, so the location is visible without
-  // an extra click. The person can still change the point or reload context.
+  // Onboarding: when the landscape section scrolls into view, the forecast for
+  // the selected point loads once. If geolocation arrives after the section opens,
+  // this effect waits for that point instead of loading a fixed region.
   useEffect(() => {
-    if (!opened || !enabled || offline || !csrfToken) return;
-    if (data || busy || autoLoaded.current) return;
-    autoLoaded.current = true;
-    void requestForecast(roundedPoint(pointRef.current));
+    if (!opened || !enabled || offline || !csrfToken || !point) return;
+    if (data || busy) return;
+    const key = `${point.latitude}:${point.longitude}`;
+    if (autoLoadedFor.current === key) return;
+    autoLoadedFor.current = key;
+    void requestForecast(point);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opened, enabled, offline, csrfToken, data, busy]);
+  }, [opened, enabled, offline, csrfToken, point, data, busy]);
   const load = async (event: FormEvent) => {
     event.preventDefault();
     const selected = current();
@@ -226,7 +244,7 @@ export default function FieldContext({
       );
       return;
     }
-    select(selected);
+    select(selected, "manual");
     await requestForecast(selected);
   };
   const locate = () => {
@@ -245,7 +263,7 @@ export default function FieldContext({
               latitude: value.coords.latitude,
               longitude: value.coords.longitude,
             });
-            select(next);
+            select(next, "geolocation");
             // An explicit request from the person may also read the forecast.
             void requestForecast(next);
           }
@@ -271,6 +289,16 @@ export default function FieldContext({
     1,
     ...days.flatMap((d) => [d.precipitation_mm, d.reference_et0_mm]),
   );
+  const sourceLabel =
+    locationSource === "geolocation"
+      ? "Approximate location"
+      : locationSource === "reference"
+        ? "Reference landscape"
+        : locationSource === "map"
+          ? "Point chosen on map"
+          : locationSource === "manual"
+            ? "Coordinates entered"
+            : "No point yet";
   return (
     <section
       ref={sectionRef}
@@ -305,15 +333,21 @@ export default function FieldContext({
           onClick={() => setOpened(!opened)}
         >
           <Layers3 size={17} />
-          {opened ? "Close 3D landscape" : "Open 3D landscape"}
+          {opened ? "Close landscape view" : "Open landscape view"}
         </button>
       </div>
       <div className="qg-grid">
         <div className="qg-location">
           <h3>Choose a place to explore</h3>
           <p className="qg-location-hint">
-            Start with a reference landscape or choose your own point.
+            Allow location to center the map on you, choose a reference
+            landscape, or enter your own point.
           </p>
+          {locationNote && (
+            <p className="qg-location-note" role="status">
+              {locationNote}
+            </p>
+          )}
           <div className="qg-examples">
             {examples.map((example) => (
               <button
@@ -322,7 +356,7 @@ export default function FieldContext({
                 aria-pressed={Boolean(
                   current() && samePoint(current()!, example),
                 )}
-                onClick={() => select(example)}
+                onClick={() => select(example, "reference")}
               >
                 {example.label}
               </button>
@@ -411,9 +445,27 @@ export default function FieldContext({
           <details className="qg-method" data-testid="geo-methods">
             <summary>Sources & map details</summary>
             <p>
-              The Cesium view uses OpenStreetMap reference tiles, with Natural
-              Earth as a coarse fallback, and an ellipsoid, not surveyed terrain. The selected point and forecast
-              are independent of the synthetic crop example below.
+              The Cesium view uses OpenStreetMap reference tiles (
+              <a
+                href="https://www.openstreetmap.org/copyright"
+                target="_blank"
+                rel="noreferrer"
+              >
+                © OpenStreetMap contributors
+              </a>
+              ), with Natural Earth as a coarse offline fallback, and an
+              ellipsoid, not surveyed terrain. The public tile service is
+              best-effort; a deployment can configure a contracted provider. If
+              a reference tile is wrong,{" "}
+              <a
+                href="https://www.openstreetmap.org/fixthemap"
+                target="_blank"
+                rel="noreferrer"
+              >
+                report a map issue
+              </a>
+              . The selected point and forecast are independent of the synthetic
+              crop example below.
             </p>
             <p>
               Loading a forecast sends rounded coordinates to Open-Meteo. The
@@ -626,7 +678,7 @@ export default function FieldContext({
               >
                 <Landscape
                   point={point}
-                  onPick={select}
+                  onPick={(next) => select(next, "map")}
                   imagery={data?.imagery ?? null}
                   nasaEnabled={nasa}
                   onImageryState={setImageryState}
@@ -645,9 +697,18 @@ export default function FieldContext({
               </div>
             )}
             <div className="qg-layer-line">
-              <span className="qg-coordinates">
+              <span
+                className="qg-coordinates"
+                data-testid="geo-selected-point"
+                data-source={locationSource}
+              >
                 <MapPin size={14} />
-                {point.latitude.toFixed(3)}, {point.longitude.toFixed(3)}
+                {point
+                  ? `${point.latitude.toFixed(3)}, ${point.longitude.toFixed(3)}`
+                  : "No point selected"}
+                {point && (
+                  <small className="qg-location-source">{sourceLabel}</small>
+                )}
               </span>
               <label className="qg-layer-toggle">
                 <input
@@ -655,7 +716,9 @@ export default function FieldContext({
                   data-testid="geo-nasa-toggle"
                   aria-describedby="qg-layer-detail"
                   checked={nasa}
-                  disabled={!opened || data?.imagery.state !== "ready_to_load"}
+                  disabled={
+                    !opened || !point || data?.imagery.state !== "ready_to_load"
+                  }
                   onChange={(e) => {
                     setNasa(e.target.checked);
                     setImageryState(e.target.checked ? "loading" : "off");
@@ -663,7 +726,13 @@ export default function FieldContext({
                 />
                 <span>
                   <strong>NASA MODIS detail</strong>
-                  <small>{data?.imagery.state === "ready_to_load" ? `250 m regional / ${data.imagery.date}` : "Load local context to enable"}</small>
+                  <small>
+                    {!point
+                      ? "Choose a point to enable"
+                      : data?.imagery.state === "ready_to_load"
+                        ? `250 m regional / ${data.imagery.date}`
+                        : "Load local context to enable"}
+                  </small>
                 </span>
               </label>
             </div>
@@ -672,7 +741,14 @@ export default function FieldContext({
               className={nasa ? "qg-source-note" : "qg-layer-hint"}
               role="status"
             >
-              {nasa ? (
+              {!point ? (
+                <>
+                  Choose a point on the map, use your location, or select a
+                  reference landscape. The map shows OpenStreetMap reference
+                  tiles (not satellite imagery) with a coarse Natural Earth
+                  fallback.
+                </>
+              ) : nasa ? (
                 <>
                   NASA EOSDIS GIBS / MODIS Terra /{" "}
                   {data?.imagery.date ?? "date pending"} / regional 250 m;
@@ -681,12 +757,20 @@ export default function FieldContext({
                     ? "Imagery received."
                     : imageryState === "unavailable"
                       ? "Satellite tiles are unavailable; the reference map remains available."
-                      : "Loading regional imagery?"}
+                      : "Loading regional imagery…"}
                 </>
               ) : (
                 <>
-                  OpenStreetMap provides a detailed reference map (not satellite imagery).
-                  NASA MODIS offers optional 250 m regional imagery once local
+                  OpenStreetMap provides a detailed reference map (not satellite
+                  imagery).{" "}
+                  <a
+                    href="https://www.openstreetmap.org/copyright"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    © OpenStreetMap contributors
+                  </a>
+                  . NASA MODIS offers optional 250 m regional imagery once local
                   context loads; clouds, date and availability vary.
                 </>
               )}

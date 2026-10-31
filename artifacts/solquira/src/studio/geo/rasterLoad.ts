@@ -1,6 +1,8 @@
 export type FirstRasterHooks = {
   isActive: () => boolean;
   onFirstRaster: () => void;
+  /** Optional diagnostic hook; Cesium still owns retries and fallback policy. */
+  onError?: (error: unknown) => void;
 };
 
 /**
@@ -26,6 +28,7 @@ export function wrapRequestImage<TArgs extends unknown[], TImage>(
         return image;
       },
       (error) => {
+        if (hooks.isActive()) hooks.onError?.(error);
         throw error;
       },
     );
