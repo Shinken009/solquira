@@ -18,7 +18,7 @@ paths:
       operationId: getProfiles
       responses:
         "200":
-          description: Tres perfiles sintéticos de Coquimbo
+          description: Tres perfiles de comparación sin ubicación geográfica preasignada
           content:
             application/json:
               schema:
@@ -90,12 +90,12 @@ paths:
       summary: Serie diaria NASA POWER (celdas de referencia)
       description: >-
         Observaciones reales de la celda NASA POWER más cercana, no medición de
-        parcela ni pronóstico. Coordenadas acotadas al piloto de Coquimbo y
+        parcela ni pronóstico. Coordenadas globales válidas y
         ventana histórica de 1 a 31 días; no convierte precipitación en agua de
         riego ni modifica la rúbrica sintética.
       parameters:
-        - { name: latitude, in: query, required: true, schema: { type: number, minimum: -32.3, maximum: -29 } }
-        - { name: longitude, in: query, required: true, schema: { type: number, minimum: -72, maximum: -69 } }
+        - { name: latitude, in: query, required: true, schema: { type: number, minimum: -90, maximum: 90 } }
+        - { name: longitude, in: query, required: true, schema: { type: number, minimum: -180, maximum: 180 } }
         - { name: start, in: query, required: true, schema: { type: string, format: date } }
         - { name: end, in: query, required: true, schema: { type: string, format: date } }
       responses:
@@ -225,7 +225,7 @@ paths:
         "422": { description: Invalid scenario or question }
         "429": { description: Request or concurrency limit }
         "503": { description: Explanation unavailable; no result invented }
-        "409": { description: Attached location context expired, changed or belongs to another session. Reload and attach again. }
+        "409": { description: "Attached location context expired, changed or belongs to another session. Reload and attach again." }
 components:
   securitySchemes:
     studioSession:
@@ -414,7 +414,7 @@ components:
                   comparison_id: { type: [string, "null"] }
     Parcel:
       type: object
-      required: [name, profileId, areaHa, waterM3Ha, soil, previousCrops, priorities, latitude, longitude]
+      required: [name, profileId, areaHa, waterM3Ha, soil, previousCrops, priorities]
       properties:
         name: { type: string, minLength: 1, maxLength: 120 }
         profileId: { type: string, enum: [valle, secano, precordillera] }
@@ -430,8 +430,8 @@ components:
           minItems: 1
           uniqueItems: true
           items: { type: string, enum: [agua, suelo, diversidad] }
-        latitude: { type: number, minimum: -32.3, maximum: -29 }
-        longitude: { type: number, minimum: -72, maximum: -69 }
+        latitude: { type: [number, "null"], minimum: -90, maximum: 90 }
+        longitude: { type: [number, "null"], minimum: -180, maximum: 180 }
     TerritorialProfile:
       type: object
       required: [id, name, location, description, climate, soil, waterM3Ha, latitude, longitude, dataStatus]
@@ -443,8 +443,8 @@ components:
         climate: { type: string }
         soil: { type: string }
         waterM3Ha: { type: number }
-        latitude: { type: number }
-        longitude: { type: number }
+        latitude: { type: [number, "null"] }
+        longitude: { type: [number, "null"] }
         dataStatus: { type: string }
     Scenario:
       type: object

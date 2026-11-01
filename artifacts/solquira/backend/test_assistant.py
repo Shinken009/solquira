@@ -19,7 +19,7 @@ import assistant_routes
 from assistant_layers import feed_state_of, overall_feed_state
 from assistant_pipeline import extract_sensor_features
 from assistant_prompts import parse_report
-from assistant_schema import FieldContext, WeatherTelemetry
+from assistant_schema import FieldContext, WeatherTelemetry, IngestPayload
 import main
 
 ENV_KEYS = (
@@ -82,6 +82,14 @@ class AssistantContractTests(unittest.TestCase):
                 return data
             time.sleep(0.05)
         self.fail("la tarea no terminó a tiempo")
+
+    def test_ingest_coordinates_global_finite_and_not_region_inferred(self):
+        for latitude, longitude in ((45, -120), (-25, 135), (90, 180), (-90, -180)):
+            payload = IngestPayload.model_validate(self.payload(latitude=latitude, longitude=longitude))
+            self.assertEqual((payload.latitude, payload.longitude), (latitude, longitude))
+        for latitude, longitude in ((True, 0), (0, False), (float("nan"), 0), (0, float("inf")), (91, 0), (0, 181)):
+            with self.subTest(latitude=latitude, longitude=longitude), self.assertRaises(ValueError):
+                IngestPayload.model_validate(self.payload(latitude=latitude, longitude=longitude))
 
     def test_ingest_queued_and_diagnosis_done(self):
         response = self.client.post("/api/v1/telemetry/ingest", json=self.payload())

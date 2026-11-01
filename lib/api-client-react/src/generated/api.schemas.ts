@@ -5,6 +5,327 @@
  * Solquira — comparación demostrativa con datos sintéticos. Sin validación agronómica.
  * OpenAPI spec version: 0.1.0
  */
+export interface StudioLocation {
+  /**
+     * @minimum -90
+     * @maximum 90
+     */
+  latitude: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
+  longitude: number;
+}
+
+export type StudioScenarioProfileId = typeof StudioScenarioProfileId[keyof typeof StudioScenarioProfileId];
+
+
+export const StudioScenarioProfileId = {
+  valle: 'valle',
+  secano: 'secano',
+  precordillera: 'precordillera',
+} as const;
+
+export type StudioScenarioPreviousCrop = typeof StudioScenarioPreviousCrop[keyof typeof StudioScenarioPreviousCrop];
+
+
+export const StudioScenarioPreviousCrop = {
+  cereal: 'cereal',
+  leguminosa: 'leguminosa',
+  cubierta: 'cubierta',
+  descanso: 'descanso',
+} as const;
+
+export interface StudioScenario {
+  profile_id: StudioScenarioProfileId;
+  /**
+     * @minimum 40
+     * @maximum 120
+     */
+  water_percent: number;
+  previous_crop: StudioScenarioPreviousCrop;
+}
+
+export interface StudioQuestion {
+  scenario: StudioScenario;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  query: string;
+  /**
+     * Include only after the user explicitly attaches a server-issued forecast; client weather is never accepted.
+     * @minLength 24
+     * @maxLength 100
+     * @nullable
+     * @pattern ^slq-context-[A-Za-z0-9_-]+$
+     */
+  context_ref?: string | null;
+}
+
+export type StudioBootstrapProfilesItemId = typeof StudioBootstrapProfilesItemId[keyof typeof StudioBootstrapProfilesItemId];
+
+
+export const StudioBootstrapProfilesItemId = {
+  valle: 'valle',
+  secano: 'secano',
+  precordillera: 'precordillera',
+} as const;
+
+export type StudioBootstrapProfilesItem = {
+  id: StudioBootstrapProfilesItemId;
+  name: string;
+  location: string;
+  water_m3_ha: number;
+};
+
+export type StudioBootstrapHistoryOptionsItemId = typeof StudioBootstrapHistoryOptionsItemId[keyof typeof StudioBootstrapHistoryOptionsItemId];
+
+
+export const StudioBootstrapHistoryOptionsItemId = {
+  cereal: 'cereal',
+  leguminosa: 'leguminosa',
+  cubierta: 'cubierta',
+  descanso: 'descanso',
+} as const;
+
+export type StudioBootstrapHistoryOptionsItem = {
+  id: StudioBootstrapHistoryOptionsItemId;
+  label: string;
+};
+
+export type StudioBootstrapInference = {
+  available?: boolean;
+  mode?: string;
+  provider?: string;
+  /** @nullable */
+  model?: string | null;
+};
+
+export interface StudioBootstrap {
+  schema_version: 'solquira.studio/1';
+  csrf_token: string;
+  /**
+     * @minimum 0
+     * @maximum 3600
+     */
+  session_expires_in: number;
+  synthetic: true;
+  rule_version: string;
+  profiles: StudioBootstrapProfilesItem[];
+  history_options: StudioBootstrapHistoryOptionsItem[];
+  inference: StudioBootstrapInference;
+}
+
+export interface StudioPlan {
+  id: string;
+  name: string;
+  sequence: string[];
+  sequence_ids?: string[];
+  demand_m3_ha: number;
+  balance_m3_ha: number;
+  history_ok: boolean;
+  eligible: boolean;
+  score?: number;
+}
+
+export type StudioReportEvidence = { [key: string]: unknown };
+
+export type StudioReportResilience = { [key: string]: unknown };
+
+export type StudioReportDecision = { [key: string]: unknown };
+
+export type StudioFieldBriefFocus = typeof StudioFieldBriefFocus[keyof typeof StudioFieldBriefFocus];
+
+
+export const StudioFieldBriefFocus = {
+  water: 'water',
+  history: 'history',
+  evidence: 'evidence',
+  resilience: 'resilience',
+  decision: 'decision',
+} as const;
+
+export type StudioFieldBriefPattern = typeof StudioFieldBriefPattern[keyof typeof StudioFieldBriefPattern];
+
+
+export const StudioFieldBriefPattern = {
+  rain_below_reference_et0: 'rain_below_reference_et0',
+  rain_at_or_above_reference_et0: 'rain_at_or_above_reference_et0',
+} as const;
+
+export type StudioFieldBriefActionsItemEvidenceIdsItem = typeof StudioFieldBriefActionsItemEvidenceIdsItem[keyof typeof StudioFieldBriefActionsItemEvidenceIdsItem];
+
+
+export const StudioFieldBriefActionsItemEvidenceIdsItem = {
+  'forecast-7d': 'forecast-7d',
+  'field-inputs': 'field-inputs',
+} as const;
+
+export type StudioFieldBriefActionsItemDestination = typeof StudioFieldBriefActionsItemDestination[keyof typeof StudioFieldBriefActionsItemDestination];
+
+
+export const StudioFieldBriefActionsItemDestination = {
+  weather: 'weather',
+  soil: 'soil',
+  question: 'question',
+} as const;
+
+export type StudioFieldBriefSourcesItemId = typeof StudioFieldBriefSourcesItemId[keyof typeof StudioFieldBriefSourcesItemId];
+
+
+export const StudioFieldBriefSourcesItemId = {
+  'forecast-7d': 'forecast-7d',
+  'field-inputs': 'field-inputs',
+} as const;
+
+export type StudioFieldBriefSourcesItemKind = typeof StudioFieldBriefSourcesItemKind[keyof typeof StudioFieldBriefSourcesItemKind];
+
+
+export const StudioFieldBriefSourcesItemKind = {
+  model_forecast: 'model_forecast',
+  missing_inputs: 'missing_inputs',
+} as const;
+
+export type StudioFieldBriefSourcesItemUrl = typeof StudioFieldBriefSourcesItemUrl[keyof typeof StudioFieldBriefSourcesItemUrl];
+
+
+export const StudioFieldBriefSourcesItemUrl = {
+  'https://open-meteocom/': 'https://open-meteo.com/',
+} as const;
+
+export type StudioFieldBriefLocation = {
+  /**
+     * @minimum -90
+     * @maximum 90
+     */
+  latitude: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
+  longitude: number;
+};
+
+export type StudioFieldBriefForecast = {
+  source: 'Open-Meteo';
+  kind: 'model_forecast';
+  time_zone: 'UTC';
+  retrieved_at: string;
+  period_start: string;
+  period_end: string;
+  /**
+     * @minimum 0
+     * @maximum 14000
+     */
+  rain_mm: number;
+  /**
+     * @minimum 0
+     * @maximum 700
+     */
+  reference_et0_mm: number;
+  /**
+     * @minimum -100
+     * @maximum 80
+     */
+  temperature_min_c: number;
+  /**
+     * @minimum -100
+     * @maximum 80
+     */
+  temperature_max_c: number;
+  /**
+     * @minimum 0
+     * @maximum 7
+     */
+  days_without_rain: number;
+};
+
+export type StudioFieldBriefActionsItem = {
+  id: string;
+  title: string;
+  detail: string;
+  evidence_ids: StudioFieldBriefActionsItemEvidenceIdsItem[];
+  destination: StudioFieldBriefActionsItemDestination;
+};
+
+export type StudioFieldBriefSourcesItem = {
+  id: StudioFieldBriefSourcesItemId;
+  label: string;
+  kind: StudioFieldBriefSourcesItemKind;
+  url?: StudioFieldBriefSourcesItemUrl;
+};
+
+export interface StudioFieldBrief {
+  schema_version: 'solquira.field-brief/1';
+  context_ref: string;
+  focus: StudioFieldBriefFocus;
+  location: StudioFieldBriefLocation;
+  created_at: string;
+  forecast: StudioFieldBriefForecast;
+  pattern: StudioFieldBriefPattern;
+  summary: string;
+  /**
+     * @minItems 3
+     * @maxItems 3
+     */
+  actions: StudioFieldBriefActionsItem[];
+  /**
+     * @minItems 2
+     * @maxItems 2
+     */
+  sources: StudioFieldBriefSourcesItem[];
+  missing_inputs: string[];
+  external_actions_executed: false;
+}
+
+export interface StudioReport {
+  comparison_id: string;
+  scenario_revision: string;
+  scenario?: StudioScenario;
+  rule_version?: string;
+  engine_sha256?: string;
+  scope?: string;
+  status: string;
+  synthetic: true;
+  agronomicViability: 'not_assessed';
+  /** @nullable */
+  available_water_m3_ha?: number | null;
+  missing_fields?: string[];
+  plans: StudioPlan[];
+  explanation: string;
+  field_brief?: StudioFieldBrief;
+  evidence: StudioReportEvidence;
+  resilience: StudioReportResilience;
+  decision: StudioReportDecision;
+}
+
+export type StudioEnvelopeRunTraceItem = {
+  tool?: string;
+  status?: string;
+  /** @nullable */
+  comparison_id?: string | null;
+};
+
+export type StudioEnvelopeRun = {
+  inference_mode: string;
+  outcome: string;
+  /** @nullable */
+  model: string | null;
+  trace: StudioEnvelopeRunTraceItem[];
+};
+
+export interface StudioEnvelope {
+  schema_version: 'solquira.studio/1';
+  scenario: StudioScenario;
+  proposed_scenario?: StudioScenario;
+  requested_scenario?: StudioScenario;
+  report: StudioReport;
+  request_id: string;
+  run: StudioEnvelopeRun;
+}
+
 export type ParcelProfileId = typeof ParcelProfileId[keyof typeof ParcelProfileId];
 
 
@@ -60,15 +381,17 @@ export interface Parcel {
   /** @minItems 1 */
   priorities: ParcelPrioritiesItem[];
   /**
-     * @minimum -32.3
-     * @maximum -29
+     * @minimum -90
+     * @maximum 90
+     * @nullable
      */
-  latitude: number;
+  latitude?: number | null;
   /**
-     * @minimum -72
-     * @maximum -69
+     * @minimum -180
+     * @maximum 180
+     * @nullable
      */
-  longitude: number;
+  longitude?: number | null;
 }
 
 export interface TerritorialProfile {
@@ -79,8 +402,10 @@ export interface TerritorialProfile {
   climate: string;
   soil: string;
   waterM3Ha: number;
-  latitude: number;
-  longitude: number;
+  /** @nullable */
+  latitude: number | null;
+  /** @nullable */
+  longitude: number | null;
   dataStatus: string;
 }
 
@@ -224,16 +549,69 @@ export interface NasaPowerDaily {
 
 export type GetNasaPowerParams = {
 /**
- * @minimum -32.3
- * @maximum -29
+ * @minimum -90
+ * @maximum 90
  */
 latitude: number;
 /**
- * @minimum -72
- * @maximum -69
+ * @minimum -180
+ * @maximum 180
  */
 longitude: number;
 start: string;
 end: string;
+};
+
+export type GetStudioLocationContext200SchemaVersion = typeof GetStudioLocationContext200SchemaVersion[keyof typeof GetStudioLocationContext200SchemaVersion];
+
+
+export const GetStudioLocationContext200SchemaVersion = {
+  'solquiralocation/1': 'solquira.location/1',
+} as const;
+
+export type GetStudioLocationContext200LocationPrecisionDegrees = typeof GetStudioLocationContext200LocationPrecisionDegrees[keyof typeof GetStudioLocationContext200LocationPrecisionDegrees];
+
+
+export const GetStudioLocationContext200LocationPrecisionDegrees = {
+  '0001': 0.001,
+} as const;
+
+export type GetStudioLocationContext200Location = {
+  /**
+     * @minimum -90
+     * @maximum 90
+     */
+  latitude: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
+  longitude: number;
+  precision_degrees: GetStudioLocationContext200LocationPrecisionDegrees;
+};
+
+/**
+ * Seven bounded UTC forecast days when ready or cached; otherwise an empty series.
+ */
+export type GetStudioLocationContext200Weather = { [key: string]: unknown };
+
+/**
+ * Allowlisted NASA GIBS MODIS true-colour template and dated regional context; no NDVI values.
+ */
+export type GetStudioLocationContext200Imagery = { [key: string]: unknown };
+
+export type GetStudioLocationContext200 = {
+  schema_version: GetStudioLocationContext200SchemaVersion;
+  /**
+     * Opaque session-owned forecast reference, at most ten minutes from source retrieval. Null when weather is unavailable or the request was superseded.
+     * @nullable
+     */
+  context_ref?: string | null;
+  location: GetStudioLocationContext200Location;
+  retrieved_at: string;
+  /** Seven bounded UTC forecast days when ready or cached; otherwise an empty series. */
+  weather: GetStudioLocationContext200Weather;
+  /** Allowlisted NASA GIBS MODIS true-colour template and dated regional context; no NDVI values. */
+  imagery: GetStudioLocationContext200Imagery;
 };
 

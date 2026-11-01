@@ -268,7 +268,6 @@ async def build_context(
         "nombre": payload.parcel_name or "Parcela no identificada",
         "cultivo_declarado": payload.crop_type or "no declarado",
         "coordenadas": {"lat": payload.latitude, "lon": payload.longitude},
-        "piloto": "Coquimbo, Chile (validación del piloto; el alcance del proyecto es internacional)",
     }
     return FieldContext(
         parcela=parcela,
