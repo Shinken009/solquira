@@ -1029,7 +1029,7 @@ export default function Studio() {
               inference={bootstrap?.inference}
               csrf={bootstrap?.csrf_token ?? ""}
               enabled={Boolean(bootstrap) && !connecting}
-              onSelectPlace={point => { setRequestedPoint(point); navigateArea("territory", "qs-landscape"); }}
+              onSelectPlace={point => { setRequestedPoint({ ...point }); navigateArea("territory", "qs-landscape"); }}
             />
           )}
 
