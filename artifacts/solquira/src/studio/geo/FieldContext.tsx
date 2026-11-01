@@ -23,18 +23,13 @@ import {
   type FieldContextData,
   type Point,
 } from "./client";
-import { REFERENCE_PLACES } from "../dryland-client";
 import "./field-context.css";
 import type { WorkspaceArea } from "../Studio";
 import AnticipationIndicators from "./AnticipationIndicators";
 import HistoricalContext from "./HistoricalContext";
 const Landscape = lazy(() => import("./CesiumFieldMap"));
-type LocationSource = "none" | "geolocation" | "reference" | "manual" | "map";
-const examples = REFERENCE_PLACES.map((item) => ({
-  label: item.label,
-  latitude: item.latitude,
-  longitude: item.longitude,
-}));
+type LocationSource = "none" | "device" | "manual" | "map";
+type DeviceLocation = Point & { accuracyMeters: number | null; capturedAt: number };
 export default function FieldContext({
   enabled,
   offline,
@@ -42,7 +37,6 @@ export default function FieldContext({
   onAttach,
   attachedRef,
   onPointChange,
-  externalPoint,
   activeArea,
   onNavigate,
 }: {
@@ -59,7 +53,11 @@ export default function FieldContext({
   const [latitude, setLatitude] = useState(""),
     [longitude, setLongitude] = useState("");
   const [point, setPoint] = useState<Point | null>(null);
-  const [opened, setOpened] = useState(false),
+  const [draft, setDraft] = useState<Point | null>(null);
+  const [deviceLocation, setDeviceLocation] = useState<DeviceLocation | null>(null);
+  const [selecting, setSelecting] = useState(false);
+  const draftSource = useRef<LocationSource>("none");
+  const [opened, setOpened] = useState(true),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [locationNote, setLocationNote] = useState(""),
@@ -71,32 +69,7 @@ export default function FieldContext({
   const controller = useRef<AbortController | null>(null),
     revision = useRef(0),
     mounted = useRef(true),
-    sectionRef = useRef<HTMLElement>(null),
-    autoOpened = useRef(false),
-    autoLoadedFor = useRef(""),
-    locationAsked = useRef(false),
-    manualSelection = useRef(false);
-  useEffect(() => {
-    const node = sectionRef.current;
-    if (!node || typeof IntersectionObserver === "undefined") {
-      setOpened(true);
-      return;
-    }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return;
-        observer.disconnect();
-        if (!autoOpened.current) {
-          autoOpened.current = true;
-          setOpened(true);
-        }
-      },
-      { threshold: 0.3, rootMargin: "0px 0px -8% 0px" },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, offline, csrfToken]);
+    sectionRef = useRef<HTMLElement>(null);
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -107,7 +80,6 @@ export default function FieldContext({
   useEffect(() => {
     controller.current?.abort();
     revision.current++;
-    autoLoadedFor.current = "";
     setBusy(false);
     setData(null);
     setNasa(false);
@@ -124,73 +96,29 @@ export default function FieldContext({
     setImageryState("off");
     onAttach(null);
   };
-  const select = (value: Point, source: LocationSource = "manual") => {
-    const next = roundedPoint(value);
+  // A draft is not an analysis point. GPS and map coordinates retain their
+  // original precision; only a copy sent to the weather service is rounded.
+  const prepare = (value: Point, source: LocationSource) => {
+    if (!Number.isFinite(value.latitude) || !Number.isFinite(value.longitude)
+      || Math.abs(value.latitude) > 90 || Math.abs(value.longitude) > 180) return;
     invalidate();
-    if (source !== "geolocation") manualSelection.current = true;
-    setPoint(next);
+    setPoint(null);
+    onPointChange?.(null);
+    setDraft(value);
+    draftSource.current = source;
     setLocationSource(source);
-    setLocationNote("");
-    onPointChange?.(next);
-    setLatitude(String(next.latitude));
-    setLongitude(String(next.longitude));
+    setLatitude(String(value.latitude));
+    setLongitude(String(value.longitude));
+    setLocationNote("Review the marker, then confirm this place. No weather request has been sent.");
   };
-  // The brief can choose one of the four prepared profiles; the map follows that choice.
-  useEffect(() => {
-    if (!externalPoint) return;
-    if (point && samePoint(point, externalPoint)) return;
-    select(externalPoint, "reference");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [externalPoint?.latitude, externalPoint?.longitude]);
-  // The map starts at the person's approximate location, never at a fixed
-  // reference region. The browser owns the permission prompt; a denial leaves
-  // the map in a neutral world view and the reference landscapes remain optional.
-  useEffect(() => {
-    if (!opened || offline || locationAsked.current) return;
-    locationAsked.current = true;
-    const geolocation = navigator.geolocation;
-    if (!geolocation) {
-      setLocationNote(
-        "This browser cannot share a location. Choose a point on the map, a reference landscape, or enter coordinates.",
-      );
-      return;
-    }
-    let cancelled = false;
-    geolocation.getCurrentPosition(
-      (value) => {
-        if (cancelled || !mounted.current || manualSelection.current) return;
-        select(
-          {
-            latitude: value.coords.latitude,
-            longitude: value.coords.longitude,
-          },
-          "geolocation",
-        );
-      },
-      (failure) => {
-        if (cancelled || !mounted.current || manualSelection.current) return;
-        setLocationSource("none");
-        if (failure.code === failure.PERMISSION_DENIED) {
-          setLocationNote(
-            "Location was not shared. Choose a point on the map, a reference landscape, or enter coordinates.",
-          );
-        } else {
-          setLocationNote(
-            "Your location could not be read. Choose a point on the map, a reference landscape, or enter coordinates.",
-          );
-        }
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: 10000,
-        maximumAge: 300000,
-      },
-    );
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opened, offline]);
+  const beginSelection = () => {
+    invalidate();
+    setPoint(null);
+    onPointChange?.(null);
+    setSelecting(true);
+    setOpened(true);
+    setLocationNote("Tap or click the map to mark your place, then confirm. You can also enter coordinates below.");
+  };
   const current = (): Point | null => {
     if (!latitude.trim() || !longitude.trim()) return null;
     const p = { latitude: Number(latitude), longitude: Number(longitude) };
@@ -198,15 +126,13 @@ export default function FieldContext({
       Number.isFinite(p.longitude) &&
       Math.abs(p.latitude) <= 90 &&
       Math.abs(p.longitude) <= 180
-      ? roundedPoint(p)
+      ? p
       : null;
   };
   const requestForecast = async (selected: Point) => {
     if (!enabled || offline || !csrfToken) return;
-    // Explicit loads and automatic onboarding share the same attempt marker.
-    // Editing inputs must not re-fetch the previously selected point, and a
-    // rejected response must wait for an explicit retry rather than auto-loop.
-    autoLoadedFor.current = `${selected.latitude}:${selected.longitude}`;
+    // Forecasts only follow a confirmation or an explicit refresh, never
+    // navigation, a draft edit, GPS completion or a rejected-response loop.
     controller.current?.abort();
     const request = new AbortController();
     controller.current = request;
@@ -235,33 +161,35 @@ export default function FieldContext({
         setBusy(false);
     }
   };
-  // Onboarding: when the landscape section scrolls into view, the forecast for
-  // the selected point loads once. If geolocation arrives after the section opens,
-  // this effect waits for that point instead of loading a fixed region.
-  useEffect(() => {
-    if (!opened || !enabled || offline || !csrfToken || !point) return;
-    if (data || busy) return;
-    const key = `${point.latitude}:${point.longitude}`;
-    if (autoLoadedFor.current === key) return;
-    autoLoadedFor.current = key;
-    void requestForecast(point);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opened, enabled, offline, csrfToken, point, data, busy]);
+  const confirm = async (selected: Point, source: LocationSource) => {
+    invalidate();
+    setPoint(selected);
+    setDraft(selected);
+    setSelecting(false);
+    setLocationSource(source);
+    onPointChange?.(selected);
+    setLatitude(String(selected.latitude));
+    setLongitude(String(selected.longitude));
+    setLocationNote("Place confirmed. Your environmental context belongs to this point; field observations remain separate.");
+    await requestForecast(roundedPoint(selected));
+  };
   const load = async (event: FormEvent) => {
     event.preventDefault();
     const selected = current();
     if (!selected) {
-      setError(
-        "Enter a latitude from −90 to 90 and longitude from −180 to 180.",
-      );
+      setError("Enter a latitude from −90 to 90 and longitude from −180 to 180.");
       return;
     }
-    select(selected, "manual");
-    await requestForecast(selected);
+    await confirm(selected, "manual");
   };
   const locate = () => {
+    if (deviceLocation) {
+      prepare({latitude: deviceLocation.latitude, longitude: deviceLocation.longitude}, "device");
+      setSelecting(false);
+      return;
+    }
     if (!navigator.geolocation) {
-      setError("Location was not shared. Enter coordinates.");
+      setError("Location is unavailable. Mark the place on the map or enter coordinates instead.");
       return;
     }
     setLocating(true);
@@ -269,27 +197,27 @@ export default function FieldContext({
     const version = revision.current;
     navigator.geolocation.getCurrentPosition(
       (value) => {
-        if (mounted.current) {
-          if (version === revision.current) {
-            const next = roundedPoint({
-              latitude: value.coords.latitude,
-              longitude: value.coords.longitude,
-            });
-            select(next, "geolocation");
-            // An explicit request from the person may also read the forecast.
-            void requestForecast(next);
-          }
-          setLocating(false);
+        if (!mounted.current) return;
+        const device: DeviceLocation = {
+          latitude: value.coords.latitude,
+          longitude: value.coords.longitude,
+          accuracyMeters: Number.isFinite(value.coords.accuracy) && value.coords.accuracy >= 0 ? value.coords.accuracy : null,
+          capturedAt: value.timestamp,
+        };
+        setDeviceLocation(device);
+        setLocating(false);
+        // A late GPS reply is retained as device context, never as an overwrite
+        // of a more recent map/manual choice.
+        if (version === revision.current) {
+          prepare({latitude: device.latitude, longitude: device.longitude}, "device");
+          setSelecting(false);
         }
       },
       () => {
-        if (mounted.current) {
-          setLocating(false);
-          if (version === revision.current)
-            setError(
-              "Location was not shared. You can enter coordinates instead.",
-            );
-        }
+        if (!mounted.current) return;
+        setLocating(false);
+        if (version === revision.current)
+          setError("Location was not shared. You can still mark the place on the map or enter coordinates.");
       },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
     );
@@ -301,16 +229,10 @@ export default function FieldContext({
     1,
     ...days.flatMap((d) => [d.precipitation_mm, d.reference_et0_mm]),
   );
-  const sourceLabel =
-    locationSource === "geolocation"
-      ? "Approximate location"
-      : locationSource === "reference"
-        ? "Reference landscape"
-        : locationSource === "map"
-          ? "Point chosen on map"
-          : locationSource === "manual"
-            ? "Coordinates entered"
-            : "No point yet";
+  const sourceLabel = locationSource === "device"
+    ? "Device GPS" : locationSource === "map"
+      ? "Chosen on map · GPS accuracy not measured" : locationSource === "manual"
+        ? "Entered coordinates · GPS accuracy not measured" : "No point yet";
   return (
     <>
       <section
@@ -350,110 +272,57 @@ export default function FieldContext({
         </div>
         <div className="qg-grid">
           <div className="qg-location">
-            <h3>Choose a place to explore</h3>
+            <span className="qg-step">01 / Choose your place</span>
+            <h3>The story starts here.</h3>
             <p className="qg-location-hint">
-              Allow location to center the map on you, choose a reference
-              landscape, or enter your own point.
+              Mark the land you want to understand. You do not need an address,
+              a parcel boundary or a GPS permission to explore.
             </p>
-            {locationNote && (
-              <p className="qg-location-note" role="status">
-                {locationNote}
-              </p>
-            )}
-            <div className="qg-examples">
-              {examples.map((example) => (
-                <button
-                  type="button"
-                  key={example.label}
-                  aria-pressed={Boolean(
-                    current() && samePoint(current()!, example),
-                  )}
-                  onClick={() => select(example, "reference")}
-                >
-                  {example.label}
-                </button>
-              ))}
+            <div className="qg-place-actions">
+              <button type="button" className="qg-load" data-testid="geo-select-map"
+                aria-pressed={selecting} onClick={beginSelection}>
+                <MapPin size={17}/>{selecting ? "Tap the map to choose" : "Select a place on the map"}
+              </button>
+              <button type="button" className="qg-locate" data-testid="geo-use-location"
+                onClick={locate} disabled={locating}>
+                <LocateFixed size={16}/>{locating ? "Finding your location…" : "Use my location"}
+              </button>
             </div>
-            {current() &&
-              !examples.some((example) => samePoint(example, current()!)) && (
-                <p
-                  className="qg-location-state"
-                  data-testid="geo-location-state"
-                  role="status"
-                >
-                  Your point is not one of the four prepared reference profiles.
-                  The map follows your point; the field brief uses a reference
-                  landscape.
-                </p>
-              )}
-            <form onSubmit={load}>
-              <button
-                type="button"
-                className="qg-locate"
-                onClick={locate}
-                disabled={locating}
-              >
-                <LocateFixed size={15} />
-                {locating
-                  ? "Finding your approximate location…"
-                  : "Use my location"}
+            {locationNote && <p className="qg-location-note" role="status">{locationNote}</p>}
+            {draft && <div className="qg-point-card" data-testid="geo-point-review" data-confirmed={Boolean(point)}>
+              <span>{point ? "Analysis point confirmed" : "Review your chosen place"}</span>
+              <strong>{draft.latitude.toFixed(5)}, {draft.longitude.toFixed(5)}</strong>
+              <small>{sourceLabel}</small>
+              {locationSource === "device" && deviceLocation && <small>
+                Reported GPS accuracy: {deviceLocation.accuracyMeters === null ? "not available" : `±${Math.round(deviceLocation.accuracyMeters)} m`} · {new Date(deviceLocation.capturedAt).toLocaleTimeString()}
+              </small>}
+              <button type="button" className="qg-load" data-testid="geo-confirm-point" disabled={busy}
+                onClick={() => void confirm(draft, draftSource.current)}>
+                {busy ? "Reading the forecast…" : point ? "Refresh this point’s context" : "Confirm this point"}
               </button>
-              <div className="qg-coordinate-inputs">
-                <label>
-                  Latitude
-                  <input
-                    data-testid="geo-lat"
-                    inputMode="decimal"
-                    value={latitude}
-                    onChange={(e) => {
-                      invalidate();
-                      onPointChange?.(null);
-                      setLatitude(e.target.value);
-                    }}
-                  />
-                </label>
-                <label>
-                  Longitude
-                  <input
-                    data-testid="geo-lon"
-                    inputMode="decimal"
-                    value={longitude}
-                    onChange={(e) => {
-                      invalidate();
-                      onPointChange?.(null);
-                      setLongitude(e.target.value);
-                    }}
-                  />
-                </label>
-              </div>
-              <button
-                type="submit"
-                className="qg-load"
-                data-testid="geo-load-context"
-                disabled={busy}
-              >
-                {busy ? (
-                  <RefreshCw size={16} className="qs-spin" />
-                ) : (
-                  <Globe2 size={16} />
-                )}{" "}
-                {busy
-                  ? "Reading local context…"
-                  : enabled && !offline
-                    ? "Load local context"
-                    : "Set map location"}
-              </button>
-            </form>
-            <p className="qg-sharing">
-              {enabled && !offline
-                ? "Load a forecast for rounded coordinates. Attach it when you want to use it in a question."
-                : "Set your reference point for the regional map."}
-            </p>
-            {error && (
-              <p role="alert" className="qg-error">
-                {error}
-              </p>
-            )}
+              {point && <button type="button" className="qg-next" data-testid="geo-next-guidance"
+                onClick={() => onNavigate("guidance", "qs-exploration")}>
+                Next: tell us what concerns you →
+              </button>}
+            </div>}
+            <details className="qg-manual" data-testid="geo-manual">
+              <summary>Enter coordinates instead</summary>
+              <form onSubmit={load}>
+                <div className="qg-coordinate-inputs">
+                  <label>Latitude<input data-testid="geo-lat" inputMode="decimal" value={latitude}
+                    onChange={(e) => {invalidate();setPoint(null);setDraft(null);onPointChange?.(null);setLatitude(e.target.value);}}/></label>
+                  <label>Longitude<input data-testid="geo-lon" inputMode="decimal" value={longitude}
+                    onChange={(e) => {invalidate();setPoint(null);setDraft(null);onPointChange?.(null);setLongitude(e.target.value);}}/></label>
+                </div>
+                <button type="submit" className="qg-load" data-testid="geo-load-context" disabled={busy}>
+                  {busy ? <RefreshCw size={16} className="qs-spin"/> : <Globe2 size={16}/>}
+                  {busy ? "Reading local context…" : "Confirm coordinates & load context"}
+                </button>
+              </form>
+            </details>
+            <p className="qg-sharing">Confirmation requests a forecast for rounded coordinates.
+              It does not save a field observation or contact the AI assistant.</p>
+            {error && <p role="alert" className="qg-error">{error}</p>}
             <details className="qg-method" data-testid="geo-methods">
               <summary>Sources & map details</summary>
               <p>
@@ -476,8 +345,8 @@ export default function FieldContext({
                 >
                   report a map issue
                 </a>
-                . The selected point and forecast are independent of the
-                synthetic crop example below.
+                . The selected point and forecast are independent of any
+                synthetic crop examples.
               </p>
               <p>
                 Loading a forecast sends rounded coordinates to Open-Meteo. The
@@ -506,7 +375,8 @@ export default function FieldContext({
           </div>
           <div className="qg-context">
             <div className="qg-map-area" id="qg-map-area">
-              {opened ? (
+              <div hidden={!opened}>
+
                 <Suspense
                   fallback={
                     <div className="qg-map-loading">
@@ -515,25 +385,16 @@ export default function FieldContext({
                   }
                 >
                   <Landscape
-                    point={point}
-                    onPick={(next) => select(next, "map")}
+                    point={draft ?? point}
+                    selecting={selecting}
+                    onPick={(next) => prepare(next, "map")}
                     imagery={data?.imagery ?? null}
                     nasaEnabled={nasa}
                     onImageryState={setImageryState}
                   />
                 </Suspense>
-              ) : (
-                <div className="qg-map-invitation">
-                  <Globe2 size={44} strokeWidth={1.2} />
-                  <div>
-                    <strong>A wider view, when you need it.</strong>
-                    <p>
-                      Open the regional view to place your next field
-                      conversation in context.
-                    </p>
-                  </div>
-                </div>
-              )}
+
+              </div>
               <div className="qg-layer-line">
                 <span
                   className="qg-coordinates"
@@ -543,7 +404,7 @@ export default function FieldContext({
                   <MapPin size={14} />
                   {point
                     ? `${point.latitude.toFixed(3)}, ${point.longitude.toFixed(3)}`
-                    : "No point selected"}
+                    : "No point confirmed"}
                   {point && (
                     <small className="qg-location-source">{sourceLabel}</small>
                   )}
@@ -583,8 +444,7 @@ export default function FieldContext({
               >
                 {!point ? (
                   <>
-                    Choose a point on the map, use your location, or select a
-                    reference landscape. The map shows OpenStreetMap reference
+                    Choose a point on the map or use your location, then confirm it. The map shows OpenStreetMap reference
                     tiles (not satellite imagery) with a coarse Natural Earth
                     fallback.
                   </>

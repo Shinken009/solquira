@@ -43,12 +43,14 @@ const sceneModeFor = (view: SceneView) =>
 
 export default function CesiumFieldMap({
   point,
+  selecting,
   onPick,
   imagery,
   nasaEnabled,
   onImageryState,
 }: {
   point: Point | null;
+  selecting: boolean;
   onPick: (p: Point) => void;
   imagery: Imagery | null;
   nasaEnabled: boolean;
@@ -60,6 +62,7 @@ export default function CesiumFieldMap({
   const markerRef = useRef<PointPrimitive | null>(null);
   const latestPoint = useRef<Point | null>(point);
   const pick = useRef(onPick);
+  const selectionEnabled = useRef(selecting);
   const imageryState = useRef(onImageryState);
   const viewRef = useRef<SceneView>(prefersFlatView() ? "2d" : "3d");
   const morphingRef = useRef(false);
@@ -72,6 +75,7 @@ export default function CesiumFieldMap({
 
   latestPoint.current = point;
   pick.current = onPick;
+  selectionEnabled.current = selecting;
   imageryState.current = onImageryState;
   viewRef.current = view;
 
@@ -290,17 +294,27 @@ export default function CesiumFieldMap({
 
         handler = new ScreenSpaceEventHandler(scene.canvas);
         handler.setInputAction((event: { position: Cartesian2 }) => {
-          const position = widget?.camera.pickEllipsoid(
-            event.position,
-            scene.globe.ellipsoid,
-          );
-          if (!position) return;
+          if (!selectionEnabled.current || morphingRef.current || !widget) return;
+          // Resolve the click against the rendered globe, never against screen
+          // pixels as coordinates. In 3D prefer terrain ray intersection; the
+          // current provider is an ellipsoid, so 2D/pick failures use that exact
+          // surface. Sky/no intersection does not produce a candidate.
+          const ray = widget.camera.getPickRay(event.position);
+          const position = (scene.mode === SceneMode.SCENE3D && ray
+            ? scene.globe.pick(ray, scene) : undefined)
+            ?? widget.camera.pickEllipsoid(event.position, scene.globe.ellipsoid);
+          if (!position) {
+            setNotice("Choose a point on the earth, not outside the map surface.");
+            return;
+          }
           const cartographic = Cartographic.fromCartesian(position);
           if (!cartographic) return;
-          pick.current({
-            latitude: CesiumMath.toDegrees(cartographic.latitude),
-            longitude: CesiumMath.toDegrees(cartographic.longitude),
-          });
+          const latitude = CesiumMath.toDegrees(cartographic.latitude);
+          const longitude = CesiumMath.toDegrees(cartographic.longitude);
+          if (!Number.isFinite(latitude) || !Number.isFinite(longitude)
+            || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return;
+          setNotice("Marker placed. Confirm this point in the place panel before loading environmental context.");
+          pick.current({latitude, longitude});
         }, ScreenSpaceEventType.LEFT_CLICK);
 
         recenter();
@@ -477,8 +491,9 @@ export default function CesiumFieldMap({
     const timeout = window.setTimeout(finish, 2_500);
     removeMorph = scene.morphComplete.addEventListener(finish);
     try {
-      if (next === "2d") scene.morphTo2D(0.55);
-      else scene.morphTo3D(0.55);
+      const duration = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 0.55;
+      if (next === "2d") scene.morphTo2D(duration);
+      else scene.morphTo3D(duration);
     } catch {
       window.clearTimeout(timeout);
       removeMorph?.();
@@ -525,12 +540,13 @@ export default function CesiumFieldMap({
             ? "pending"
             : "unavailable"
       }
+      data-selecting={selecting ? "true" : "false"}
       aria-busy={state === "loading" || morphing}
     >
       <div
         className="qg-map"
         ref={container}
-        aria-label="Interactive Cesium landscape: select a point, zoom or use the coordinate form"
+        aria-label="Interactive Cesium landscape: enable Select a place, then tap the earth; coordinates are available as a keyboard alternative"
       />
       {state === "unavailable" ? (
         <div className="qg-map-fallback" role="status">
