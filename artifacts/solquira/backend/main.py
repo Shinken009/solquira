@@ -17,7 +17,7 @@ from contextlib import asynccontextmanager
 from fastapi import APIRouter, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from starlette._utils import get_route_path
 from studio_api import studio_mode, studio_router, field_router
 
@@ -53,8 +53,14 @@ class Parcel(BaseModel):
     priorities: list[Literal["agua", "suelo", "diversidad"]] = Field(
         default_factory=list
     )
-    latitude: float = Field(ge=-32.3, le=-29)
-    longitude: float = Field(ge=-72, le=-69)
+    latitude: float | None = Field(default=None, ge=-90, le=90, strict=True, allow_inf_nan=False)
+    longitude: float | None = Field(default=None, ge=-180, le=180, strict=True, allow_inf_nan=False)
+
+    @model_validator(mode="after")
+    def coordinates_form_one_point(self):
+        if (self.latitude is None) != (self.longitude is None):
+            raise ValueError("Provide both coordinates or leave both unset.")
+        return self
 
 
 class EvaluationInput(BaseModel):
@@ -66,38 +72,38 @@ PROFILES = [
     {
         "id": "valle",
         "name": "Valle con riego",
-        "location": "Valle del Elqui · referencia: Vicuña",
+        "location": "Valle de referencia sin ubicación asignada",
         "description": "Perfil territorial demostrativo de valle con riego.",
         "climate": "Árido; condición sintética, sin serie local verificada.",
         "soil": "No caracterizado; completar en la ficha de parcela.",
         "waterM3Ha": 2400,
-        "latitude": -30.031,
-        "longitude": -70.708,
-        "dataStatus": "Perfil demostrativo sintético; ubicación de referencia, no parcela medida.",
+        "latitude": None,
+        "longitude": None,
+        "dataStatus": "Perfil de comparación sin ubicación ni medición local asignada.",
     },
     {
         "id": "secano",
         "name": "Secano semiárido",
-        "location": "Limarí · referencia: Punitaqui",
+        "location": "Secano de referencia sin ubicación asignada",
         "description": "Perfil territorial demostrativo de secano semiárido.",
         "climate": "Semiárido; condición sintética, sin serie local verificada.",
         "soil": "No caracterizado; completar en la ficha de parcela.",
         "waterM3Ha": 1200,
-        "latitude": -30.835,
-        "longitude": -71.263,
-        "dataStatus": "Perfil demostrativo sintético; ubicación de referencia, no parcela medida.",
+        "latitude": None,
+        "longitude": None,
+        "dataStatus": "Perfil de comparación sin ubicación ni medición local asignada.",
     },
     {
         "id": "precordillera",
         "name": "Precordillera",
-        "location": "Choapa · referencia: Salamanca",
+        "location": "Relieve de referencia sin ubicación asignada",
         "description": "Perfil territorial demostrativo de precordillera.",
         "climate": "Variabilidad altitudinal; condición sintética, sin serie local verificada.",
         "soil": "No caracterizado; completar en la ficha de parcela.",
         "waterM3Ha": 1600,
-        "latitude": -31.778,
-        "longitude": -70.963,
-        "dataStatus": "Perfil demostrativo sintético; ubicación de referencia, no parcela medida.",
+        "latitude": None,
+        "longitude": None,
+        "dataStatus": "Perfil de comparación sin ubicación ni medición local asignada.",
     },
 ]
 
@@ -623,8 +629,8 @@ def evaluation(value: EvaluationInput):
 
 @router.get("/fuentes/power")
 def nasa_power(
-    latitude: float = Query(ge=-32.3, le=-29),
-    longitude: float = Query(ge=-72, le=-69),
+    latitude: float = Query(ge=-90, le=90),
+    longitude: float = Query(ge=-180, le=180),
     start: date = Query(),
     end: date = Query(),
 ):

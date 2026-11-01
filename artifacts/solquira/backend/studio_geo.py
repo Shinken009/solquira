@@ -18,6 +18,106 @@ _lock = threading.Lock()
 TTL = 600
 MAX_CACHE = 64
 MAX_REQUESTS_HOUR = 60
+LOW_PRECIPITATION_MM_PER_DAY = 1.0
+
+
+def forecast_anticipation(weather, retrieved_at):
+    """Descriptive seven-day indicators, never a soil balance or climate index.
+
+    Amounts include rain/showers/snow water equivalent as supplied by Open-Meteo.
+    The declared one-millimetre threshold separates low-precipitation days from
+    contiguous wet-day episodes. It is not a site-specific biological threshold.
+    """
+    missing = ["Observed soil moisture and root-zone storage",
+               "Soil infiltration, slope and observed ground cover",
+               "Local precipitation measurements and precipitation phase",
+               "Crop or vegetation type and growth stage"]
+    result = {
+        "schema_version": "solquira.anticipation/1", "state": "unavailable",
+        "source": "Open-Meteo", "source_url": "https://open-meteo.com/en/docs",
+        "kind": "model_forecast", "time_zone": "UTC", "retrieved_at": None,
+        "period_start": None, "period_end": None,
+        "method": "seven-day-descriptive-v1",
+        "units": {"precipitation": "mm", "reference_et0": "mm",
+                  "precipitation_minus_et0": "mm", "temperature": "°C",
+                  "duration": "days", "share": "%"},
+        "thresholds": {"low_precipitation_mm_per_day": LOW_PRECIPITATION_MM_PER_DAY,
+                       "wet_episode_min_mm_per_day": LOW_PRECIPITATION_MM_PER_DAY},
+        "missing_inputs": ["Complete seven-day forecast"] + missing,
+        "limitations": [
+            "Precipitation minus reference ET0 is not soil moisture, a real water balance or an irrigation dose.",
+            "Seven forecast days do not diagnose drought, desertification or land degradation.",
+            "Daily precipitation includes snow water equivalent; it is not effective rainfall or stored water.",
+            "Daily concentration does not measure hourly intensity, runoff, flooding or infiltration.",
+            "Runs and episodes are truncated at the seven-day window; no preceding or later conditions are inferred.",
+        ],
+    }
+    try:
+        stamp = datetime.fromisoformat(retrieved_at)
+        if stamp.tzinfo is None or stamp.utcoffset() != timedelta(0):
+            raise ValueError("A UTC retrieval time is required.")
+        if (not isinstance(weather, dict) or weather.get("state") not in {"ready", "cached"}
+                or weather.get("source") != "Open-Meteo" or weather.get("kind") != "model_forecast"
+                or weather.get("time_zone") != "UTC"):
+            return result
+        days = weather.get("days")
+        if not isinstance(days, list) or len(days) != 7:
+            return result
+        precipitation, et0, minima, maxima, dates = [], [], [], [], []
+        for day in days:
+            value = date.fromisoformat(day["date"])
+            if day["date"] != value.isoformat() or dates and value - dates[-1] != timedelta(days=1):
+                raise ValueError("Consecutive dated days are required.")
+            dates.append(value)
+            precipitation.append(_number(day["precipitation_mm"], 0, 2000))
+            et0.append(_number(day["reference_et0_mm"], 0, 100))
+            minima.append(_number(day["temperature_min_c"], -100, 80))
+            maxima.append(_number(day["temperature_max_c"], -100, 80))
+            if minima[-1] > maxima[-1]:
+                raise ValueError("Invalid temperature interval.")
+    except (ValueError, TypeError, KeyError, OverflowError):
+        return result
+
+    total, reference_total = math.fsum(precipitation), math.fsum(et0)
+    low_days = longest_run = run = episodes = 0
+    episode_total = largest_episode = 0.0
+    in_episode = False
+    for amount in precipitation:
+        if amount < LOW_PRECIPITATION_MM_PER_DAY:
+            low_days += 1
+            run += 1
+            longest_run = max(longest_run, run)
+            largest_episode = max(largest_episode, episode_total)
+            episode_total, in_episode = 0.0, False
+        else:
+            run = 0
+            if not in_episode:
+                episodes += 1
+            in_episode = True
+            episode_total += amount
+    largest_episode = max(largest_episode, episode_total)
+    maximum = max(precipitation)
+    return result | {
+        "state": "ready", "retrieved_at": stamp.isoformat(),
+        "period_start": dates[0].isoformat(), "period_end": dates[-1].isoformat(),
+        "precipitation_total_mm": round(total, 1),
+        "reference_et0_total_mm": round(reference_total, 1),
+        "precipitation_minus_et0_mm": round(total - reference_total, 1),
+        "low_precipitation_days": low_days,
+        "longest_low_precipitation_run_days": longest_run,
+        "precipitation_days": 7 - low_days, "precipitation_episode_count": episodes,
+        "maximum_daily_precipitation_mm": maximum,
+        "wettest_day_date": dates[precipitation.index(maximum)].isoformat() if total else None,
+        "wettest_day_share_percent": round(100 * maximum / total, 1) if total else None,
+        "largest_episode_total_mm": round(largest_episode, 1),
+        "largest_episode_share_percent": round(100 * largest_episode / total, 1) if episodes else None,
+        "temperature_min_c": min(minima), "temperature_max_c": max(maxima),
+        "missing_inputs": missing,
+    }
+
+
+def _with_anticipation(result):
+    return result | {"anticipation": forecast_anticipation(result["weather"], result["retrieved_at"])}
 
 
 def enabled():
@@ -92,7 +192,7 @@ def location_context(value):
               "retrieved_at": now.isoformat(), "imagery": imagery}
     empty = {"source": "Open-Meteo", "source_url": "https://open-meteo.com/", "kind": "model_forecast", "time_zone": "UTC", "days": []}
     if not enabled():
-        return result | {"weather": empty | {"state": "disabled", "note": "Live geographic sources are off for this local session."}}
+        return _with_anticipation(result | {"weather": empty | {"state": "disabled", "note": "Live geographic sources are off for this local session."}})
     key = (latitude, longitude)
     with _lock:
         cached = _cache.get(key)
@@ -102,12 +202,13 @@ def location_context(value):
             return saved
         while _requests and time.monotonic() - _requests[0] > 3600: _requests.popleft()
         if len(_requests) >= MAX_REQUESTS_HOUR:
-            return result | {"weather": empty | {"state": "unavailable", "note": "The geographic source request limit has been reached. Try again later."}}
+            return _with_anticipation(result | {"weather": empty | {"state": "unavailable", "note": "The geographic source request limit has been reached. Try again later."}})
         _requests.append(time.monotonic())
     try:
         result["weather"] = _fetch(latitude, longitude)
     except Exception:
-        return result | {"weather": empty | {"state": "unavailable", "note": "Weather could not be retrieved. Keep exploring the map or retry the forecast."}}
+        return _with_anticipation(result | {"weather": empty | {"state": "unavailable", "note": "Weather could not be retrieved. Keep exploring the map or retry the forecast."}})
+    result = _with_anticipation(result)
     with _lock:
         _cache[key] = (time.monotonic(), copy.deepcopy(result)); _cache.move_to_end(key)
         while len(_cache) > MAX_CACHE: _cache.popitem(last=False)

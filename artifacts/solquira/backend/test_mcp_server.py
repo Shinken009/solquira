@@ -292,7 +292,7 @@ class NasaPowerGateTests(unittest.IsolatedAsyncioTestCase):
         os.environ["SOLQUIRA_MCP_NASA_POWER"] = "1"
         with patch(
             "power.fetch_nasa_power",
-            side_effect=HTTPException(422, "Use coordenadas de Coquimbo"),
+            side_effect=HTTPException(422, "Use coordenadas geográficas válidas"),
         ):
             response = await mcp_server.handle_request(
                 {

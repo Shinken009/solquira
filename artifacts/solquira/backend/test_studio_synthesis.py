@@ -117,6 +117,24 @@ class SynthesisTests(unittest.TestCase):
         )
         return provider, result
 
+    def test_anticipation_is_allowlisted_and_keeps_the_existing_constraint(self):
+        catalog=catalogue(context(rain=.3),record(constraint='cost'))
+        statement=catalog['statements']['forecast-anticipation']
+        self.assertIn('7 of seven days',statement['text'])
+        self.assertIn('does not diagnose drought or desertification',statement['text'])
+        self.assertEqual(statement['evidence_ids'],['forecast-7d'])
+        self.assertIn('review-precipitation-timing',catalog['checks'])
+        self.assertIn('constraint-cost',catalog['default']['statement_ids'])
+        self.assertIn('reported-cover',catalog['default']['statement_ids'])
+        self.assertEqual(catalog['default']['check_ids'][0],'discuss-cost')
+
+    def test_deterministic_forecast_explanation_includes_anticipation_when_space_allows(self):
+        catalog=catalogue(context())
+        self.assertIn('forecast-anticipation',catalog['default']['statement_ids'])
+        result=render_synthesis(catalog)
+        self.assertIn('No precipitation is forecast',result['summary'])
+        self.assertIn('not diagnose',result['summary'])
+
     def test_contrasting_forecasts_produce_source_linked_model_composition(self):
         dry_provider, dry = self.run_case()
         wet_provider, wet = self.run_case(rain=10)

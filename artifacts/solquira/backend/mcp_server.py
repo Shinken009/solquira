@@ -109,15 +109,15 @@ TOOLS: list[dict] = [
         "name": "nasa_power_daily",
         "description": (
             "Serie diaria NASA POWER (celdas de referencia, no medición de parcela ni pronóstico). "
-            "Coordenadas acotadas al piloto de Coquimbo y ventana histórica de 1 a 31 días. "
+            "Coordenadas globales válidas y ventana histórica de 1 a 31 días. "
             "Deshabilitado por defecto: requiere SOLQUIRA_MCP_NASA_POWER=1 (egreso de red por llamada)."
         ),
         "inputSchema": {
             "type": "object",
             "required": ["latitude", "longitude", "start", "end"],
             "properties": {
-                "latitude": {"type": "number", "minimum": -32.3, "maximum": -29},
-                "longitude": {"type": "number", "minimum": -72, "maximum": -69},
+                "latitude": {"type": "number", "minimum": -90, "maximum": 90},
+                "longitude": {"type": "number", "minimum": -180, "maximum": 180},
                 "start": {
                     "type": "string",
                     "format": "date",

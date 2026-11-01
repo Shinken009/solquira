@@ -69,6 +69,8 @@ def sources(root):
         "release_scan.py",
         "stage-github-release.py",
         "qa-dryland-brief.mjs",
+        "qa-environment-navigation.mjs",
+        "qa-territorial-journey.mjs",
         "qa-studio.mjs",
         "qa-solquira-experience.mjs",
         "qa-solquira-record-agent.mjs",

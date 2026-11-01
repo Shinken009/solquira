@@ -520,9 +520,9 @@ async def bootstrap(request: Request):
         "precordillera": "Andean foothills",
     }
     locations = {
-        "valle": "Elqui valley · Vicuña",
-        "secano": "Limarí · Punitaqui",
-        "precordillera": "Choapa · Salamanca",
+        "valle": "No location assigned · reference valley",
+        "secano": "No location assigned · reference dryland",
+        "precordillera": "No location assigned · reference upland",
     }
     try:
         inference = _service().studio_status()
@@ -607,6 +607,17 @@ async def location(request: Request):
 
         result = await _run_service(lease, location_context, coordinates)
         result["context_ref"] = ADMISSION.bind_context(token, version, result)
+        return _json(result)
+
+
+@studio_router.post("/history")
+async def history(request: Request):
+    """Explicit optional public reanalysis; same admission/CSRF, never inference."""
+    async with _admitted(request) as lease:
+        coordinates = _validate(StudioLocation, await _body(request)).model_dump()
+        from environmental_history import historical_context
+
+        result = await _run_service(lease, historical_context, coordinates)
         return _json(result)
 
 

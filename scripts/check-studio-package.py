@@ -40,6 +40,7 @@ def source_files(root):
         "dryland_brief",
         "dryland_progressive",
         "dryland_references",
+        "environmental_history",
         "main",
         "mcp_server",
         "power",
@@ -108,6 +109,8 @@ with TestClient(main.app, base_url="http://127.0.0.1") as client:
     bootstrap = client.get("/solquira-api/studio/bootstrap")
     assert bootstrap.status_code == 200
     assert not studio_service.studio_status()["available"]
+    history = client.post("/solquira-api/studio/history", headers={"X-Solquira-CSRF":bootstrap.json()["csrf_token"]}, json={"latitude":37.1,"longitude":-4.6})
+    assert history.status_code == 200 and history.json()["history"]["state"] == "disabled"
     result = studio_service.evaluate_studio(scenario)
     explanation = studio_service.explain_studio(scenario, "What should I check about soil cover?")
     assert explanation["inference_mode"] == "local_fallback"
@@ -115,7 +118,7 @@ with TestClient(main.app, base_url="http://127.0.0.1") as client:
     from datetime import datetime, timedelta, timezone
     now = datetime.now(timezone.utc)
     field = {"context_ref":"slq-context-"+"A"*32, "location":{"latitude":37.1,"longitude":-4.6}, "retrieved_at":now.isoformat(),
-             "weather":{"state":"ready","source":"Open-Meteo","days":[{"date":(now.date()+timedelta(days=i)).isoformat(),
+             "weather":{"state":"ready","source":"Open-Meteo","kind":"model_forecast","time_zone":"UTC","days":[{"date":(now.date()+timedelta(days=i)).isoformat(),
                "precipitation_mm":0,"reference_et0_mm":4,"temperature_min_c":10,"temperature_max_c":25} for i in range(7)]}}
     connected = studio_service.explain_studio(scenario, "What should I check about soil cover?", field_context=field)
     assert len(connected["trace"]) == 6
@@ -137,7 +140,8 @@ def main():
         files = source_files(ROOT)
         for source in files:
             stage_source(source, ROOT, stage)
-        shutil.copyfile(ROOT / "deploy/studio/Dockerfile", stage / "Dockerfile")
+        stage_source(ROOT / "scripts/run-studio-hosted.py", ROOT, stage)
+        shutil.copyfile(ROOT / "deploy/studio/hosted.Dockerfile", stage / "Dockerfile")
         env = _launcher.local_environment(__import__("os").environ)
         env.update(
             {

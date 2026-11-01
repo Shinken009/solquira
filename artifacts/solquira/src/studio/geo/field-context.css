@@ -185,3 +185,45 @@
 @media (min-width: 721px) and (max-width: 900px) {
   .qg-grid { grid-template-columns: 1fr; }
 }
+
+
+/* Environmental anticipation; preserve the existing map instance across areas. */
+.qg-anticipation > .qg-weather { margin-top: 20px; }
+.qg-indicators, .qg-history { margin-top: 24px; padding-top: 22px; border-top: 1px solid #bdcfc2; }
+.qg-indicators > h3, .qg-history > h3 { color: #173d36; font-size: 21px; }
+.qg-indicator-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 20px; margin: 18px 0; }
+.qg-indicator-grid > div { min-width: 0; border-left: 3px solid #96ad91; padding-left: 14px; }
+.qg-indicator-grid dt { color: #30483f; font-size: 13px; font-weight: 650; }
+.qg-indicator-grid dd { color: #173d36; font-size: 26px; font-weight: 700; line-height: 1.4; margin: 4px 0; overflow-wrap: anywhere; }
+.qg-indicator-grid dd small { font-size: 14px; font-weight: 500; }
+.qg-indicator-grid p, .qg-history > p, .qg-interpretation { color: #30483f; font-size: 13px; line-height: 1.65; }
+.qg-interpretation { padding: 12px 14px; background: #fff9e9; border-radius: 6px; }
+.qg-history > button { margin-top: 14px; }
+.qg-history [data-testid="history-result"] { margin-top: 20px; }
+@media (max-width: 850px) { .qg-indicator-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .qg-indicator-grid { grid-template-columns: 1fr; gap: 18px; } .qg-indicator-grid dd { font-size: 25px; } }
+
+/* Place-first exploration: map is the persistent work surface. */
+.qg-step{display:block;color:#537464;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:9px}
+.qg-place-actions{display:grid;gap:2px;margin:14px 0}
+.qg-place-actions .qg-load{margin-bottom:0}
+.qg-place-actions .qg-locate{justify-content:center;text-decoration:none;border:1px solid #b9cdbf;border-radius:10px;background:#fffef9;min-height:44px;font-weight:700}
+.qg-point-card{display:grid;gap:8px;padding:16px;border:1px solid #b8d0be;border-radius:14px;background:#fffef9;margin:15px 0}
+.qg-point-card>span{font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:800;color:#426854}
+.qg-point-card>strong{font-size:20px;letter-spacing:-.03em;overflow-wrap:anywhere}
+.qg-point-card>small{font-size:12px;color:#4d645d;line-height:1.5}
+.qg-point-card .qg-load{margin:8px 0 0;font-size:13px}
+.qg-next{border:0;background:none;text-align:left;padding:8px 0;color:#173d36;font-weight:800;font-size:13px;min-height:44px}
+.qg-manual{margin:14px 0;border-top:1px solid #c4d8cb;padding-top:8px}
+.qg-manual summary{min-height:44px;display:flex;align-items:center;font-weight:700;font-size:13px;cursor:pointer}
+.qg-manual summary::before{content:'＋';margin-right:8px}
+.qg-manual[open] summary::before{content:'−'}
+.qg-manual form{padding:4px 0}
+.qg-manual .qg-load{margin-top:10px;font-size:12px}
+.qg-map-wrap[data-selecting="true"] .qg-map canvas{cursor:crosshair}
+.qg-map-wrap[data-selecting="true"]{outline:3px solid #c6a341;outline-offset:3px}
+.qg-grid{grid-template-columns:minmax(240px,.7fr) minmax(0,1.6fr);align-items:start}
+.qg-map-area{margin-top:0;padding-top:0;border-top:0}
+.qg-map{height:clamp(420px,45vw,600px)}
+@media(max-width:720px){.qg-grid{display:flex;flex-direction:column;gap:18px}.qg-context{order:-1;width:100%}.qg-location{width:100%}.qg-map{height:clamp(300px,48dvh,410px)}.qg-place-actions{grid-template-columns:1fr}.qg-point-card>strong{font-size:19px}}
+.qg-section button:focus-visible,.qg-manual summary:focus-visible{outline:3px solid #9a6b17;outline-offset:3px}

@@ -44,6 +44,16 @@ class HostedPackageTests(unittest.TestCase):
                 release.stage(root)
             self.assertFalse((root / "output").exists())
 
+    def test_existing_landscape_asset_is_explicitly_allowed(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.fixture(root)
+            front = root / "artifacts/solquira/dist/public"
+            (front / "solquira-rural-landscape.svg").write_text("<svg></svg>", encoding="utf-8")
+            _, _, manifest = release.stage(root)
+            self.assertIn("artifacts/solquira/dist/public/solquira-rural-landscape.svg", manifest["files"])
+            self.assertFalse(release.assets.allowed(Path("unreviewed.svg")))
+
     def test_output_outside_workspace_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

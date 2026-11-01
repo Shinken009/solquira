@@ -24,10 +24,16 @@ import type {
   EvaluationInput,
   Evidence,
   GetNasaPowerParams,
+  GetStudioLocationContext200,
   HealthStatus,
   NasaPowerDaily,
   Parcel,
   Scenario,
+  StudioBootstrap,
+  StudioEnvelope,
+  StudioLocation,
+  StudioQuestion,
+  StudioScenario,
   TerritorialProfile
 } from './api.schemas';
 
@@ -522,7 +528,7 @@ export const getGetNasaPowerUrl = (params: GetNasaPowerParams,) => {
 }
 
 /**
- * Observaciones reales de la celda NASA POWER más cercana, no medición de parcela ni pronóstico. Coordenadas acotadas al piloto de Coquimbo y ventana histórica de 1 a 31 días; no convierte precipitación en agua de riego ni modifica la rúbrica sintética.
+ * Observaciones reales de la celda NASA POWER más cercana, no medición de parcela ni pronóstico. Coordenadas globales válidas y ventana histórica de 1 a 31 días; no convierte precipitación en agua de riego ni modifica la rúbrica sintética.
  * @summary Serie diaria NASA POWER (celdas de referencia)
  */
 export const getNasaPower = async (params: GetNasaPowerParams, options?: Parameters<typeof customFetch>[1]): Promise<NasaPowerDaily> => {
@@ -668,4 +674,348 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
+
+export const getGetStudioBootstrapUrl = () => {
+
+
+
+
+  return `/solquira-api/studio/bootstrap`
+}
+
+/**
+ * Requires Studio mode. Returns a CSRF token and a scoped HttpOnly cookie; never activates a provider.
+ * @summary Create or resume an ephemeral local Studio session
+ */
+export const getStudioBootstrap = async ( options?: Parameters<typeof customFetch>[1]): Promise<StudioBootstrap> => {
+
+  return customFetch<StudioBootstrap>(getGetStudioBootstrapUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStudioBootstrapQueryKey = () => {
+    return [
+    `/solquira-api/studio/bootstrap`
+    ] as const;
+    }
+
+
+export const getGetStudioBootstrapQueryOptions = <TData = Awaited<ReturnType<typeof getStudioBootstrap>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudioBootstrap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudioBootstrapQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudioBootstrap>>> = ({ signal }) => getStudioBootstrap({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudioBootstrap>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStudioBootstrapQueryResult = NonNullable<Awaited<ReturnType<typeof getStudioBootstrap>>>
+export type GetStudioBootstrapQueryError = ErrorType<void>
+
+
+/**
+ * @summary Create or resume an ephemeral local Studio session
+ */
+
+export function useGetStudioBootstrap<TData = Awaited<ReturnType<typeof getStudioBootstrap>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudioBootstrap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStudioBootstrapQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetStudioLocationContextUrl = () => {
+
+
+
+
+  return `/solquira-api/studio/location`
+}
+
+/**
+ * Explicit source opt-in; seven-day UTC model forecast and optional NASA imagery configuration. Does not change the crop example or send coordinates to the model.
+ * @summary Load independent, rounded-point geographic context
+ */
+export const getStudioLocationContext = async (studioLocation: StudioLocation, options?: Parameters<typeof customFetch>[1]): Promise<GetStudioLocationContext200> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<GetStudioLocationContext200>(getGetStudioLocationContextUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(studioLocation)
+  }
+);}
+
+
+
+
+
+export const getGetStudioLocationContextMutationKey = () => ['getStudioLocationContext'] as const;
+
+export const getGetStudioLocationContextMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getStudioLocationContext>>, TError,GetStudioLocationContextMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof getStudioLocationContext>>, TError,GetStudioLocationContextMutationVariables, TContext> => {
+
+const mutationKey = getGetStudioLocationContextMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getStudioLocationContext>>, GetStudioLocationContextMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  getStudioLocationContext(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetStudioLocationContextMutationResult = NonNullable<Awaited<ReturnType<typeof getStudioLocationContext>>>
+    export type GetStudioLocationContextMutationBody = BodyType<StudioLocation>
+    export type GetStudioLocationContextMutationError = ErrorType<void>
+    export type GetStudioLocationContextMutationVariables = {data: BodyType<StudioLocation>}
+
+    /**
+ * @summary Load independent, rounded-point geographic context
+ */
+export const useGetStudioLocationContext = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getStudioLocationContext>>, TError,GetStudioLocationContextMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof getStudioLocationContext>>,
+        TError,
+        GetStudioLocationContextMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGetStudioLocationContextMutationOptions(options));
+    }
+
+export const getEvaluateStudioScenarioUrl = () => {
+
+
+
+
+  return `/solquira-api/studio/evaluate`
+}
+
+/**
+ * @summary Compare the same explicit scenario using the deterministic motor
+ */
+export const evaluateStudioScenario = async (studioScenario: StudioScenario, options?: Parameters<typeof customFetch>[1]): Promise<StudioEnvelope> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StudioEnvelope>(getEvaluateStudioScenarioUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(studioScenario)
+  }
+);}
+
+
+
+
+
+export const getEvaluateStudioScenarioMutationKey = () => ['evaluateStudioScenario'] as const;
+
+export const getEvaluateStudioScenarioMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof evaluateStudioScenario>>, TError,EvaluateStudioScenarioMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof evaluateStudioScenario>>, TError,EvaluateStudioScenarioMutationVariables, TContext> => {
+
+const mutationKey = getEvaluateStudioScenarioMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof evaluateStudioScenario>>, EvaluateStudioScenarioMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  evaluateStudioScenario(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EvaluateStudioScenarioMutationResult = NonNullable<Awaited<ReturnType<typeof evaluateStudioScenario>>>
+    export type EvaluateStudioScenarioMutationBody = BodyType<StudioScenario>
+    export type EvaluateStudioScenarioMutationError = ErrorType<void>
+    export type EvaluateStudioScenarioMutationVariables = {data: BodyType<StudioScenario>}
+
+    /**
+ * @summary Compare the same explicit scenario using the deterministic motor
+ */
+export const useEvaluateStudioScenario = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof evaluateStudioScenario>>, TError,EvaluateStudioScenarioMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof evaluateStudioScenario>>,
+        TError,
+        EvaluateStudioScenarioMutationVariables,
+        TContext
+      > => {
+      return useMutation(getEvaluateStudioScenarioMutationOptions(options));
+    }
+
+export const getExplainStudioScenarioUrl = () => {
+
+
+
+
+  return `/solquira-api/studio/agent`
+}
+
+/**
+ * A remote provider is installed only by the explicitly authorized bounded connection-trial launcher. Default local execution and any fallback are explicitly labelled.
+ * @summary Execute bounded local tools and explain the current scenario
+ */
+export const explainStudioScenario = async (studioQuestion: StudioQuestion, options?: Parameters<typeof customFetch>[1]): Promise<StudioEnvelope> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StudioEnvelope>(getExplainStudioScenarioUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(studioQuestion)
+  }
+);}
+
+
+
+
+
+export const getExplainStudioScenarioMutationKey = () => ['explainStudioScenario'] as const;
+
+export const getExplainStudioScenarioMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof explainStudioScenario>>, TError,ExplainStudioScenarioMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof explainStudioScenario>>, TError,ExplainStudioScenarioMutationVariables, TContext> => {
+
+const mutationKey = getExplainStudioScenarioMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof explainStudioScenario>>, ExplainStudioScenarioMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  explainStudioScenario(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ExplainStudioScenarioMutationResult = NonNullable<Awaited<ReturnType<typeof explainStudioScenario>>>
+    export type ExplainStudioScenarioMutationBody = BodyType<StudioQuestion>
+    export type ExplainStudioScenarioMutationError = ErrorType<void>
+    export type ExplainStudioScenarioMutationVariables = {data: BodyType<StudioQuestion>}
+
+    /**
+ * @summary Execute bounded local tools and explain the current scenario
+ */
+export const useExplainStudioScenario = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof explainStudioScenario>>, TError,ExplainStudioScenarioMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof explainStudioScenario>>,
+        TError,
+        ExplainStudioScenarioMutationVariables,
+        TContext
+      > => {
+      return useMutation(getExplainStudioScenarioMutationOptions(options));
+    }
 

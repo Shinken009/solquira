@@ -16,8 +16,8 @@ export const GetProfilesResponseItem = zod.object({
   "climate": zod.string(),
   "soil": zod.string(),
   "waterM3Ha": zod.number(),
-  "latitude": zod.number(),
-  "longitude": zod.number(),
+  "latitude": zod.number().nullable(),
+  "longitude": zod.number().nullable(),
   "dataStatus": zod.string()
 })
 export const GetProfilesResponse = zod.array(GetProfilesResponseItem)
@@ -36,11 +36,11 @@ export const getParcelResponsePreviousCropsItemMax = 60;
 export const getParcelResponsePreviousCropsMax = 10;
 
 
-export const getParcelResponseLatitudeMin = -32.3;
-export const getParcelResponseLatitudeMax = -29;
+export const getParcelResponseLatitudeMin = -90;
+export const getParcelResponseLatitudeMax = 90;
 
-export const getParcelResponseLongitudeMin = -72;
-export const getParcelResponseLongitudeMax = -69;
+export const getParcelResponseLongitudeMin = -180;
+export const getParcelResponseLongitudeMax = 180;
 
 
 
@@ -52,8 +52,8 @@ export const GetParcelResponse = zod.object({
   "soil": zod.enum(['franco', 'arenoso', 'arcilloso', 'desconocido']),
   "previousCrops": zod.array(zod.string().max(getParcelResponsePreviousCropsItemMax)).max(getParcelResponsePreviousCropsMax),
   "priorities": zod.array(zod.enum(['agua', 'suelo', 'diversidad'])).min(1),
-  "latitude": zod.number().min(getParcelResponseLatitudeMin).max(getParcelResponseLatitudeMax),
-  "longitude": zod.number().min(getParcelResponseLongitudeMin).max(getParcelResponseLongitudeMax)
+  "latitude": zod.number().min(getParcelResponseLatitudeMin).max(getParcelResponseLatitudeMax).nullish(),
+  "longitude": zod.number().min(getParcelResponseLongitudeMin).max(getParcelResponseLongitudeMax).nullish()
 })
 
 
@@ -70,11 +70,11 @@ export const saveParcelBodyPreviousCropsItemMax = 60;
 export const saveParcelBodyPreviousCropsMax = 10;
 
 
-export const saveParcelBodyLatitudeMin = -32.3;
-export const saveParcelBodyLatitudeMax = -29;
+export const saveParcelBodyLatitudeMin = -90;
+export const saveParcelBodyLatitudeMax = 90;
 
-export const saveParcelBodyLongitudeMin = -72;
-export const saveParcelBodyLongitudeMax = -69;
+export const saveParcelBodyLongitudeMin = -180;
+export const saveParcelBodyLongitudeMax = 180;
 
 
 
@@ -86,8 +86,8 @@ export const SaveParcelBody = zod.object({
   "soil": zod.enum(['franco', 'arenoso', 'arcilloso', 'desconocido']),
   "previousCrops": zod.array(zod.string().max(saveParcelBodyPreviousCropsItemMax)).max(saveParcelBodyPreviousCropsMax),
   "priorities": zod.array(zod.enum(['agua', 'suelo', 'diversidad'])).min(1),
-  "latitude": zod.number().min(saveParcelBodyLatitudeMin).max(saveParcelBodyLatitudeMax),
-  "longitude": zod.number().min(saveParcelBodyLongitudeMin).max(saveParcelBodyLongitudeMax)
+  "latitude": zod.number().min(saveParcelBodyLatitudeMin).max(saveParcelBodyLatitudeMax).nullish(),
+  "longitude": zod.number().min(saveParcelBodyLongitudeMin).max(saveParcelBodyLongitudeMax).nullish()
 })
 
 export const saveParcelResponseNameMax = 120;
@@ -103,11 +103,11 @@ export const saveParcelResponsePreviousCropsItemMax = 60;
 export const saveParcelResponsePreviousCropsMax = 10;
 
 
-export const saveParcelResponseLatitudeMin = -32.3;
-export const saveParcelResponseLatitudeMax = -29;
+export const saveParcelResponseLatitudeMin = -90;
+export const saveParcelResponseLatitudeMax = 90;
 
-export const saveParcelResponseLongitudeMin = -72;
-export const saveParcelResponseLongitudeMax = -69;
+export const saveParcelResponseLongitudeMin = -180;
+export const saveParcelResponseLongitudeMax = 180;
 
 
 
@@ -119,8 +119,8 @@ export const SaveParcelResponse = zod.object({
   "soil": zod.enum(['franco', 'arenoso', 'arcilloso', 'desconocido']),
   "previousCrops": zod.array(zod.string().max(saveParcelResponsePreviousCropsItemMax)).max(saveParcelResponsePreviousCropsMax),
   "priorities": zod.array(zod.enum(['agua', 'suelo', 'diversidad'])).min(1),
-  "latitude": zod.number().min(saveParcelResponseLatitudeMin).max(saveParcelResponseLatitudeMax),
-  "longitude": zod.number().min(saveParcelResponseLongitudeMin).max(saveParcelResponseLongitudeMax)
+  "latitude": zod.number().min(saveParcelResponseLatitudeMin).max(saveParcelResponseLatitudeMax).nullish(),
+  "longitude": zod.number().min(saveParcelResponseLongitudeMin).max(saveParcelResponseLongitudeMax).nullish()
 })
 
 
@@ -146,11 +146,11 @@ export const evaluateParcelBodyParcelPreviousCropsItemMax = 60;
 export const evaluateParcelBodyParcelPreviousCropsMax = 10;
 
 
-export const evaluateParcelBodyParcelLatitudeMin = -32.3;
-export const evaluateParcelBodyParcelLatitudeMax = -29;
+export const evaluateParcelBodyParcelLatitudeMin = -90;
+export const evaluateParcelBodyParcelLatitudeMax = 90;
 
-export const evaluateParcelBodyParcelLongitudeMin = -72;
-export const evaluateParcelBodyParcelLongitudeMax = -69;
+export const evaluateParcelBodyParcelLongitudeMin = -180;
+export const evaluateParcelBodyParcelLongitudeMax = 180;
 
 export const evaluateParcelBodyWaterPercentMin = 0;
 export const evaluateParcelBodyWaterPercentMax = 150;
@@ -166,8 +166,8 @@ export const EvaluateParcelBody = zod.object({
   "soil": zod.enum(['franco', 'arenoso', 'arcilloso', 'desconocido']),
   "previousCrops": zod.array(zod.string().max(evaluateParcelBodyParcelPreviousCropsItemMax)).max(evaluateParcelBodyParcelPreviousCropsMax),
   "priorities": zod.array(zod.enum(['agua', 'suelo', 'diversidad'])).min(1),
-  "latitude": zod.number().min(evaluateParcelBodyParcelLatitudeMin).max(evaluateParcelBodyParcelLatitudeMax),
-  "longitude": zod.number().min(evaluateParcelBodyParcelLongitudeMin).max(evaluateParcelBodyParcelLongitudeMax)
+  "latitude": zod.number().min(evaluateParcelBodyParcelLatitudeMin).max(evaluateParcelBodyParcelLatitudeMax).nullish(),
+  "longitude": zod.number().min(evaluateParcelBodyParcelLongitudeMin).max(evaluateParcelBodyParcelLongitudeMax).nullish()
 }),
   "waterPercent": zod.number().min(evaluateParcelBodyWaterPercentMin).max(evaluateParcelBodyWaterPercentMax)
 })
@@ -223,14 +223,14 @@ export const GetSourcesResponse = zod.array(GetSourcesResponseItem)
 
 
 /**
- * Observaciones reales de la celda NASA POWER más cercana, no medición de parcela ni pronóstico. Coordenadas acotadas al piloto de Coquimbo y ventana histórica de 1 a 31 días; no convierte precipitación en agua de riego ni modifica la rúbrica sintética.
+ * Observaciones reales de la celda NASA POWER más cercana, no medición de parcela ni pronóstico. Coordenadas globales válidas y ventana histórica de 1 a 31 días; no convierte precipitación en agua de riego ni modifica la rúbrica sintética.
  * @summary Serie diaria NASA POWER (celdas de referencia)
  */
-export const getNasaPowerQueryLatitudeMin = -32.3;
-export const getNasaPowerQueryLatitudeMax = -29;
+export const getNasaPowerQueryLatitudeMin = -90;
+export const getNasaPowerQueryLatitudeMax = 90;
 
-export const getNasaPowerQueryLongitudeMin = -72;
-export const getNasaPowerQueryLongitudeMax = -69;
+export const getNasaPowerQueryLongitudeMin = -180;
+export const getNasaPowerQueryLongitudeMax = 180;
 
 
 
@@ -275,6 +275,433 @@ export const GetNasaPowerResponse = zod.object({
  */
 export const HealthCheckResponse = zod.object({
   "status": zod.string()
+})
+
+
+/**
+ * Requires Studio mode. Returns a CSRF token and a scoped HttpOnly cookie; never activates a provider.
+ * @summary Create or resume an ephemeral local Studio session
+ */
+export const getStudioBootstrapResponseSessionExpiresInMin = 0;
+export const getStudioBootstrapResponseSessionExpiresInMax = 3600;
+
+
+
+export const GetStudioBootstrapResponse = zod.object({
+  "schema_version": zod.literal("solquira.studio/1"),
+  "csrf_token": zod.string(),
+  "session_expires_in": zod.number().int().min(getStudioBootstrapResponseSessionExpiresInMin).max(getStudioBootstrapResponseSessionExpiresInMax),
+  "synthetic": zod.literal(true),
+  "rule_version": zod.string(),
+  "profiles": zod.array(zod.object({
+  "id": zod.enum(['valle', 'secano', 'precordillera']),
+  "name": zod.string(),
+  "location": zod.string(),
+  "water_m3_ha": zod.number()
+})),
+  "history_options": zod.array(zod.object({
+  "id": zod.enum(['cereal', 'leguminosa', 'cubierta', 'descanso']),
+  "label": zod.string()
+})),
+  "inference": zod.object({
+  "available": zod.boolean().optional(),
+  "mode": zod.string().optional(),
+  "provider": zod.string().optional(),
+  "model": zod.string().nullish()
+})
+})
+
+
+/**
+ * Explicit source opt-in; seven-day UTC model forecast and optional NASA imagery configuration. Does not change the crop example or send coordinates to the model.
+ * @summary Load independent, rounded-point geographic context
+ */
+export const GetStudioLocationContextHeader = zod.object({
+  "X-Solquira-CSRF": zod.string()
+})
+
+export const getStudioLocationContextBodyLatitudeMin = -90;
+export const getStudioLocationContextBodyLatitudeMax = 90;
+
+export const getStudioLocationContextBodyLongitudeMin = -180;
+export const getStudioLocationContextBodyLongitudeMax = 180;
+
+
+
+export const GetStudioLocationContextBody = zod.object({
+  "latitude": zod.number().min(getStudioLocationContextBodyLatitudeMin).max(getStudioLocationContextBodyLatitudeMax),
+  "longitude": zod.number().min(getStudioLocationContextBodyLongitudeMin).max(getStudioLocationContextBodyLongitudeMax)
+})
+
+export const getStudioLocationContextResponseLocationLatitudeMin = -90;
+export const getStudioLocationContextResponseLocationLatitudeMax = 90;
+
+export const getStudioLocationContextResponseLocationLongitudeMin = -180;
+export const getStudioLocationContextResponseLocationLongitudeMax = 180;
+
+
+
+export const GetStudioLocationContextResponse = zod.object({
+  "schema_version": zod.enum(['solquira.location/1']),
+  "context_ref": zod.string().nullish().describe('Opaque session-owned forecast reference, at most ten minutes from source retrieval. Null when weather is unavailable or the request was superseded.'),
+  "location": zod.object({
+  "latitude": zod.number().min(getStudioLocationContextResponseLocationLatitudeMin).max(getStudioLocationContextResponseLocationLatitudeMax),
+  "longitude": zod.number().min(getStudioLocationContextResponseLocationLongitudeMin).max(getStudioLocationContextResponseLocationLongitudeMax),
+  "precision_degrees": zod.literal(0.001)
+}),
+  "retrieved_at": zod.coerce.date(),
+  "weather": zod.object({
+
+}).passthrough().describe('Seven bounded UTC forecast days when ready or cached; otherwise an empty series.'),
+  "imagery": zod.object({
+
+}).passthrough().describe('Allowlisted NASA GIBS MODIS true-colour template and dated regional context; no NDVI values.')
+})
+
+
+/**
+ * @summary Compare the same explicit scenario using the deterministic motor
+ */
+export const EvaluateStudioScenarioHeader = zod.object({
+  "X-Solquira-CSRF": zod.string()
+})
+
+export const evaluateStudioScenarioBodyWaterPercentMin = 40;
+export const evaluateStudioScenarioBodyWaterPercentMax = 120;
+export const evaluateStudioScenarioBodyWaterPercentMultipleOf = 10;
+
+
+
+export const EvaluateStudioScenarioBody = zod.object({
+  "profile_id": zod.enum(['valle', 'secano', 'precordillera']),
+  "water_percent": zod.number().int().min(evaluateStudioScenarioBodyWaterPercentMin).max(evaluateStudioScenarioBodyWaterPercentMax).multipleOf(evaluateStudioScenarioBodyWaterPercentMultipleOf),
+  "previous_crop": zod.enum(['cereal', 'leguminosa', 'cubierta', 'descanso'])
+})
+
+export const evaluateStudioScenarioResponseScenarioWaterPercentMin = 40;
+export const evaluateStudioScenarioResponseScenarioWaterPercentMax = 120;
+export const evaluateStudioScenarioResponseScenarioWaterPercentMultipleOf = 10;
+
+export const evaluateStudioScenarioResponseProposedScenarioWaterPercentMin = 40;
+export const evaluateStudioScenarioResponseProposedScenarioWaterPercentMax = 120;
+export const evaluateStudioScenarioResponseProposedScenarioWaterPercentMultipleOf = 10;
+
+export const evaluateStudioScenarioResponseRequestedScenarioWaterPercentMin = 40;
+export const evaluateStudioScenarioResponseRequestedScenarioWaterPercentMax = 120;
+export const evaluateStudioScenarioResponseRequestedScenarioWaterPercentMultipleOf = 10;
+
+export const evaluateStudioScenarioResponseReportScenarioWaterPercentMin = 40;
+export const evaluateStudioScenarioResponseReportScenarioWaterPercentMax = 120;
+export const evaluateStudioScenarioResponseReportScenarioWaterPercentMultipleOf = 10;
+
+export const evaluateStudioScenarioResponseReportFieldBriefLocationLatitudeMin = -90;
+export const evaluateStudioScenarioResponseReportFieldBriefLocationLatitudeMax = 90;
+
+export const evaluateStudioScenarioResponseReportFieldBriefLocationLongitudeMin = -180;
+export const evaluateStudioScenarioResponseReportFieldBriefLocationLongitudeMax = 180;
+
+export const evaluateStudioScenarioResponseReportFieldBriefForecastRainMmMin = 0;
+export const evaluateStudioScenarioResponseReportFieldBriefForecastRainMmMax = 14000;
+
+export const evaluateStudioScenarioResponseReportFieldBriefForecastReferenceEt0MmMin = 0;
+export const evaluateStudioScenarioResponseReportFieldBriefForecastReferenceEt0MmMax = 700;
+
+export const evaluateStudioScenarioResponseReportFieldBriefForecastTemperatureMinCMin = -100;
+export const evaluateStudioScenarioResponseReportFieldBriefForecastTemperatureMinCMax = 80;
+
+export const evaluateStudioScenarioResponseReportFieldBriefForecastTemperatureMaxCMin = -100;
+export const evaluateStudioScenarioResponseReportFieldBriefForecastTemperatureMaxCMax = 80;
+
+export const evaluateStudioScenarioResponseReportFieldBriefForecastDaysWithoutRainMin = 0;
+export const evaluateStudioScenarioResponseReportFieldBriefForecastDaysWithoutRainMax = 7;
+
+export const evaluateStudioScenarioResponseReportFieldBriefActionsMin = 3;
+export const evaluateStudioScenarioResponseReportFieldBriefActionsMax = 3;
+
+export const evaluateStudioScenarioResponseReportFieldBriefSourcesMin = 2;
+export const evaluateStudioScenarioResponseReportFieldBriefSourcesMax = 2;
+
+
+
+export const EvaluateStudioScenarioResponse = zod.object({
+  "schema_version": zod.literal("solquira.studio/1"),
+  "scenario": zod.object({
+  "profile_id": zod.enum(['valle', 'secano', 'precordillera']),
+  "water_percent": zod.number().int().min(evaluateStudioScenarioResponseScenarioWaterPercentMin).max(evaluateStudioScenarioResponseScenarioWaterPercentMax).multipleOf(evaluateStudioScenarioResponseScenarioWaterPercentMultipleOf),
+  "previous_crop": zod.enum(['cereal', 'leguminosa', 'cubierta', 'descanso'])
+}),
+  "proposed_scenario": zod.object({
+  "profile_id": zod.enum(['valle', 'secano', 'precordillera']),
+  "water_percent": zod.number().int().min(evaluateStudioScenarioResponseProposedScenarioWaterPercentMin).max(evaluateStudioScenarioResponseProposedScenarioWaterPercentMax).multipleOf(evaluateStudioScenarioResponseProposedScenarioWaterPercentMultipleOf),
+  "previous_crop": zod.enum(['cereal', 'leguminosa', 'cubierta', 'descanso'])
+}).optional(),
+  "requested_scenario": zod.object({
+  "profile_id": zod.enum(['valle', 'secano', 'precordillera']),
+  "water_percent": zod.number().int().min(evaluateStudioScenarioResponseRequestedScenarioWaterPercentMin).max(evaluateStudioScenarioResponseRequestedScenarioWaterPercentMax).multipleOf(evaluateStudioScenarioResponseRequestedScenarioWaterPercentMultipleOf),
+  "previous_crop": zod.enum(['cereal', 'leguminosa', 'cubierta', 'descanso'])
+}).optional(),
+  "report": zod.object({
+  "comparison_id": zod.string(),
+  "scenario_revision": zod.string(),
+  "scenario": zod.object({
+  "profile_id": zod.enum(['valle', 'secano', 'precordillera']),
+  "water_percent": zod.number().int().min(evaluateStudioScenarioResponseReportScenarioWaterPercentMin).max(evaluateStudioScenarioResponseReportScenarioWaterPercentMax).multipleOf(evaluateStudioScenarioResponseReportScenarioWaterPercentMultipleOf),
+  "previous_crop": zod.enum(['cereal', 'leguminosa', 'cubierta', 'descanso'])
+}).optional(),
+  "rule_version": zod.string().optional(),
+  "engine_sha256": zod.string().optional(),
+  "scope": zod.string().optional(),
+  "status": zod.string(),
+  "synthetic": zod.literal(true),
+  "agronomicViability": zod.literal("not_assessed"),
+  "available_water_m3_ha": zod.number().nullish(),
+  "missing_fields": zod.array(zod.string()).optional(),
+  "plans": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "sequence": zod.array(zod.string()),
+  "sequence_ids": zod.array(zod.string()).optional(),
+  "demand_m3_ha": zod.number(),
+  "balance_m3_ha": zod.number(),
+  "history_ok": zod.boolean(),
+  "eligible": zod.boolean(),
+  "score": zod.number().optional()
+})),
+  "explanation": zod.string(),
+  "field_brief": zod.object({
+  "schema_version": zod.literal("solquira.field-brief/1"),
+  "context_ref": zod.string(),
+  "focus": zod.enum(['water', 'history', 'evidence', 'resilience', 'decision']),
+  "location": zod.object({
+  "latitude": zod.number().min(evaluateStudioScenarioResponseReportFieldBriefLocationLatitudeMin).max(evaluateStudioScenarioResponseReportFieldBriefLocationLatitudeMax),
+  "longitude": zod.number().min(evaluateStudioScenarioResponseReportFieldBriefLocationLongitudeMin).max(evaluateStudioScenarioResponseReportFieldBriefLocationLongitudeMax)
+}),
+  "created_at": zod.coerce.date(),
+  "forecast": zod.object({
+  "source": zod.literal("Open-Meteo"),
+  "kind": zod.literal("model_forecast"),
+  "time_zone": zod.literal("UTC"),
+  "retrieved_at": zod.coerce.date(),
+  "period_start": zod.coerce.date(),
+  "period_end": zod.coerce.date(),
+  "rain_mm": zod.number().min(evaluateStudioScenarioResponseReportFieldBriefForecastRainMmMin).max(evaluateStudioScenarioResponseReportFieldBriefForecastRainMmMax),
+  "reference_et0_mm": zod.number().min(evaluateStudioScenarioResponseReportFieldBriefForecastReferenceEt0MmMin).max(evaluateStudioScenarioResponseReportFieldBriefForecastReferenceEt0MmMax),
+  "temperature_min_c": zod.number().min(evaluateStudioScenarioResponseReportFieldBriefForecastTemperatureMinCMin).max(evaluateStudioScenarioResponseReportFieldBriefForecastTemperatureMinCMax),
+  "temperature_max_c": zod.number().min(evaluateStudioScenarioResponseReportFieldBriefForecastTemperatureMaxCMin).max(evaluateStudioScenarioResponseReportFieldBriefForecastTemperatureMaxCMax),
+  "days_without_rain": zod.number().int().min(evaluateStudioScenarioResponseReportFieldBriefForecastDaysWithoutRainMin).max(evaluateStudioScenarioResponseReportFieldBriefForecastDaysWithoutRainMax)
+}),
+  "pattern": zod.enum(['rain_below_reference_et0', 'rain_at_or_above_reference_et0']),
+  "summary": zod.string(),
+  "actions": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string(),
+  "evidence_ids": zod.array(zod.enum(['forecast-7d', 'field-inputs'])),
+  "destination": zod.enum(['weather', 'soil', 'question'])
+})).min(evaluateStudioScenarioResponseReportFieldBriefActionsMin).max(evaluateStudioScenarioResponseReportFieldBriefActionsMax),
+  "sources": zod.array(zod.object({
+  "id": zod.enum(['forecast-7d', 'field-inputs']),
+  "label": zod.string(),
+  "kind": zod.enum(['model_forecast', 'missing_inputs']),
+  "url": zod.enum(['https://open-meteo.com/']).optional()
+})).min(evaluateStudioScenarioResponseReportFieldBriefSourcesMin).max(evaluateStudioScenarioResponseReportFieldBriefSourcesMax),
+  "missing_inputs": zod.array(zod.string()),
+  "external_actions_executed": zod.literal(false)
+}).optional(),
+  "evidence": zod.record(zod.string(), zod.unknown()),
+  "resilience": zod.record(zod.string(), zod.unknown()),
+  "decision": zod.record(zod.string(), zod.unknown())
+}),
+  "request_id": zod.string(),
+  "run": zod.object({
+  "inference_mode": zod.string(),
+  "outcome": zod.string(),
+  "model": zod.string().nullable(),
+  "trace": zod.array(zod.object({
+  "tool": zod.string().optional(),
+  "status": zod.string().optional(),
+  "comparison_id": zod.string().nullish()
+}))
+})
+})
+
+
+/**
+ * A remote provider is installed only by the explicitly authorized bounded connection-trial launcher. Default local execution and any fallback are explicitly labelled.
+ * @summary Execute bounded local tools and explain the current scenario
+ */
+export const ExplainStudioScenarioHeader = zod.object({
+  "X-Solquira-CSRF": zod.string()
+})
+
+export const explainStudioScenarioBodyScenarioWaterPercentMin = 40;
+export const explainStudioScenarioBodyScenarioWaterPercentMax = 120;
+export const explainStudioScenarioBodyScenarioWaterPercentMultipleOf = 10;
+
+export const explainStudioScenarioBodyQueryMax = 1000;
+
+export const explainStudioScenarioBodyContextRefMin = 24;
+export const explainStudioScenarioBodyContextRefMax = 100;
+
+
+export const explainStudioScenarioBodyContextRefRegExp = new RegExp('^slq-context-[A-Za-z0-9_-]+$');
+
+
+export const ExplainStudioScenarioBody = zod.object({
+  "scenario": zod.object({
+  "profile_id": zod.enum(['valle', 'secano', 'precordillera']),
+  "water_percent": zod.number().int().min(explainStudioScenarioBodyScenarioWaterPercentMin).max(explainStudioScenarioBodyScenarioWaterPercentMax).multipleOf(explainStudioScenarioBodyScenarioWaterPercentMultipleOf),
+  "previous_crop": zod.enum(['cereal', 'leguminosa', 'cubierta', 'descanso'])
+}),
+  "query": zod.string().min(1).max(explainStudioScenarioBodyQueryMax),
+  "context_ref": zod.string().min(explainStudioScenarioBodyContextRefMin).max(explainStudioScenarioBodyContextRefMax).regex(explainStudioScenarioBodyContextRefRegExp).nullish().describe('Include only after the user explicitly attaches a server-issued forecast; client weather is never accepted.')
+})
+
+export const explainStudioScenarioResponseScenarioWaterPercentMin = 40;
+export const explainStudioScenarioResponseScenarioWaterPercentMax = 120;
+export const explainStudioScenarioResponseScenarioWaterPercentMultipleOf = 10;
+
+export const explainStudioScenarioResponseProposedScenarioWaterPercentMin = 40;
+export const explainStudioScenarioResponseProposedScenarioWaterPercentMax = 120;
+export const explainStudioScenarioResponseProposedScenarioWaterPercentMultipleOf = 10;
+
+export const explainStudioScenarioResponseRequestedScenarioWaterPercentMin = 40;
+export const explainStudioScenarioResponseRequestedScenarioWaterPercentMax = 120;
+export const explainStudioScenarioResponseRequestedScenarioWaterPercentMultipleOf = 10;
+
+export const explainStudioScenarioResponseReportScenarioWaterPercentMin = 40;
+export const explainStudioScenarioResponseReportScenarioWaterPercentMax = 120;
+export const explainStudioScenarioResponseReportScenarioWaterPercentMultipleOf = 10;
+
+export const explainStudioScenarioResponseReportFieldBriefLocationLatitudeMin = -90;
+export const explainStudioScenarioResponseReportFieldBriefLocationLatitudeMax = 90;
+
+export const explainStudioScenarioResponseReportFieldBriefLocationLongitudeMin = -180;
+export const explainStudioScenarioResponseReportFieldBriefLocationLongitudeMax = 180;
+
+export const explainStudioScenarioResponseReportFieldBriefForecastRainMmMin = 0;
+export const explainStudioScenarioResponseReportFieldBriefForecastRainMmMax = 14000;
+
+export const explainStudioScenarioResponseReportFieldBriefForecastReferenceEt0MmMin = 0;
+export const explainStudioScenarioResponseReportFieldBriefForecastReferenceEt0MmMax = 700;
+
+export const explainStudioScenarioResponseReportFieldBriefForecastTemperatureMinCMin = -100;
+export const explainStudioScenarioResponseReportFieldBriefForecastTemperatureMinCMax = 80;
+
+export const explainStudioScenarioResponseReportFieldBriefForecastTemperatureMaxCMin = -100;
+export const explainStudioScenarioResponseReportFieldBriefForecastTemperatureMaxCMax = 80;
+
+export const explainStudioScenarioResponseReportFieldBriefForecastDaysWithoutRainMin = 0;
+export const explainStudioScenarioResponseReportFieldBriefForecastDaysWithoutRainMax = 7;
+
+export const explainStudioScenarioResponseReportFieldBriefActionsMin = 3;
+export const explainStudioScenarioResponseReportFieldBriefActionsMax = 3;
+
+export const explainStudioScenarioResponseReportFieldBriefSourcesMin = 2;
+export const explainStudioScenarioResponseReportFieldBriefSourcesMax = 2;
+
+
+
+export const ExplainStudioScenarioResponse = zod.object({
+  "schema_version": zod.literal("solquira.studio/1"),
+  "scenario": zod.object({
+  "profile_id": zod.enum(['valle', 'secano', 'precordillera']),
+  "water_percent": zod.number().int().min(explainStudioScenarioResponseScenarioWaterPercentMin).max(explainStudioScenarioResponseScenarioWaterPercentMax).multipleOf(explainStudioScenarioResponseScenarioWaterPercentMultipleOf),
+  "previous_crop": zod.enum(['cereal', 'leguminosa', 'cubierta', 'descanso'])
+}),
+  "proposed_scenario": zod.object({
+  "profile_id": zod.enum(['valle', 'secano', 'precordillera']),
+  "water_percent": zod.number().int().min(explainStudioScenarioResponseProposedScenarioWaterPercentMin).max(explainStudioScenarioResponseProposedScenarioWaterPercentMax).multipleOf(explainStudioScenarioResponseProposedScenarioWaterPercentMultipleOf),
+  "previous_crop": zod.enum(['cereal', 'leguminosa', 'cubierta', 'descanso'])
+}).optional(),
+  "requested_scenario": zod.object({
+  "profile_id": zod.enum(['valle', 'secano', 'precordillera']),
+  "water_percent": zod.number().int().min(explainStudioScenarioResponseRequestedScenarioWaterPercentMin).max(explainStudioScenarioResponseRequestedScenarioWaterPercentMax).multipleOf(explainStudioScenarioResponseRequestedScenarioWaterPercentMultipleOf),
+  "previous_crop": zod.enum(['cereal', 'leguminosa', 'cubierta', 'descanso'])
+}).optional(),
+  "report": zod.object({
+  "comparison_id": zod.string(),
+  "scenario_revision": zod.string(),
+  "scenario": zod.object({
+  "profile_id": zod.enum(['valle', 'secano', 'precordillera']),
+  "water_percent": zod.number().int().min(explainStudioScenarioResponseReportScenarioWaterPercentMin).max(explainStudioScenarioResponseReportScenarioWaterPercentMax).multipleOf(explainStudioScenarioResponseReportScenarioWaterPercentMultipleOf),
+  "previous_crop": zod.enum(['cereal', 'leguminosa', 'cubierta', 'descanso'])
+}).optional(),
+  "rule_version": zod.string().optional(),
+  "engine_sha256": zod.string().optional(),
+  "scope": zod.string().optional(),
+  "status": zod.string(),
+  "synthetic": zod.literal(true),
+  "agronomicViability": zod.literal("not_assessed"),
+  "available_water_m3_ha": zod.number().nullish(),
+  "missing_fields": zod.array(zod.string()).optional(),
+  "plans": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "sequence": zod.array(zod.string()),
+  "sequence_ids": zod.array(zod.string()).optional(),
+  "demand_m3_ha": zod.number(),
+  "balance_m3_ha": zod.number(),
+  "history_ok": zod.boolean(),
+  "eligible": zod.boolean(),
+  "score": zod.number().optional()
+})),
+  "explanation": zod.string(),
+  "field_brief": zod.object({
+  "schema_version": zod.literal("solquira.field-brief/1"),
+  "context_ref": zod.string(),
+  "focus": zod.enum(['water', 'history', 'evidence', 'resilience', 'decision']),
+  "location": zod.object({
+  "latitude": zod.number().min(explainStudioScenarioResponseReportFieldBriefLocationLatitudeMin).max(explainStudioScenarioResponseReportFieldBriefLocationLatitudeMax),
+  "longitude": zod.number().min(explainStudioScenarioResponseReportFieldBriefLocationLongitudeMin).max(explainStudioScenarioResponseReportFieldBriefLocationLongitudeMax)
+}),
+  "created_at": zod.coerce.date(),
+  "forecast": zod.object({
+  "source": zod.literal("Open-Meteo"),
+  "kind": zod.literal("model_forecast"),
+  "time_zone": zod.literal("UTC"),
+  "retrieved_at": zod.coerce.date(),
+  "period_start": zod.coerce.date(),
+  "period_end": zod.coerce.date(),
+  "rain_mm": zod.number().min(explainStudioScenarioResponseReportFieldBriefForecastRainMmMin).max(explainStudioScenarioResponseReportFieldBriefForecastRainMmMax),
+  "reference_et0_mm": zod.number().min(explainStudioScenarioResponseReportFieldBriefForecastReferenceEt0MmMin).max(explainStudioScenarioResponseReportFieldBriefForecastReferenceEt0MmMax),
+  "temperature_min_c": zod.number().min(explainStudioScenarioResponseReportFieldBriefForecastTemperatureMinCMin).max(explainStudioScenarioResponseReportFieldBriefForecastTemperatureMinCMax),
+  "temperature_max_c": zod.number().min(explainStudioScenarioResponseReportFieldBriefForecastTemperatureMaxCMin).max(explainStudioScenarioResponseReportFieldBriefForecastTemperatureMaxCMax),
+  "days_without_rain": zod.number().int().min(explainStudioScenarioResponseReportFieldBriefForecastDaysWithoutRainMin).max(explainStudioScenarioResponseReportFieldBriefForecastDaysWithoutRainMax)
+}),
+  "pattern": zod.enum(['rain_below_reference_et0', 'rain_at_or_above_reference_et0']),
+  "summary": zod.string(),
+  "actions": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string(),
+  "evidence_ids": zod.array(zod.enum(['forecast-7d', 'field-inputs'])),
+  "destination": zod.enum(['weather', 'soil', 'question'])
+})).min(explainStudioScenarioResponseReportFieldBriefActionsMin).max(explainStudioScenarioResponseReportFieldBriefActionsMax),
+  "sources": zod.array(zod.object({
+  "id": zod.enum(['forecast-7d', 'field-inputs']),
+  "label": zod.string(),
+  "kind": zod.enum(['model_forecast', 'missing_inputs']),
+  "url": zod.enum(['https://open-meteo.com/']).optional()
+})).min(explainStudioScenarioResponseReportFieldBriefSourcesMin).max(explainStudioScenarioResponseReportFieldBriefSourcesMax),
+  "missing_inputs": zod.array(zod.string()),
+  "external_actions_executed": zod.literal(false)
+}).optional(),
+  "evidence": zod.record(zod.string(), zod.unknown()),
+  "resilience": zod.record(zod.string(), zod.unknown()),
+  "decision": zod.record(zod.string(), zod.unknown())
+}),
+  "request_id": zod.string(),
+  "run": zod.object({
+  "inference_mode": zod.string(),
+  "outcome": zod.string(),
+  "model": zod.string().nullable(),
+  "trace": zod.array(zod.object({
+  "tool": zod.string().optional(),
+  "status": zod.string().optional(),
+  "comparison_id": zod.string().nullish()
+}))
+})
 })
 
 

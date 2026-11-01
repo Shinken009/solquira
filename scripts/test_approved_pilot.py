@@ -1,47 +1,28 @@
+"""Public release boundary after removal of the private approved-pilot runner."""
 import importlib.util
-import io
-import json
 from pathlib import Path
-import tempfile
 import unittest
-from unittest.mock import patch
 
-spec = importlib.util.spec_from_file_location("approved_pilot", Path(__file__).with_name("run-studio-approved-pilot.py"))
-pilot = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(pilot)
+ROOT = Path(__file__).resolve().parents[1]
 
+def load(filename):
+    spec = importlib.util.spec_from_file_location(filename.replace('-', '_'), ROOT / 'scripts' / filename)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
-class ApprovedPilotTests(unittest.TestCase):
-    def test_approved_policy_is_fixed_and_conservative(self):
-        policy = pilot.policy()
-        self.assertEqual(policy.lifetime_micro_usd, 5000000)
-        self.assertEqual(policy.daily_micro_usd, 1000000)
-        self.assertEqual(policy.lifetime_calls * policy.reservation_micro_usd, 4200000)
+class PublicPilotBoundaryTests(unittest.TestCase):
+    def test_private_pilot_is_not_restored(self):
+        self.assertFalse((ROOT / 'scripts/run-studio-approved-pilot.py').exists())
 
-    def test_initialize_and_check_do_not_load_secrets_or_start_provider(self):
-        with tempfile.TemporaryDirectory() as directory, patch.object(pilot, "DATA", Path(directory)), patch.object(pilot, "helper") as helper, patch("sys.stdout", new=io.StringIO()):
-            self.assertEqual(pilot.main(["--initialize-budget"]), 0)
-            self.assertEqual(pilot.main(["--check"]), 0)
-            helper.assert_not_called()
+    def test_private_pilot_is_not_published(self):
+        self.assertNotIn('scripts/run-studio-approved-pilot.py', load('stage-github-release.py').sources(ROOT))
 
-    def test_check_does_not_create_missing_ledger(self):
-        with tempfile.TemporaryDirectory() as directory, patch.object(pilot, "DATA", Path(directory)):
-            with self.assertRaises(ValueError):
-                pilot.main(["--check"])
-            self.assertFalse((Path(directory) / "studio-budget.sqlite3").exists())
+    def test_default_launcher_does_not_forward_model_credentials(self):
+        environment = load('run-studio-local.py').local_environment({'NEBIUS_API_KEY':'synthetic-decoy','SOLQUIRA_STUDIO_PROVIDER':'nebius'})
+        self.assertNotIn('NEBIUS_API_KEY', environment)
+        self.assertNotIn('SOLQUIRA_STUDIO_PROVIDER', environment)
+        self.assertEqual(environment['SOLQUIRA_LIVE_ADAPTERS'], '0')
 
-    def test_receipts_only_counts_status_and_timing(self):
-        class Provider:
-            model, mode = "synthetic-model", "provider_stub"
-            last_usage, last_http_status = {"prompt_tokens": 12}, 200
-            def complete(self, *args, **kwargs):
-                return {"content": "PRIVATE_REPLY_DECOY"}
-        provider = pilot.AuditedProvider(Provider())
-        provider.complete([{"content": "PRIVATE_PROMPT_DECOY"}], [])
-        serialized = json.dumps(provider.receipts)
-        self.assertNotIn("PRIVATE_", serialized)
-        self.assertIn('"prompt_tokens": 12', serialized)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

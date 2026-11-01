@@ -28,6 +28,8 @@ class GeoTests(unittest.TestCase):
         self.assertEqual(result["weather"]["state"],"disabled")
         self.assertEqual(result["weather"]["days"],[])
         self.assertEqual(result["imagery"]["state"],"disabled")
+        self.assertEqual(result["anticipation"]["state"], "unavailable")
+        self.assertNotIn("precipitation_total_mm", result["anticipation"])
 
     def test_strict_coordinate_validation_before_network(self):
         for value in ({"latitude":True,"longitude":0.},{"latitude":float('nan'),"longitude":0.},{"latitude":91.,"longitude":0.},{"latitude":"1","longitude":0.},{"latitude":1.,"longitude":2.,"url":"https://untrusted.invalid"}):
@@ -77,6 +79,8 @@ class GeoTests(unittest.TestCase):
         self.assertEqual(second['weather']['state'],'cached')
         self.assertEqual(second['retrieved_at'],first['retrieved_at'])
         self.assertEqual(first['weather']['state'],'ready')
+        self.assertEqual(first['anticipation'], second['anticipation'])
+        self.assertEqual(first['anticipation']['retrieved_at'], first['retrieved_at'])
         second['weather']['days'][0]['precipitation_mm']=999
         self.assertNotEqual(first['weather']['days'][0]['precipitation_mm'],999)
 
@@ -93,6 +97,7 @@ class GeoTests(unittest.TestCase):
             value=geo.location_context({'latitude':1.,'longitude':2.})
         self.assertEqual(value['weather']['days'],[])
         self.assertNotIn('PRIVATE_SOURCE_MARKER',json.dumps(value))
+        self.assertEqual(value['anticipation']['state'],'unavailable')
 
     def test_transport_is_fixed_bounded_and_redirects_are_disabled(self):
         real=httpx.Client
@@ -112,3 +117,107 @@ class GeoTests(unittest.TestCase):
         for response in (httpx.Response(302,headers={'location':'https://untrusted.invalid'}),httpx.Response(200,content=b'x'*65537)):
             with self.subTest(status=response.status_code),patch.object(geo.httpx,'Client',side_effect=lambda **kw:real(**kw,transport=httpx.MockTransport(lambda _:response))):
                 with self.assertRaises((httpx.HTTPError,ValueError)):geo._fetch(1.,2.)
+
+
+class AnticipationTests(unittest.TestCase):
+    """Descriptive forecast fixtures, not observed environmental validation."""
+
+    def indicators(self, precipitation, et0=None):
+        payload = source()
+        payload['daily']['precipitation_sum'] = precipitation
+        if et0 is not None:
+            payload['daily']['et0_fao_evapotranspiration'] = et0
+        return geo.forecast_anticipation(geo.parse_weather(payload), datetime.now(timezone.utc).isoformat())
+
+    def test_episode_and_concentration_calculations_are_distinct(self):
+        result = self.indicators([2,3,0,4,0,1,1])
+        self.assertEqual(result['state'],'ready')
+        self.assertEqual(result['precipitation_total_mm'],11)
+        self.assertEqual(result['reference_et0_total_mm'],22.4)
+        self.assertEqual(result['precipitation_minus_et0_mm'],-11.4)
+        self.assertEqual(result['low_precipitation_days'],2)
+        self.assertEqual(result['longest_low_precipitation_run_days'],1)
+        self.assertEqual(result['precipitation_days'],5)
+        self.assertEqual(result['precipitation_episode_count'],3)
+        self.assertEqual(result['largest_episode_total_mm'],5)
+        self.assertEqual(result['largest_episode_share_percent'],45.5)
+        self.assertEqual(result['maximum_daily_precipitation_mm'],4)
+        self.assertEqual(result['wettest_day_share_percent'],36.4)
+        self.assertEqual(result['wettest_day_date'],(datetime.now(timezone.utc).date()+timedelta(days=3)).isoformat())
+
+    def test_zero_precipitation_and_zero_et0_never_divide_or_invent_an_episode(self):
+        result = self.indicators([0]*7,[0]*7)
+        self.assertEqual(result['precipitation_minus_et0_mm'],0)
+        self.assertEqual(result['low_precipitation_days'],7)
+        self.assertEqual(result['longest_low_precipitation_run_days'],7)
+        self.assertEqual(result['precipitation_episode_count'],0)
+        self.assertIsNone(result['wettest_day_date'])
+        self.assertIsNone(result['wettest_day_share_percent'])
+        self.assertIsNone(result['largest_episode_share_percent'])
+
+    def test_trace_precipitation_is_in_total_but_not_a_wet_episode(self):
+        result = self.indicators([.1]*7)
+        self.assertEqual(result['precipitation_total_mm'],.7)
+        self.assertEqual(result['low_precipitation_days'],7)
+        self.assertEqual(result['precipitation_days'],0)
+        self.assertEqual(result['precipitation_episode_count'],0)
+        self.assertEqual(result['largest_episode_total_mm'],0)
+        self.assertEqual(result['wettest_day_share_percent'],14.3)
+        self.assertIsNone(result['largest_episode_share_percent'])
+
+    def test_one_millimetre_boundary_is_declared_and_inclusive_for_wet_days(self):
+        result = self.indicators([.999,1,1.001,0,.3,1,0])
+        self.assertEqual(result['thresholds']['low_precipitation_mm_per_day'],1)
+        self.assertEqual(result['thresholds']['wet_episode_min_mm_per_day'],1)
+        self.assertEqual(result['low_precipitation_days'],4)
+        self.assertEqual(result['longest_low_precipitation_run_days'],2)
+        self.assertEqual(result['precipitation_episode_count'],2)
+
+    def test_one_episode_at_window_edges_and_earliest_tied_wettest_day(self):
+        result = self.indicators([1]*7)
+        self.assertEqual(result['precipitation_episode_count'],1)
+        self.assertEqual(result['largest_episode_total_mm'],7)
+        self.assertEqual(result['largest_episode_share_percent'],100)
+        self.assertEqual(result['longest_low_precipitation_run_days'],0)
+        self.assertEqual(result['wettest_day_date'],result['period_start'])
+
+    def test_temperature_extremes_and_complete_provenance(self):
+        weather = geo.parse_weather(source())
+        weather['days'][0]['temperature_min_c']=-2
+        weather['days'][-1]['temperature_max_c']=37
+        stamp=datetime.now(timezone.utc).isoformat()
+        result=geo.forecast_anticipation(weather,stamp)
+        self.assertEqual(result['temperature_min_c'],-2)
+        self.assertEqual(result['temperature_max_c'],37)
+        self.assertEqual(result['period_start'],weather['days'][0]['date'])
+        self.assertEqual(result['period_end'],weather['days'][-1]['date'])
+        self.assertEqual(result['retrieved_at'],stamp)
+        self.assertEqual(result['time_zone'],'UTC')
+        self.assertEqual(result['source'],'Open-Meteo')
+        self.assertEqual(result['units']['temperature'],'°C')
+        self.assertEqual(result['units']['precipitation_minus_et0'],'mm')
+        limits=' '.join(result['limitations']).lower()
+        for boundary in ('not soil moisture','desertification','snow','hourly intensity','truncated'):
+            self.assertIn(boundary,limits)
+        self.assertTrue(result['missing_inputs'])
+
+    def test_incomplete_or_invalid_context_has_no_partial_indicators(self):
+        for mutate in (lambda w:w['days'].pop(), lambda w:w.update(state='unavailable'),
+                       lambda w:w.update(time_zone='local'), lambda w:w.update(kind='observation'),
+                       lambda w:w['days'][1].update(date=w['days'][0]['date']),
+                       lambda w:w['days'][0].update(temperature_min_c=40),
+                       lambda w:w['days'][0].update(precipitation_mm=None),
+                       lambda w:w['days'][0].update(reference_et0_mm=True),
+                       lambda w:w['days'][0].update(precipitation_mm=float('nan'))):
+            weather=geo.parse_weather(source());mutate(weather)
+            result=geo.forecast_anticipation(weather,datetime.now(timezone.utc).isoformat())
+            self.assertEqual(result['state'],'unavailable')
+            self.assertNotIn('precipitation_total_mm',result)
+            self.assertIsNone(result['period_start'])
+
+    def test_invalid_or_ambiguous_retrieval_time_is_not_relabelled_utc(self):
+        for stamp in (None, 'PRIVATE_MARKER', '2026-11-01', '2026-11-01T00:00:00+03:00'):
+            result=geo.forecast_anticipation(geo.parse_weather(source()),stamp)
+            self.assertEqual(result['state'],'unavailable')
+            self.assertIsNone(result['retrieved_at'])
+            self.assertNotIn('PRIVATE_MARKER',json.dumps(result))

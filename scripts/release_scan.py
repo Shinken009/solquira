@@ -13,7 +13,7 @@ from pathlib import Path
 
 MAX_FILE_BYTES = 25 * 1024 * 1024
 # Entry files a built UI context may serve at its root.
-ROOT_FILES = {"index.html", "favicon.svg", "robots.txt"}
+ROOT_FILES = {"index.html", "favicon.svg", "robots.txt", "solquira-rural-landscape.svg"}
 CESIUM_SUFFIXES = {
     ".css",
     ".gif",

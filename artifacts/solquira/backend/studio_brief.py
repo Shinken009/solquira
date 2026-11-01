@@ -4,7 +4,7 @@ from __future__ import annotations
 import copy
 from datetime import datetime, timezone
 
-from studio_geo import _number
+from studio_geo import _number, forecast_anticipation
 
 
 def weather_evidence(context):
@@ -13,6 +13,9 @@ def weather_evidence(context):
     days = weather["days"]
     if weather.get("state") not in {"ready", "cached"} or weather.get("source") != "Open-Meteo" or len(days) != 7:
         raise ValueError("A complete source-backed forecast is required.")
+    anticipation = forecast_anticipation(weather, context["retrieved_at"])
+    if anticipation["state"] != "ready":
+        raise ValueError("A complete, dated forecast with supported units is required.")
     rain = round(sum(_number(d["precipitation_mm"], 0, 2000) for d in days), 1)
     et0 = round(sum(_number(d["reference_et0_mm"], 0, 100) for d in days), 1)
     maximum = max(_number(d["temperature_max_c"], -100, 80) for d in days)
@@ -22,7 +25,8 @@ def weather_evidence(context):
             "rain_mm": rain, "reference_et0_mm": et0,
             "temperature_min_c": minimum, "temperature_max_c": maximum,
             "days_without_rain": sum(d["precipitation_mm"] == 0 for d in days),
-            "boundary": "Separate location forecast; it does not calibrate the synthetic crop example. ET0 is not crop water need.",
+            "anticipation": anticipation,
+            "boundary": "Separate location forecast; it does not calibrate the synthetic crop example. ET0 is not crop water need. Precipitation minus ET0 is not soil water balance, and a dry week is not a desertification diagnosis.",
             "missing_inputs": ["Crop and growth stage", "Observed soil moisture and soil type", "Root depth and irrigation efficiency", "Observed ground cover and slope"]}
 
 
@@ -34,9 +38,13 @@ def field_brief(context, focus):
     rain, et0 = evidence["rain_mm"], evidence["reference_et0_mm"]
     below = rain < et0
     pattern = "rain_below_reference_et0" if below else "rain_at_or_above_reference_et0"
-    summary = (f"The seven-day forecast totals {rain:g} mm of rain and {et0:g} mm of reference ET0. "
-               + ("Rain is below reference atmospheric demand. Check stored soil water and available irrigation before planning field work."
-                  if below else "Rain meets or exceeds reference atmospheric demand over this period. Check infiltration, drainage and runoff before planning field work."))
+    summary = (f"The seven-day forecast totals {rain:g} mm of precipitation and {et0:g} mm of reference ET0. "
+               + ("Precipitation is below reference atmospheric demand. Check stored soil water and available irrigation before planning field work."
+                  if below else "Precipitation meets or exceeds reference atmospheric demand over this period. Check infiltration, drainage and runoff before planning field work."))
+    anticipation = evidence["anticipation"]
+    summary += (f" {anticipation['low_precipitation_days']} days are below the declared one-millimetre daily precipitation threshold; "
+                f"the longest such run inside this forecast is {anticipation['longest_low_precipitation_run_days']} days. "
+                "These are short-term forecast indicators, not a diagnosis of drought or desertification.")
     first = {"id": "water-record", "title": "Check soil water before irrigation" if below else "Check infiltration after forecast rain",
              "detail": "Record soil moisture at the crop root zone, recent irrigation and usable water supply. Use crop stage and local advice to determine any irrigation amount." if below else "Inspect infiltration and drainage after rain, and note ponding or runoff. Forecast rain is not the same as water stored in the root zone.",
              "evidence_ids": ["forecast-7d"], "destination": "weather"}
