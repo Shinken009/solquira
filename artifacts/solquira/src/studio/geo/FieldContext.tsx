@@ -28,7 +28,7 @@ import type { WorkspaceArea } from "../Studio";
 import AnticipationIndicators from "./AnticipationIndicators";
 import HistoricalContext from "./HistoricalContext";
 const Landscape = lazy(() => import("./CesiumFieldMap"));
-type LocationSource = "none" | "device" | "manual" | "map";
+type LocationSource = "none" | "device" | "manual" | "map" | "reference";
 type DeviceLocation = Point & { accuracyMeters: number | null; capturedAt: number };
 export default function FieldContext({
   enabled,
@@ -37,6 +37,7 @@ export default function FieldContext({
   onAttach,
   attachedRef,
   onPointChange,
+  externalPoint,
   activeArea,
   onNavigate,
 }: {
@@ -111,6 +112,16 @@ export default function FieldContext({
     setLongitude(String(value.longitude));
     setLocationNote("Review the marker, then confirm this place. No weather request has been sent.");
   };
+  // Only an explicit selection from the demonstration controls supplies this
+  // prop. It previews a place; it does not turn example data into observations.
+  useEffect(() => {
+    if (!externalPoint) return;
+    prepare(externalPoint, "reference");
+    setSelecting(false);
+    setOpened(true);
+    // An event-like object from the parent changes only on an explicit choice.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalPoint]);
   const beginSelection = () => {
     invalidate();
     setPoint(null);
@@ -230,7 +241,8 @@ export default function FieldContext({
     ...days.flatMap((d) => [d.precipitation_mm, d.reference_et0_mm]),
   );
   const sourceLabel = locationSource === "device"
-    ? "Device GPS" : locationSource === "map"
+    ? "Device GPS" : locationSource === "reference"
+      ? "Demonstration location · not field observations" : locationSource === "map"
       ? "Chosen on map · GPS accuracy not measured" : locationSource === "manual"
         ? "Entered coordinates · GPS accuracy not measured" : "No point yet";
   return (
