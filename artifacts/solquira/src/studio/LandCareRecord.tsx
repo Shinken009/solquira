@@ -1,7 +1,8 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { CalendarDays, ChevronDown, Download, Leaf, UsersRound } from 'lucide-react';
 import type { AttachedContext } from './geo/client';
 import type { FieldRecord } from './types';
+import type { GuidedRecordDraft } from './GuidedExploration';
 import './land-care-record.css';
 
 const sources = [
@@ -33,7 +34,7 @@ const constraintQuestions: Record<Exclude<Constraint, ''>, string> = {
 const localToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const validDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
 
-export default function LandCareRecord({ context, agentEnabled = false, attachedRecord = null, onAttachRecord }: { context: AttachedContext | null; agentEnabled?: boolean; attachedRecord?: FieldRecord | null; onAttachRecord?: (record: FieldRecord | null) => void }) {
+export default function LandCareRecord({ context, draft = null, agentEnabled = false, attachedRecord = null, onAttachRecord }: { context: AttachedContext | null; draft?: GuidedRecordDraft | null; agentEnabled?: boolean; attachedRecord?: FieldRecord | null; onAttachRecord?: (record: FieldRecord | null) => void }) {
   const [open, setOpen] = useState(false), [started, setStarted] = useState(false);
   const [snapshot, setSnapshot] = useState<AttachedContext | null>(null), [includePoint, setIncludePoint] = useState(false);
   const [observed, setObserved] = useState(''), [followUp, setFollowUp] = useState('');
@@ -50,6 +51,16 @@ export default function LandCareRecord({ context, agentEnabled = false, attached
     onAttachRecord?.({ observed_at: observed, soil_cover: soil, water_access: water, constraint: barrier });
   };
   const [note, setNote] = useState(''), [nextCheck, setNextCheck] = useState(''), [downloadNotice, setDownloadNotice] = useState('');
+  useEffect(() => {
+    if (!draft) return;
+    setStarted(true); setOpen(true);
+    // The person explicitly transferred these choices. Never overwrite an
+    // existing note, date, constraint or planned check from a previous visit.
+    setNote(value => value || draft.note.slice(0, 280));
+    setNextCheck(value => value || draft.nextCheck);
+    setConstraint(value => value || draft.constraint);
+    setDownloadNotice('Exploration choices added only to empty fields. Confirm the observation and follow-up dates; existing notes stay unchanged.');
+  }, [draft]);
   const questions = [cover ? coverQuestions[cover] : '', constraint ? constraintQuestions[constraint] : ''].filter(Boolean);
   const ready = validDate(observed) && observed <= localToday() && validDate(followUp) && followUp >= observed && nextCheck.trim().length > 0;
   const toggle = () => {

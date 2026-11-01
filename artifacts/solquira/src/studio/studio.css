@@ -4213,3 +4213,75 @@
     display: none;
   }
 }
+
+/* A place-led conversation: progressive questions and a practical return visit.
+   The map and existing record retain ownership of location and observations. */
+.qj-exploration { margin: 22px 0 28px; padding: clamp(20px, 3.5vw, 42px); border: 1px solid #cbd7c7; border-radius: 22px; background: linear-gradient(145deg, #f4f7ec 0%, #fcfbf5 75%); color: #243b2c; scroll-margin-top: 125px; }
+.qj-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
+.qj-heading h2 { margin: 7px 0 10px; font-family: Georgia, serif; font-size: clamp(28px, 3vw, 40px); font-weight: 500; letter-spacing: -.8px; line-height: 1.15; }
+.qj-heading p, .qj-empty p { max-width: 54ch; margin: 0; color: #536453; line-height: 1.6; }
+.qj-local { display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0; padding: 8px 10px; border: 1px solid #d7dfcb; border-radius: 20px; font-size: 11px; background: #fffdf7; }
+.qj-empty { display: flex; gap: 20px; align-items: flex-start; padding: 24px; border: 1px dashed #afc0a8; border-radius: 14px; background: #ffffff88; }
+.qj-empty > svg { flex-shrink: 0; margin-top: 4px; color: #527650; }
+.qj-empty h3 { margin: 0 0 9px; font-size: 21px; }
+.qj-empty .qj-primary { margin-top: 20px; }
+.qj-place { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: #e4ecde; border-radius: 12px; font-size: 12px; }
+.qj-place > svg { flex-shrink: 0; }
+.qj-place span { display: flex; flex-wrap: wrap; gap: 4px 12px; min-width: 0; }
+.qj-place strong { font-variant-numeric: tabular-nums; font-size: 13px; }
+.qj-place button { margin-left: auto; flex-shrink: 0; min-height: 44px; border: 0; padding: 6px 10px; color: #345834; background: transparent; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.qj-progress { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 16px 0 24px; font-size: 11px; color: #5a6b56; }
+.qj-question-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 30px; align-items: start; }
+.qj-question-grid fieldset { margin: 0; padding: 0; min-width: 0; border: 0; }
+.qj-question-grid legend { display: flex; gap: 10px; align-items: center; float: none; width: 100%; padding: 0; margin-bottom: 14px; font-size: 16px; line-height: 1.5; font-weight: 600; }
+.qj-question-grid legend > span { display: inline-flex; flex-shrink: 0; justify-content: center; align-items: center; width: 28px; height: 28px; border: 1px solid #bbcbb1; border-radius: 50%; color: #69805e; font-size: 10px; font-variant-numeric: tabular-nums; }
+.qj-question-grid fieldset > p { margin: -5px 0 12px 38px; font-size: 12px; color: #65725f; }
+.qj-choices { display: grid; gap: 8px; }
+.qj-choice { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px 13px; border: 1px solid #d7dfce; border-radius: 10px; background: #fffef9; cursor: pointer; font-size: 13px; line-height: 1.45; transition: background .15s, border-color .15s; }
+.qj-choice:hover { border-color: #839d77; }
+.qj-choice-selected { border-color: #58794d; background: #e7efdd; }
+.qj-choice input { width: 16px; height: 16px; margin: 0; flex-shrink: 0; accent-color: #527747; }
+.qj-choice > svg { flex-shrink: 0; color: #6c8460; }
+.qj-choice > svg:last-child { margin-left: auto; visibility: hidden; color: #3e653a; }
+.qj-choice-selected > svg:last-child { visibility: visible; }
+.qj-choice:focus-within { outline: 3px solid #8d652b; outline-offset: 3px; }
+.qj-primary, .qj-secondary { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 12px; padding: 12px 18px; border: 1px solid #345534; border-radius: 10px; font: inherit; font-size: 13px; font-weight: 600; line-height: 1.45; cursor: pointer; text-align: left; }
+.qj-primary { background: #345534; color: #fffef4; }
+.qj-primary:hover { background: #274329; }
+.qj-primary:disabled { background: #e0e5d8; color: #697661; border-color: #c8d1bf; cursor: not-allowed; }
+.qj-primary svg, .qj-secondary svg { flex-shrink: 0; }
+.qj-secondary { background: transparent; color: #345534; }
+.qj-exploration button:focus-visible { outline: 3px solid #8d652b; outline-offset: 3px; }
+.qj-submit { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding-top: 26px; }
+.qj-submit p, .qj-retention { max-width: 55ch; margin: 0; color: #68725e; font-size: 11px; line-height: 1.6; }
+.qj-result { border-top: 1px solid #c8d5bd; padding-top: 28px; margin-top: 28px; }
+.qj-result-title { display: flex; align-items: flex-start; gap: 14px; }
+.qj-result-title > svg { margin-top: 4px; flex-shrink: 0; color: #557c49; }
+.qj-result-title span { color: #66765a; font-size: 10px; letter-spacing: .9px; text-transform: uppercase; }
+.qj-result h3 { margin: 6px 0 0; font-family: Georgia, serif; font-size: clamp(23px, 2.4vw, 30px); line-height: 1.3; font-weight: 500; }
+.qj-next-check { font-size: 16px; line-height: 1.7; max-width: 75ch; }
+.qj-adjustment { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; line-height: 1.6; }
+.qj-adjustment svg { flex-shrink: 0; margin-top: 3px; color: #72815c; }
+.qj-limit { max-width: 85ch; font-size: 12px; line-height: 1.65; color: #67705d; }
+.qj-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0 12px; }
+.qs-prepared-heading { border-top: 1px solid #d7dbce; margin: 34px 0 20px; padding-top: 22px; }
+.qs-prepared-heading p { max-width: 85ch; font-size: 13px; line-height: 1.65; color: #6c7466; }
+@media (max-width: 640px) {
+  .qj-exploration { padding: 22px 16px; border-radius: 16px; scroll-margin-top: 90px; }
+  .qj-heading { flex-direction: column; gap: 12px; }
+  .qj-heading p { font-size: 14px; }
+  .qj-empty { padding: 18px 14px; gap: 12px; }
+  .qj-empty > svg { width: 22px; }
+  .qj-empty h3 { font-size: 18px; }
+  .qj-empty p { font-size: 13px; }
+  .qj-place { flex-wrap: wrap; gap: 8px; padding: 12px; }
+  .qj-place span { flex: 1; }
+  .qj-place button { margin-left: 21px; }
+  .qj-question-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .qj-question-grid legend { font-size: 15px; }
+  .qj-choice { font-size: 13px; }
+  .qj-submit, .qj-actions { flex-direction: column; align-items: stretch; }
+  .qj-primary, .qj-secondary { width: 100%; justify-content: space-between; }
+  .qj-next-check { font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) { .qj-choice { transition: none; } }

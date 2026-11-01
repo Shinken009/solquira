@@ -65,6 +65,7 @@ import type { FieldRecord } from "./types";
 import BrandMark from "./BrandMark";
 
 import LandCareRecord from "./LandCareRecord";
+import GuidedExploration, { type GuidedRecordDraft } from "./GuidedExploration";
 
 import type { AttachedContext, Point } from "./geo/client";
 
@@ -129,7 +130,7 @@ const areas: {
     id: "guidance",
     label: "Orientación",
     target: "qs-guidance",
-    detail: "Prepare your next checks",
+    detail: "Your knowledge, one next check",
   },
   {
     id: "evidence",
@@ -388,6 +389,8 @@ export default function Studio() {
 
   const [refresh, setRefresh] = useState(0);
   const [briefPoint, setBriefPoint] = useState<Point | null>(null);
+  const [requestedPoint, setRequestedPoint] = useState<Point | null>(null);
+  const [guidedDraft, setGuidedDraft] = useState<GuidedRecordDraft | null>(null);
 
   const revision = useRef(0);
 
@@ -742,7 +745,9 @@ export default function Studio() {
   const displayedReport = agentResult?.report ?? report;
 
   const sourceMode =
-    mode === "offline"
+    mode === "service" && briefPoint
+      ? "Place selected"
+      : mode === "offline"
       ? "Sample workspace"
       : connecting
         ? "Connecting…"
@@ -754,7 +759,7 @@ export default function Studio() {
   // It now states what the visitor is actually looking at, and the full
   // explanation travels with it for assistive tech and hover.
   const sourceHint = bootstrap
-    ? "Connected to the Solquira Studio with prepared teaching examples. No real parcel data."
+    ? "Selected-place environmental sources and hypothetical teaching examples are separate. No field measurements are inferred."
     : undefined;
 
   const returnedTools = agentResult?.run.trace ?? [];
@@ -903,14 +908,14 @@ export default function Studio() {
                 care for it.
               </div>
               <h1 id="qs-title">
-                Explore your land.
+                Start with a place.
                 <br />
-                Discover what matters.
+                Find your next step.
               </h1>
               <p>
                 {mode === "offline"
-                  ? "Explore a landscape, work through water and crop choices, and leave with a plan for your next field visit."
-                  : "Bring landscape context, local knowledge and practical constraints into one clear next step for your land."}
+                  ? "Explore a landscape and prepared examples. Choose one useful question for your next visit."
+                  : "Choose the land you care for. Bring what you notice, understand the weather context, and keep one manageable next check."}
               </p>
               <div className="qs-hero-actions">
                 <a className="qs-hero-cta" href="#qs-landscape">
@@ -932,8 +937,8 @@ export default function Studio() {
               <strong>Healthy land. Resilient communities.</strong>
               <p>
                 Water, soil and livelihoods belong in the same conversation.
-                Turn what you know about your land into a practical next step
-                against desertification.
+                Turn what you know about your land into a practical next
+                observation, with sources and limits you can review.
               </p>
             </div>
             <a href="#qs-land-record">
@@ -953,7 +958,7 @@ export default function Studio() {
                   : "See the wider landscape"}
               </div>
             </a>
-            <button className="qs-step-soil" onClick={openQuestion}>
+            <button className="qs-step-soil" onClick={() => navigateArea("guidance", "qs-exploration")}>
               <span>
                 <Leaf size={19} />
               </span>
@@ -961,11 +966,11 @@ export default function Studio() {
                 <small>
                   {mode === "offline"
                     ? "2. Explore a choice"
-                    : "2. Bring a question"}
+                    : "2. Share what matters"}
                 </small>
                 {mode === "offline"
                   ? "Connect water, soil & cover"
-                  : "Prepare your field checks"}
+                  : "Connect your knowledge to a next check"}
               </div>
             </button>
             <button className="qs-step-decision" onClick={openFieldBrief}>
@@ -988,7 +993,7 @@ export default function Studio() {
           onAttach={attachContext}
           attachedRef={attachedContext?.reference}
           onPointChange={setBriefPoint}
-          externalPoint={briefPoint}
+          externalPoint={requestedPoint}
         />
 
         <section
@@ -999,6 +1004,20 @@ export default function Studio() {
           hidden={area !== "guidance"}
           data-testid="area-guidance"
         >
+          <GuidedExploration
+            key={briefPoint ? `${briefPoint.latitude}:${briefPoint.longitude}` : "no-place"}
+            point={briefPoint}
+            onChoosePlace={() => navigateArea("territory", "qs-landscape")}
+            onWeather={() => navigateArea("anticipation", "qs-anticipation")}
+            onRecord={draft => {
+              setGuidedDraft(draft);
+              navigateArea("guidance", "qs-land-record");
+            }}
+          />
+          <div className="qs-prepared-heading">
+            <span className="qs-index">Keep exploration and examples distinct</span>
+            <p>The guided check above comes from your answers. Prepared crop scenarios below are teaching examples, not properties or recommendations for your selected land.</p>
+          </div>
           {mode === "service" && (
             <DrylandFieldBrief
               key={
@@ -1010,7 +1029,7 @@ export default function Studio() {
               inference={bootstrap?.inference}
               csrf={bootstrap?.csrf_token ?? ""}
               enabled={Boolean(bootstrap) && !connecting}
-              onSelectPlace={setBriefPoint}
+              onSelectPlace={point => { setRequestedPoint(point); navigateArea("territory", "qs-landscape"); }}
             />
           )}
 
@@ -1343,6 +1362,7 @@ export default function Studio() {
           )}
 
           <LandCareRecord
+            draft={guidedDraft}
             context={attachedContext}
             agentEnabled={mode === "service" && Boolean(bootstrap)}
             attachedRecord={attachedRecord}
@@ -2036,12 +2056,11 @@ export default function Studio() {
                     Where this example comes from <ChevronRight size={15} />
                   </summary>
                   <p>
-                    Reference setting: Coquimbo, Chile. These three synthetic
-                    landscape profiles are not measured parcels. Solquira is
-                    being built for growers and support teams around the world.
-                    These examples are not agronomically validated; land
-                    degradation is not assessed and environmental impact is not
-                    measured.
+                    These comparison profiles are hypothetical teaching inputs,
+                    not measured conditions for your selected location.
+                    Location-based environmental evidence is kept separate;
+                    land degradation is not diagnosed and environmental impact
+                    has not been measured.
                   </p>
                 </details>
               </div>
