@@ -1005,7 +1005,7 @@ export default function Studio() {
           data-testid="area-guidance"
         >
           <GuidedExploration
-            key={briefPoint ? `${briefPoint.latitude}:${briefPoint.longitude}` : "no-place"}
+            key={briefPoint ? `guided:${briefPoint.latitude}:${briefPoint.longitude}` : "guided:no-place"}
             point={briefPoint}
             onChoosePlace={() => navigateArea("territory", "qs-landscape")}
             onWeather={() => navigateArea("anticipation", "qs-anticipation")}
@@ -1022,8 +1022,8 @@ export default function Studio() {
             <DrylandFieldBrief
               key={
                 briefPoint
-                  ? `${briefPoint.latitude}:${briefPoint.longitude}`
-                  : "unselected"
+                  ? `brief:${briefPoint.latitude}:${briefPoint.longitude}`
+                  : "brief:unselected"
               }
               point={briefPoint}
               inference={bootstrap?.inference}
