@@ -14,6 +14,12 @@ and scientific limits. Planned integrations are identified separately from worki
 
 ## The experience
 
+The workspace has four keyboard-accessible areas: **Territorio (Territory),
+Anticipación (Anticipation), Orientación (Guidance), and Evidencia (Evidence)**.
+Switching areas preserves the map, selected place, forecast, scenario, results,
+session and land record. Source requests occur through user actions, not navigation.
+
+
 1. **Start with a place.** Allow location to center the map on you, select a reference
    landscape or enter coordinates. The optional Cesium view combines a detailed
    OpenStreetMap reference layer with a bundled Natural Earth fallback and optional
@@ -28,6 +34,36 @@ and scientific limits. Planned integrations are identified separately from worki
    enabled, Nemotron writes three short action details; only complete validated fields render.
 5. **Take the next step.** Mark the checks to bring to a field visit. Open the receipt to see the
    evidence type, model, input fingerprint, budget reservation and execution outcome.
+
+## Environmental anticipation and historical context
+
+Seven-day indicators are computed in Python from the validated Open-Meteo forecast:
+precipitation and reference ET₀ totals (mm), their arithmetic difference (mm),
+minimum/maximum temperature (°C), days below **1 mm/day**, longest consecutive
+low-precipitation run, and contiguous episodes at or above **1 mm/day**. Episode
+concentration is the largest episode's share of seven-day precipitation, not an
+intensity or flood-risk estimate. Zero precipitation produces no percentage share.
+These declared descriptive thresholds are not crop-specific stress thresholds.
+Source, UTC dates, retrieval time, units, method, missing observations and limitations
+accompany the indicators. Precipitation includes snow water equivalent. The
+precipitation−ET₀ difference is **not soil moisture, a root-zone water balance or
+irrigation need**; one dry forecast week does not diagnose desertification.
+
+An optional **explicit historical lookup** compares the latest fully available
+calendar month with the same month in **1991–2020**, using fixed **ERA5** reanalysis
+from Open-Meteo. It respects the five-day source lag and requires all target days
+and thirty complete baseline months. Results include monthly totals, absolute mm
+anomaly, percentage anomaly (unavailable below a 0.01 mm reference), grid location,
+coverage and source. This is approximately 0.25° modeled reanalysis, not a measured
+parcel, a seasonal forecast, SPI or a degradation diagnosis. Missing data remain
+unavailable. Requests are bounded, cached for 24 hours, and limited per process to one uncached lookup/hour and four/day. Long requests count as multiple source API units, not one call; changing workspace
+areas does not fetch decades of data. Geographic sources must be enabled.
+
+The free Open-Meteo service is for noncommercial use with attribution; commercial
+operation requires reviewing its terms separately. No subscription is activated.
+Quantitative vegetation/NDVI/NDMI trends are **not implemented**: rendered GIBS
+true-color JPG tiles do not supply the required numeric bands, cloud/quality masks
+or seasonal comparisons. The current imagery and map functionality are preserved.
 
 ## Bounded orchestration
 
@@ -59,6 +95,7 @@ complete Python skeleton → validated action fields → authoritative final car
 | Layer                                    | Current implementation                                              |
 | ---------------------------------------- | ------------------------------------------------------------------- |
 | Open-Meteo seven-day forecast            | Optional live source; coordinates rounded to 0.001°                 |
+| ERA5 monthly precipitation context      | Explicit optional lookup; fixed 1991–2020 same-month baseline          |
 | NASA GIBS satellite imagery              | Optional geographic imagery layer                                   |
 | Soil and water reference profiles        | Four synthetic teaching inputs, calculated in Python                |
 | Crop pathways and comparison rules       | Explicit demonstration catalogue and deterministic rules            |
@@ -130,6 +167,7 @@ The model and spending boundaries can be inspected directly in
 | `GET /solquira-api/healthz`                            | Liveness                                                                |
 | `GET /solquira-api/studio/bootstrap`                   | Establish opaque session cookie and CSRF token; expose effective limits |
 | `POST /solquira-api/studio/evaluate`                   | Deterministic crop-path comparison                                      |
+| `POST /solquira-api/studio/history`                    | Explicit bounded ERA5 historical precipitation comparison               |
 | `POST /solquira-api/studio/location`                   | Optional Open-Meteo context for rounded coordinates                     |
 | `POST /solquira-api/studio/agent`                      | Tool-grounded answer over the attached context                          |
 | `GET /v1/field-payload?scenario=dry&place=ouagadougou` | Canonical reference payload (session + CSRF)                            |
@@ -158,6 +196,7 @@ The fixture check compares the stored examples with the current Python engine an
 | Component                  | Provider                                                | Attribution / terms                         |
 | -------------------------- | ------------------------------------------------------- | ------------------------------------------- |
 | Forecast and reference ET₀ | [Open-Meteo](https://open-meteo.com/)                   | CC BY 4.0                                   |
+| Historical precipitation | [Open-Meteo ERA5 archive](https://open-meteo.com/en/docs/historical-weather-api) | [Noncommercial API terms](https://open-meteo.com/en/terms), CC BY 4.0 |
 | MODIS imagery              | [NASA GIBS](https://nasa-gibs.github.io/gibs-api-docs/) | Imagery courtesy NASA EOSDIS GIBS / LP DAAC |
 | Basemap geometry           | [Natural Earth](https://www.naturalearthdata.com/)      | Public domain                               |
 | Globe rendering            | [CesiumJS](https://cesium.com/)                         | Apache-2.0                                  |

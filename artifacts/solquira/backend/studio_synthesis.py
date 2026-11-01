@@ -98,6 +98,7 @@ def catalogue(context=None, record=None):
     }
     required_statement = None
     preferred = []
+    anticipation_statement = None
     if forecast:
         sources.append(
             {
@@ -109,12 +110,27 @@ def catalogue(context=None, record=None):
         dry = forecast["rain_mm"] < forecast["reference_et0_mm"]
         key = "forecast-dry" if dry else "forecast-wet"
         statements[key] = {
-            "text": "Forecast rain is below reference atmospheric demand; actual soil water still needs checking."
+            "text": "Forecast precipitation is below reference atmospheric demand; actual soil water still needs checking."
             if dry
-            else "Forecast rain meets or exceeds reference atmospheric demand; infiltration and runoff still need checking.",
+            else "Forecast precipitation meets or exceeds reference atmospheric demand; infiltration and runoff still need checking.",
             "evidence_ids": ["forecast-7d", "field-inputs"],
         }
         preferred.append(key)
+        anticipation = forecast["anticipation"]
+        anticipation_statement = "forecast-anticipation"
+        share = anticipation["wettest_day_share_percent"]
+        timing = (f"The wettest forecast day contains {share:g}% of the seven-day precipitation total. "
+                  if share is not None else "No precipitation is forecast in this window. ")
+        statements[anticipation_statement] = {
+            "text": (f"{anticipation['low_precipitation_days']} of seven days are below the declared 1 mm/day threshold. "
+                     + timing + "This does not diagnose drought or desertification."),
+            "evidence_ids": ["forecast-7d"],
+        }
+        check(
+            "review-precipitation-timing", "Review when precipitation is forecast",
+            "Compare the forecast dates and daily concentration with safe field observations. Daily totals do not establish hourly intensity, flooding or infiltration.",
+            ["forecast-7d", "field-inputs"], "weather",
+        )
         if dry:
             checks["confirm-soil-water"]["evidence_ids"].append("forecast-7d")
         else:
@@ -249,6 +265,10 @@ def catalogue(context=None, record=None):
         first_check,
         "observe-cover",
     ]
+    # Preserve record/constraint precedence; include the new timing evidence only
+    # when the existing three-statement budget leaves room for it.
+    if anticipation_statement:
+        preferred.append(anticipation_statement)
     default = {
         "statement_ids": preferred[:3],
         "check_ids": default_checks[:3],

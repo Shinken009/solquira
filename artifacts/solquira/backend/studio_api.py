@@ -610,6 +610,17 @@ async def location(request: Request):
         return _json(result)
 
 
+@studio_router.post("/history")
+async def history(request: Request):
+    """Explicit optional public reanalysis; same admission/CSRF, never inference."""
+    async with _admitted(request) as lease:
+        coordinates = _validate(StudioLocation, await _body(request)).model_dump()
+        from environmental_history import historical_context
+
+        result = await _run_service(lease, historical_context, coordinates)
+        return _json(result)
+
+
 @studio_router.post("/agent")
 async def agent(request: Request):
     async with _admitted(request) as lease:

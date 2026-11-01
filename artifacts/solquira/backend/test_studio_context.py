@@ -85,6 +85,29 @@ class ContextAdmissionTests(unittest.TestCase):
 
 
 class GroundedBriefTests(unittest.TestCase):
+    def test_anticipation_is_server_calculated_not_reused_from_supplied_summary(self):
+        value=context(rain=.3)
+        value['anticipation']={'precipitation_total_mm':999999,'private':'PRIVATE_MARKER'}
+        evidence=weather_evidence(value)
+        anticipation=evidence['anticipation']
+        self.assertEqual(anticipation['precipitation_total_mm'],2.1)
+        self.assertEqual(anticipation['low_precipitation_days'],7)
+        self.assertEqual(anticipation['longest_low_precipitation_run_days'],7)
+        self.assertNotIn('PRIVATE_MARKER',json.dumps(evidence))
+        self.assertNotIn('latitude',json.dumps(anticipation))
+        self.assertNotIn('context_ref',json.dumps(anticipation))
+
+    def test_anticipation_rejects_malformed_date_before_guidance(self):
+        value=context();value['weather']['days'][0]['date']='not-a-day'
+        with self.assertRaises(ValueError):
+            weather_evidence(value)
+
+    def test_field_brief_explains_low_precipitation_window_without_diagnosis(self):
+        brief=field_brief(context(rain=.3),'water')
+        self.assertIn('7 days are below',brief['summary'])
+        self.assertIn('not a diagnosis of drought or desertification',brief['summary'])
+        self.assertEqual(brief['forecast']['anticipation']['precipitation_episode_count'],0)
+
     def test_different_forecasts_change_actions_not_crop_math(self):
         dry = explain_studio(SCENARIO,"What about water?",field_context=context())
         wet = explain_studio(SCENARIO,"What about water?",field_context=context(rain=10,latitude=-.5))
@@ -176,6 +199,19 @@ class ContextApiTests(unittest.TestCase):
         self.assertEqual(response.status_code,200)
         self.assertEqual(response.json()["report"]["field_brief"]["context_ref"],ref)
         self.assertEqual(response.headers["cache-control"],"no-store")
+
+    def test_location_api_exposes_deterministic_anticipation_without_a_model(self):
+        from test_studio_geo import source
+        from studio_geo import parse_weather
+        with patch('studio_geo._fetch',return_value=parse_weather(source())), patch('studio_api.current_provider') as provider:
+            response=self.post('location',{'latitude':37.1,'longitude':-4.6})
+        self.assertEqual(response.status_code,200)
+        anticipation=response.json()['anticipation']
+        self.assertEqual(anticipation['state'],'ready')
+        self.assertEqual(anticipation['precipitation_total_mm'],2.1)
+        self.assertEqual(anticipation['low_precipitation_days'],7)
+        self.assertEqual(anticipation['units']['precipitation'],'mm')
+        provider.assert_not_called()
 
     def test_unknown_and_cross_session_refs_are_rejected_before_provider(self):
         ref=self.load()

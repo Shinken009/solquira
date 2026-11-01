@@ -25,6 +25,9 @@ import {
 } from "./client";
 import { REFERENCE_PLACES } from "../dryland-client";
 import "./field-context.css";
+import type { WorkspaceArea } from "../Studio";
+import AnticipationIndicators from "./AnticipationIndicators";
+import HistoricalContext from "./HistoricalContext";
 const Landscape = lazy(() => import("./CesiumFieldMap"));
 type LocationSource = "none" | "geolocation" | "reference" | "manual" | "map";
 const examples = REFERENCE_PLACES.map((item) => ({
@@ -40,6 +43,8 @@ export default function FieldContext({
   attachedRef,
   onPointChange,
   externalPoint,
+  activeArea,
+  onNavigate,
 }: {
   enabled: boolean;
   offline: boolean;
@@ -48,6 +53,8 @@ export default function FieldContext({
   attachedRef?: string;
   onPointChange?: (point: Point | null) => void;
   externalPoint?: Point | null;
+  activeArea: WorkspaceArea;
+  onNavigate: (area: WorkspaceArea, target?: string) => void;
 }) {
   const [latitude, setLatitude] = useState(""),
     [longitude, setLongitude] = useState("");
@@ -161,7 +168,7 @@ export default function FieldContext({
         );
       },
       (failure) => {
-        if (cancelled || !mounted.current) return;
+        if (cancelled || !mounted.current || manualSelection.current) return;
         setLocationSource("none");
         if (failure.code === failure.PERMISSION_DENIED) {
           setLocationNote(
@@ -196,6 +203,11 @@ export default function FieldContext({
   };
   const requestForecast = async (selected: Point) => {
     if (!enabled || offline || !csrfToken) return;
+    // Explicit loads and automatic onboarding share the same attempt marker.
+    // Editing inputs must not re-fetch the previously selected point, and a
+    // rejected response must wait for an explicit retry rather than auto-loop.
+    autoLoadedFor.current = `${selected.latitude}:${selected.longitude}`;
+    controller.current?.abort();
     const request = new AbortController();
     controller.current = request;
     const version = ++revision.current;
@@ -300,484 +312,513 @@ export default function FieldContext({
             ? "Coordinates entered"
             : "No point yet";
   return (
-    <section
-      ref={sectionRef}
-      className="qg-section"
-      id="qs-landscape"
-      tabIndex={-1}
-      data-testid="geo-section"
-      aria-labelledby="qg-title"
-    >
-      <div className="qg-heading">
-        <div>
-          <span className="qg-eyebrow">
-            <MapPin size={17} /> Start with a place
-          </span>
-          <h2 id="qg-title" tabIndex={-1}>
-            {enabled && !offline
-              ? "What is the week ahead?"
-              : "Put your land in context."}
-          </h2>
-          <p>
-            {enabled && !offline
-              ? "Read the coming weather, then turn it into a useful question for your next visit."
-              : "Explore a reference landscape, choose a point and decide what you want to understand on the ground."}
-          </p>
+    <>
+      <section
+        hidden={activeArea !== "territory"}
+        role="tabpanel"
+        aria-labelledby="qs-area-tab-territory"
+        ref={sectionRef}
+        className="qg-section"
+        id="qs-landscape"
+        tabIndex={-1}
+        data-testid="geo-section"
+      >
+        <div className="qg-heading">
+          <div>
+            <span className="qg-eyebrow">
+              <MapPin size={17} /> Start with a place
+            </span>
+            <h2 id="qg-title" tabIndex={-1}>
+              Put your land in context.
+            </h2>
+            <p>
+              Choose a point once. Its map, forecast and field record stay with
+              you as you move through the workspace.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="qg-open"
+            data-testid="geo-open-map"
+            aria-expanded={opened}
+            aria-controls="qg-map-area"
+            onClick={() => setOpened(!opened)}
+          >
+            <Layers3 size={17} />
+            {opened ? "Close landscape view" : "Open landscape view"}
+          </button>
         </div>
+        <div className="qg-grid">
+          <div className="qg-location">
+            <h3>Choose a place to explore</h3>
+            <p className="qg-location-hint">
+              Allow location to center the map on you, choose a reference
+              landscape, or enter your own point.
+            </p>
+            {locationNote && (
+              <p className="qg-location-note" role="status">
+                {locationNote}
+              </p>
+            )}
+            <div className="qg-examples">
+              {examples.map((example) => (
+                <button
+                  type="button"
+                  key={example.label}
+                  aria-pressed={Boolean(
+                    current() && samePoint(current()!, example),
+                  )}
+                  onClick={() => select(example, "reference")}
+                >
+                  {example.label}
+                </button>
+              ))}
+            </div>
+            {current() &&
+              !examples.some((example) => samePoint(example, current()!)) && (
+                <p
+                  className="qg-location-state"
+                  data-testid="geo-location-state"
+                  role="status"
+                >
+                  Your point is not one of the four prepared reference profiles.
+                  The map follows your point; the field brief uses a reference
+                  landscape.
+                </p>
+              )}
+            <form onSubmit={load}>
+              <button
+                type="button"
+                className="qg-locate"
+                onClick={locate}
+                disabled={locating}
+              >
+                <LocateFixed size={15} />
+                {locating
+                  ? "Finding your approximate location…"
+                  : "Use my location"}
+              </button>
+              <div className="qg-coordinate-inputs">
+                <label>
+                  Latitude
+                  <input
+                    data-testid="geo-lat"
+                    inputMode="decimal"
+                    value={latitude}
+                    onChange={(e) => {
+                      invalidate();
+                      onPointChange?.(null);
+                      setLatitude(e.target.value);
+                    }}
+                  />
+                </label>
+                <label>
+                  Longitude
+                  <input
+                    data-testid="geo-lon"
+                    inputMode="decimal"
+                    value={longitude}
+                    onChange={(e) => {
+                      invalidate();
+                      onPointChange?.(null);
+                      setLongitude(e.target.value);
+                    }}
+                  />
+                </label>
+              </div>
+              <button
+                type="submit"
+                className="qg-load"
+                data-testid="geo-load-context"
+                disabled={busy}
+              >
+                {busy ? (
+                  <RefreshCw size={16} className="qs-spin" />
+                ) : (
+                  <Globe2 size={16} />
+                )}{" "}
+                {busy
+                  ? "Reading local context…"
+                  : enabled && !offline
+                    ? "Load local context"
+                    : "Set map location"}
+              </button>
+            </form>
+            <p className="qg-sharing">
+              {enabled && !offline
+                ? "Load a forecast for rounded coordinates. Attach it when you want to use it in a question."
+                : "Set your reference point for the regional map."}
+            </p>
+            {error && (
+              <p role="alert" className="qg-error">
+                {error}
+              </p>
+            )}
+            <details className="qg-method" data-testid="geo-methods">
+              <summary>Sources & map details</summary>
+              <p>
+                The Cesium view uses OpenStreetMap reference tiles (
+                <a
+                  href="https://www.openstreetmap.org/copyright"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  © OpenStreetMap contributors
+                </a>
+                ), with Natural Earth as a coarse offline fallback, and an
+                ellipsoid, not surveyed terrain. The public tile service is
+                best-effort; a deployment can configure a contracted provider.
+                If a reference tile is wrong,{" "}
+                <a
+                  href="https://www.openstreetmap.org/fixthemap"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  report a map issue
+                </a>
+                . The selected point and forecast are independent of the
+                synthetic crop example below.
+              </p>
+              <p>
+                Loading a forecast sends rounded coordinates to Open-Meteo. The
+                agent receives weather only after explicit attachment, without
+                those coordinates.
+              </p>
+              <p>
+                Weather is a seven-day model forecast in UTC from{" "}
+                <a
+                  href="https://open-meteo.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open-Meteo
+                </a>{" "}
+                (CC BY 4.0). Reference ET₀ describes a standard reference
+                surface, not an irrigation prescription.
+              </p>
+              <p>
+                Optional NASA MODIS imagery provides regional visual context
+                from a 250 m product. Its date is shown beside the layer. The
+                Web Mercator layer covers approximately 85°S to 85°N. It is not
+                an NDVI calculation or a field boundary.
+              </p>
+            </details>
+          </div>
+          <div className="qg-context">
+            <div className="qg-map-area" id="qg-map-area">
+              {opened ? (
+                <Suspense
+                  fallback={
+                    <div className="qg-map-loading">
+                      Opening the landscape tools…
+                    </div>
+                  }
+                >
+                  <Landscape
+                    point={point}
+                    onPick={(next) => select(next, "map")}
+                    imagery={data?.imagery ?? null}
+                    nasaEnabled={nasa}
+                    onImageryState={setImageryState}
+                  />
+                </Suspense>
+              ) : (
+                <div className="qg-map-invitation">
+                  <Globe2 size={44} strokeWidth={1.2} />
+                  <div>
+                    <strong>A wider view, when you need it.</strong>
+                    <p>
+                      Open the regional view to place your next field
+                      conversation in context.
+                    </p>
+                  </div>
+                </div>
+              )}
+              <div className="qg-layer-line">
+                <span
+                  className="qg-coordinates"
+                  data-testid="geo-selected-point"
+                  data-source={locationSource}
+                >
+                  <MapPin size={14} />
+                  {point
+                    ? `${point.latitude.toFixed(3)}, ${point.longitude.toFixed(3)}`
+                    : "No point selected"}
+                  {point && (
+                    <small className="qg-location-source">{sourceLabel}</small>
+                  )}
+                </span>
+                <label className="qg-layer-toggle">
+                  <input
+                    type="checkbox"
+                    data-testid="geo-nasa-toggle"
+                    aria-describedby="qg-layer-detail"
+                    checked={nasa}
+                    disabled={
+                      !opened ||
+                      !point ||
+                      data?.imagery.state !== "ready_to_load"
+                    }
+                    onChange={(e) => {
+                      setNasa(e.target.checked);
+                      setImageryState(e.target.checked ? "loading" : "off");
+                    }}
+                  />
+                  <span>
+                    <strong>NASA MODIS detail</strong>
+                    <small>
+                      {!point
+                        ? "Choose a point to enable"
+                        : data?.imagery.state === "ready_to_load"
+                          ? `250 m regional / ${data.imagery.date}`
+                          : "Load local context to enable"}
+                    </small>
+                  </span>
+                </label>
+              </div>
+              <p
+                id="qg-layer-detail"
+                className={nasa ? "qg-source-note" : "qg-layer-hint"}
+                role="status"
+              >
+                {!point ? (
+                  <>
+                    Choose a point on the map, use your location, or select a
+                    reference landscape. The map shows OpenStreetMap reference
+                    tiles (not satellite imagery) with a coarse Natural Earth
+                    fallback.
+                  </>
+                ) : nasa ? (
+                  <>
+                    NASA EOSDIS GIBS / MODIS Terra /{" "}
+                    {data?.imagery.date ?? "date pending"} / regional 250 m;
+                    clouds and availability vary.{" "}
+                    {imageryState === "received"
+                      ? "Imagery received."
+                      : imageryState === "unavailable"
+                        ? "Satellite tiles are unavailable; the reference map remains available."
+                        : "Loading regional imagery…"}
+                  </>
+                ) : (
+                  <>
+                    OpenStreetMap provides a detailed reference map (not
+                    satellite imagery).{" "}
+                    <a
+                      href="https://www.openstreetmap.org/copyright"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      © OpenStreetMap contributors
+                    </a>
+                    . NASA MODIS offers optional 250 m regional imagery once
+                    local context loads; clouds, date and availability vary.
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section
+        className="qg-section qg-anticipation"
+        id="qs-anticipation"
+        role="tabpanel"
+        aria-labelledby="qs-area-tab-anticipation"
+        tabIndex={0}
+        hidden={activeArea !== "anticipation"}
+        data-testid="area-anticipation"
+      >
+        <div className="qg-heading">
+          <div>
+            <span className="qg-eyebrow">Anticipación ambiental</span>
+            <h2>The coming week, with its limits.</h2>
+            <p>
+              Read forecast indicators before choosing checks for your next
+              visit. No model call is needed.
+            </p>
+          </div>
+        </div>
+        <div
+          className="qg-weather"
+          aria-busy={busy}
+          data-testid="geo-weather"
+          data-state={data?.weather.state ?? "idle"}
+        >
+          <div className="qg-weather-heading">
+            <h3 tabIndex={-1}>
+              {enabled && !offline
+                ? "The next seven days"
+                : "Read the landscape."}
+            </h3>
+            <span>
+              {data
+                ? data.weather.state === "cached"
+                  ? "Recent cached forecast"
+                  : data.weather.state === "ready"
+                    ? "Forecast received"
+                    : data.weather.state === "disabled"
+                      ? "Local map mode"
+                      : "Forecast needs retry"
+                : enabled && !offline
+                  ? "Choose a point, then load context"
+                  : "Three questions for your next visit"}
+            </span>
+          </div>
+          {days.length === 7 ? (
+            <>
+              <div className="qg-weather-totals">
+                <div>
+                  <Droplets size={20} />
+                  <strong>
+                    {totalRain.toFixed(1)}
+                    <small> mm</small>
+                  </strong>
+                  <span>Forecast precipitation</span>
+                </div>
+                <div>
+                  <Sun size={20} />
+                  <strong>
+                    {totalET.toFixed(1)}
+                    <small> mm</small>
+                  </strong>
+                  <span>Reference ET₀</span>
+                </div>
+              </div>
+              <div className="qg-chart-legend">
+                <span>
+                  <i /> Precipitation
+                </span>
+                <span>
+                  <i /> Reference ET₀
+                </span>
+                <small>mm per day · UTC</small>
+              </div>
+              <div
+                className="qg-chart"
+                role="img"
+                aria-label={
+                  "Daily forecast in UTC: " +
+                  days
+                    .map(
+                      (d) =>
+                        `${d.date}: precipitation ${d.precipitation_mm} millimetres, reference ET0 ${d.reference_et0_mm} millimetres, temperature ${d.temperature_min_c} to ${d.temperature_max_c} degrees Celsius`,
+                    )
+                    .join("; ")
+                }
+              >
+                {days.map((day) => (
+                  <div key={day.date} className="qg-chart-day">
+                    <div className="qg-bars">
+                      <i
+                        style={{
+                          height: `${(day.precipitation_mm / chartMax) * 100}%`,
+                        }}
+                      />
+                      <b
+                        style={{
+                          height: `${(day.reference_et0_mm / chartMax) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <span>{day.date.slice(5)}</span>
+                    <small>
+                      {day.precipitation_mm.toFixed(1)} /{" "}
+                      {day.reference_et0_mm.toFixed(1)}
+                    </small>
+                    <small>
+                      {day.temperature_min_c.toFixed(0)}–
+                      {day.temperature_max_c.toFixed(0)}°C
+                    </small>
+                  </div>
+                ))}
+              </div>
+              <p className="qg-guidance">
+                Compare rain with atmospheric water demand, then check soil
+                moisture and irrigation records with local agronomic support.
+              </p>
+              <p className="qg-source-note">
+                Open-Meteo · Model forecast · Retrieved{" "}
+                {new Date(data!.retrieved_at)
+                  .toISOString()
+                  .slice(0, 16)
+                  .replace("T", " ")}{" "}
+                UTC
+              </p>
+            </>
+          ) : (
+            <p className="qg-weather-empty">
+              {data?.weather.note ??
+                (enabled && !offline
+                  ? "Load the forecast to explore rain, temperature and reference water demand for this point."
+                  : "Follow the water paths. Notice where the soil is exposed. Bring local knowledge into what you check next.")}
+            </p>
+          )}
+          {(!enabled || offline) && (
+            <div className="qg-landscape-lens">
+              <div>
+                <Droplets size={21} />
+                <strong>Water</strong>
+                <span>Where does it move?</span>
+              </div>
+              <div>
+                <Sun size={21} />
+                <strong>Cover</strong>
+                <span>What protects the soil?</span>
+              </div>
+              <div>
+                <MapPin size={21} />
+                <strong>People</strong>
+                <span>Who knows this place?</span>
+              </div>
+              <a href="#qs-land-record">
+                Bring your observations into a record
+              </a>
+            </div>
+          )}
+        </div>
+        <AnticipationIndicators data={data?.anticipation} />
+        {data?.context_ref && days.length === 7 && !offline && (
+          <div className="qg-connect" data-testid="geo-connect">
+            <div>
+              <strong>Forecast ready. What should you check?</strong>
+              <p>
+                Bring these seven days into your question about water, soil or
+                living cover.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="qg-load"
+              data-testid="geo-attach"
+              onClick={() => {
+                onAttach({
+                  reference: data.context_ref!,
+                  location: data.location,
+                  retrievedAt: data.retrieved_at,
+                });
+                onNavigate("guidance", "qs-query");
+              }}
+            >
+              {attachedRef === data.context_ref
+                ? "Forecast attached · go to question"
+                : "Use this forecast in my question"}
+            </button>
+          </div>
+        )}
+
         <button
           type="button"
           className="qg-open"
-          data-testid="geo-open-map"
-          aria-expanded={opened}
-          aria-controls="qg-map-area"
-          onClick={() => setOpened(!opened)}
+          onClick={() => onNavigate("territory")}
         >
-          <Layers3 size={17} />
-          {opened ? "Close landscape view" : "Open landscape view"}
+          Choose or change the place
         </button>
-      </div>
-      <div className="qg-grid">
-        <div className="qg-location">
-          <h3>Choose a place to explore</h3>
-          <p className="qg-location-hint">
-            Allow location to center the map on you, choose a reference
-            landscape, or enter your own point.
-          </p>
-          {locationNote && (
-            <p className="qg-location-note" role="status">
-              {locationNote}
-            </p>
-          )}
-          <div className="qg-examples">
-            {examples.map((example) => (
-              <button
-                type="button"
-                key={example.label}
-                aria-pressed={Boolean(
-                  current() && samePoint(current()!, example),
-                )}
-                onClick={() => select(example, "reference")}
-              >
-                {example.label}
-              </button>
-            ))}
-          </div>
-          {current() &&
-            !examples.some((example) => samePoint(example, current()!)) && (
-              <p
-                className="qg-location-state"
-                data-testid="geo-location-state"
-                role="status"
-              >
-                Your point is not one of the four prepared reference profiles.
-                The map follows your point; the field brief uses a reference
-                landscape.
-              </p>
-            )}
-          <form onSubmit={load}>
-            <button
-              type="button"
-              className="qg-locate"
-              onClick={locate}
-              disabled={locating}
-            >
-              <LocateFixed size={15} />
-              {locating
-                ? "Finding your approximate location…"
-                : "Use my location"}
-            </button>
-            <div className="qg-coordinate-inputs">
-              <label>
-                Latitude
-                <input
-                  data-testid="geo-lat"
-                  inputMode="decimal"
-                  value={latitude}
-                  onChange={(e) => {
-                    invalidate();
-                    onPointChange?.(null);
-                    setLatitude(e.target.value);
-                  }}
-                />
-              </label>
-              <label>
-                Longitude
-                <input
-                  data-testid="geo-lon"
-                  inputMode="decimal"
-                  value={longitude}
-                  onChange={(e) => {
-                    invalidate();
-                    onPointChange?.(null);
-                    setLongitude(e.target.value);
-                  }}
-                />
-              </label>
-            </div>
-            <button
-              type="submit"
-              className="qg-load"
-              data-testid="geo-load-context"
-              disabled={busy}
-            >
-              {busy ? (
-                <RefreshCw size={16} className="qs-spin" />
-              ) : (
-                <Globe2 size={16} />
-              )}{" "}
-              {busy
-                ? "Reading local context…"
-                : enabled && !offline
-                  ? "Load local context"
-                  : "Set map location"}
-            </button>
-          </form>
-          <p className="qg-sharing">
-            {enabled && !offline
-              ? "Load a forecast for rounded coordinates. Attach it when you want to use it in a question."
-              : "Set your reference point for the regional map."}
-          </p>
-          {error && (
-            <p role="alert" className="qg-error">
-              {error}
-            </p>
-          )}
-          <details className="qg-method" data-testid="geo-methods">
-            <summary>Sources & map details</summary>
-            <p>
-              The Cesium view uses OpenStreetMap reference tiles (
-              <a
-                href="https://www.openstreetmap.org/copyright"
-                target="_blank"
-                rel="noreferrer"
-              >
-                © OpenStreetMap contributors
-              </a>
-              ), with Natural Earth as a coarse offline fallback, and an
-              ellipsoid, not surveyed terrain. The public tile service is
-              best-effort; a deployment can configure a contracted provider. If
-              a reference tile is wrong,{" "}
-              <a
-                href="https://www.openstreetmap.org/fixthemap"
-                target="_blank"
-                rel="noreferrer"
-              >
-                report a map issue
-              </a>
-              . The selected point and forecast are independent of the synthetic
-              crop example below.
-            </p>
-            <p>
-              Loading a forecast sends rounded coordinates to Open-Meteo. The
-              agent receives weather only after explicit attachment, without
-              those coordinates.
-            </p>
-            <p>
-              Weather is a seven-day model forecast in UTC from{" "}
-              <a
-                href="https://open-meteo.com/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Open-Meteo
-              </a>{" "}
-              (CC BY 4.0). Reference ET₀ describes a standard reference surface,
-              not an irrigation prescription.
-            </p>
-            <p>
-              Optional NASA MODIS imagery provides regional visual context from
-              a 250 m product. Its date is shown beside the layer. The Web
-              Mercator layer covers approximately 85°S to 85°N. It is not an
-              NDVI calculation or a field boundary.
-            </p>
-          </details>
-        </div>
-        <div className="qg-context">
-          <div
-            className="qg-weather"
-            aria-busy={busy}
-            data-testid="geo-weather"
-            data-state={data?.weather.state ?? "idle"}
-          >
-            <div className="qg-weather-heading">
-              <h3 tabIndex={-1}>
-                {enabled && !offline
-                  ? "The next seven days"
-                  : "Read the landscape."}
-              </h3>
-              <span>
-                {data
-                  ? data.weather.state === "cached"
-                    ? "Recent cached forecast"
-                    : data.weather.state === "ready"
-                      ? "Forecast received"
-                      : data.weather.state === "disabled"
-                        ? "Local map mode"
-                        : "Forecast needs retry"
-                  : enabled && !offline
-                    ? "Choose a point, then load context"
-                    : "Three questions for your next visit"}
-              </span>
-            </div>
-            {days.length === 7 ? (
-              <>
-                <div className="qg-weather-totals">
-                  <div>
-                    <Droplets size={20} />
-                    <strong>
-                      {totalRain.toFixed(1)}
-                      <small> mm</small>
-                    </strong>
-                    <span>Forecast rainfall</span>
-                  </div>
-                  <div>
-                    <Sun size={20} />
-                    <strong>
-                      {totalET.toFixed(1)}
-                      <small> mm</small>
-                    </strong>
-                    <span>Reference ET₀</span>
-                  </div>
-                </div>
-                <div className="qg-chart-legend">
-                  <span>
-                    <i /> Rain
-                  </span>
-                  <span>
-                    <i /> Reference ET₀
-                  </span>
-                  <small>mm per day · UTC</small>
-                </div>
-                <div
-                  className="qg-chart"
-                  role="img"
-                  aria-label={
-                    "Daily forecast in UTC: " +
-                    days
-                      .map(
-                        (d) =>
-                          `${d.date}: rain ${d.precipitation_mm} millimetres, reference ET0 ${d.reference_et0_mm} millimetres, temperature ${d.temperature_min_c} to ${d.temperature_max_c} degrees Celsius`,
-                      )
-                      .join("; ")
-                  }
-                >
-                  {days.map((day) => (
-                    <div key={day.date} className="qg-chart-day">
-                      <div className="qg-bars">
-                        <i
-                          style={{
-                            height: `${(day.precipitation_mm / chartMax) * 100}%`,
-                          }}
-                        />
-                        <b
-                          style={{
-                            height: `${(day.reference_et0_mm / chartMax) * 100}%`,
-                          }}
-                        />
-                      </div>
-                      <span>{day.date.slice(5)}</span>
-                      <small>
-                        {day.precipitation_mm.toFixed(1)} /{" "}
-                        {day.reference_et0_mm.toFixed(1)}
-                      </small>
-                      <small>
-                        {day.temperature_min_c.toFixed(0)}–
-                        {day.temperature_max_c.toFixed(0)}°C
-                      </small>
-                    </div>
-                  ))}
-                </div>
-                <p className="qg-guidance">
-                  Compare rain with atmospheric water demand, then check soil
-                  moisture and irrigation records with local agronomic support.
-                </p>
-                <p className="qg-source-note">
-                  Open-Meteo · Model forecast · Retrieved{" "}
-                  {new Date(data!.retrieved_at)
-                    .toISOString()
-                    .slice(0, 16)
-                    .replace("T", " ")}{" "}
-                  UTC
-                </p>
-              </>
-            ) : (
-              <p className="qg-weather-empty">
-                {data?.weather.note ??
-                  (enabled && !offline
-                    ? "Load the forecast to explore rain, temperature and reference water demand for this point."
-                    : "Follow the water paths. Notice where the soil is exposed. Bring local knowledge into what you check next.")}
-              </p>
-            )}
-            {(!enabled || offline) && (
-              <div className="qg-landscape-lens">
-                <div>
-                  <Droplets size={21} />
-                  <strong>Water</strong>
-                  <span>Where does it move?</span>
-                </div>
-                <div>
-                  <Sun size={21} />
-                  <strong>Cover</strong>
-                  <span>What protects the soil?</span>
-                </div>
-                <div>
-                  <MapPin size={21} />
-                  <strong>People</strong>
-                  <span>Who knows this place?</span>
-                </div>
-                <a href="#qs-land-record">
-                  Bring your observations into a record
-                </a>
-              </div>
-            )}
-          </div>
-          {data?.context_ref && days.length === 7 && !offline && (
-            <div className="qg-connect" data-testid="geo-connect">
-              <div>
-                <strong>Forecast ready. What should you check?</strong>
-                <p>
-                  Bring these seven days into your question about water, soil or
-                  living cover.
-                </p>
-              </div>
-              <button
-                type="button"
-                className="qg-load"
-                data-testid="geo-attach"
-                onClick={() => {
-                  onAttach({
-                    reference: data.context_ref!,
-                    location: data.location,
-                    retrievedAt: data.retrieved_at,
-                  });
-                  document.getElementById("qs-query")?.focus();
-                  document.getElementById("qs-agent-title")?.scrollIntoView({
-                    behavior: window.matchMedia(
-                      "(prefers-reduced-motion: reduce)",
-                    ).matches
-                      ? "auto"
-                      : "smooth",
-                    block: "start",
-                  });
-                }}
-              >
-                {attachedRef === data.context_ref
-                  ? "Forecast attached · go to question"
-                  : "Use this forecast in my question"}
-              </button>
-            </div>
-          )}
-          <div className="qg-map-area" id="qg-map-area">
-            {opened ? (
-              <Suspense
-                fallback={
-                  <div className="qg-map-loading">
-                    Opening the landscape tools…
-                  </div>
-                }
-              >
-                <Landscape
-                  point={point}
-                  onPick={(next) => select(next, "map")}
-                  imagery={data?.imagery ?? null}
-                  nasaEnabled={nasa}
-                  onImageryState={setImageryState}
-                />
-              </Suspense>
-            ) : (
-              <div className="qg-map-invitation">
-                <Globe2 size={44} strokeWidth={1.2} />
-                <div>
-                  <strong>A wider view, when you need it.</strong>
-                  <p>
-                    Open the regional view to place your next field conversation
-                    in context.
-                  </p>
-                </div>
-              </div>
-            )}
-            <div className="qg-layer-line">
-              <span
-                className="qg-coordinates"
-                data-testid="geo-selected-point"
-                data-source={locationSource}
-              >
-                <MapPin size={14} />
-                {point
-                  ? `${point.latitude.toFixed(3)}, ${point.longitude.toFixed(3)}`
-                  : "No point selected"}
-                {point && (
-                  <small className="qg-location-source">{sourceLabel}</small>
-                )}
-              </span>
-              <label className="qg-layer-toggle">
-                <input
-                  type="checkbox"
-                  data-testid="geo-nasa-toggle"
-                  aria-describedby="qg-layer-detail"
-                  checked={nasa}
-                  disabled={
-                    !opened || !point || data?.imagery.state !== "ready_to_load"
-                  }
-                  onChange={(e) => {
-                    setNasa(e.target.checked);
-                    setImageryState(e.target.checked ? "loading" : "off");
-                  }}
-                />
-                <span>
-                  <strong>NASA MODIS detail</strong>
-                  <small>
-                    {!point
-                      ? "Choose a point to enable"
-                      : data?.imagery.state === "ready_to_load"
-                        ? `250 m regional / ${data.imagery.date}`
-                        : "Load local context to enable"}
-                  </small>
-                </span>
-              </label>
-            </div>
-            <p
-              id="qg-layer-detail"
-              className={nasa ? "qg-source-note" : "qg-layer-hint"}
-              role="status"
-            >
-              {!point ? (
-                <>
-                  Choose a point on the map, use your location, or select a
-                  reference landscape. The map shows OpenStreetMap reference
-                  tiles (not satellite imagery) with a coarse Natural Earth
-                  fallback.
-                </>
-              ) : nasa ? (
-                <>
-                  NASA EOSDIS GIBS / MODIS Terra /{" "}
-                  {data?.imagery.date ?? "date pending"} / regional 250 m;
-                  clouds and availability vary.{" "}
-                  {imageryState === "received"
-                    ? "Imagery received."
-                    : imageryState === "unavailable"
-                      ? "Satellite tiles are unavailable; the reference map remains available."
-                      : "Loading regional imagery…"}
-                </>
-              ) : (
-                <>
-                  OpenStreetMap provides a detailed reference map (not satellite
-                  imagery).{" "}
-                  <a
-                    href="https://www.openstreetmap.org/copyright"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    © OpenStreetMap contributors
-                  </a>
-                  . NASA MODIS offers optional 250 m regional imagery once local
-                  context loads; clouds, date and availability vary.
-                </>
-              )}
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
+        <HistoricalContext
+          point={point}
+          enabled={enabled && !offline}
+          csrf={csrfToken}
+        />
+      </section>
+    </>
   );
 }

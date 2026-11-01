@@ -185,3 +185,20 @@
 @media (min-width: 721px) and (max-width: 900px) {
   .qg-grid { grid-template-columns: 1fr; }
 }
+
+
+/* Environmental anticipation; preserve the existing map instance across areas. */
+.qg-anticipation > .qg-weather { margin-top: 20px; }
+.qg-indicators, .qg-history { margin-top: 24px; padding-top: 22px; border-top: 1px solid #bdcfc2; }
+.qg-indicators > h3, .qg-history > h3 { color: #173d36; font-size: 21px; }
+.qg-indicator-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 20px; margin: 18px 0; }
+.qg-indicator-grid > div { min-width: 0; border-left: 3px solid #96ad91; padding-left: 14px; }
+.qg-indicator-grid dt { color: #30483f; font-size: 13px; font-weight: 650; }
+.qg-indicator-grid dd { color: #173d36; font-size: 26px; font-weight: 700; line-height: 1.4; margin: 4px 0; overflow-wrap: anywhere; }
+.qg-indicator-grid dd small { font-size: 14px; font-weight: 500; }
+.qg-indicator-grid p, .qg-history > p, .qg-interpretation { color: #30483f; font-size: 13px; line-height: 1.65; }
+.qg-interpretation { padding: 12px 14px; background: #fff9e9; border-radius: 6px; }
+.qg-history > button { margin-top: 14px; }
+.qg-history [data-testid="history-result"] { margin-top: 20px; }
+@media (max-width: 850px) { .qg-indicator-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .qg-indicator-grid { grid-template-columns: 1fr; gap: 18px; } .qg-indicator-grid dd { font-size: 25px; } }
