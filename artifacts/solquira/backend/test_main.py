@@ -16,8 +16,8 @@ class EvaluatorTests(unittest.TestCase):
             soil="franco",
             previousCrops=["descanso"],
             priorities=["agua", "diversidad"],
-            latitude=-30.03,
-            longitude=-70.7,
+            latitude=10.0,
+            longitude=20.0,
         )
 
     def test_less_water_changes_balance_and_ranking(self):
@@ -59,6 +59,27 @@ class EvaluatorTests(unittest.TestCase):
             with patch.object(main, "DB_PATH", Path(temp_dir) / "test.sqlite3"):
                 main.save_parcel(self.parcel)
                 self.assertEqual(main.get_parcel(), self.parcel)
+
+    def test_no_default_location_and_global_parcel_coordinates(self):
+        self.assertIsNone(main.default_parcel().latitude)
+        self.assertIsNone(main.default_parcel().longitude)
+        for latitude, longitude in ((45.0, -120.0), (-25.0, 135.0), (0.0, 0.0)):
+            with self.subTest(latitude=latitude, longitude=longitude):
+                parcel = main.Parcel.model_validate(
+                    {**self.parcel.model_dump(), "latitude": latitude, "longitude": longitude}
+                )
+                self.assertEqual(parcel.latitude, latitude)
+                self.assertEqual(parcel.longitude, longitude)
+        no_location = main.Parcel.model_validate(
+            {**self.parcel.model_dump(), "latitude": None, "longitude": None}
+        )
+        self.assertIsNone(no_location.latitude)
+        for invalid in (90.1, -90.1):
+            with self.assertRaises(Exception):
+                main.Parcel.model_validate({**self.parcel.model_dump(), "latitude": invalid})
+        for invalid in (180.1, -180.1):
+            with self.assertRaises(Exception):
+                main.Parcel.model_validate({**self.parcel.model_dump(), "longitude": invalid})
 
     def test_invalid_power_range_is_rejected_before_network(self):
         with self.assertRaises(Exception):

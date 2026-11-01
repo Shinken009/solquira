@@ -10,12 +10,6 @@ export const REFERENCE_PLACES = [
     longitude: -1.519,
   },
   {
-    id: "coquimbo",
-    label: "Dryland valley",
-    latitude: -30.03,
-    longitude: -70.71,
-  },
-  {
     id: "andalusia",
     label: "Mediterranean farmland",
     latitude: 37.1,

@@ -21,7 +21,7 @@ and scientific limits. Planned integrations are identified separately from worki
    forecast: rainfall, reference ET₀ and temperature, in UTC.
 2. **Explore a field question.** The forecast can be attached to a question in the context panel.
    This forecast-linked workflow is separate from the reference scenarios below.
-3. **Build a field brief.** Four map-linked reference profiles provide distinct soil-life and
+3. **Build a field brief.** Three map-linked reference profiles provide distinct soil-life and
    water-held bands. Choose a dry-week or returning-rain scenario, then build a complete card
    with a labor-aware checklist and three crop pathways.
 4. **See useful wording arrive.** Python supplies the complete initial brief. When inference is
@@ -60,17 +60,16 @@ complete Python skeleton → validated action fields → authoritative final car
 | ---------------------------------------- | ------------------------------------------------------------------- |
 | Open-Meteo seven-day forecast            | Optional live source; coordinates rounded to 0.001°                 |
 | NASA GIBS satellite imagery              | Optional geographic imagery layer                                   |
-| Soil and water reference profiles        | Four synthetic teaching inputs, calculated in Python                |
+| Soil and water reference profiles        | Three synthetic teaching inputs, calculated in Python                |
 | Crop pathways and comparison rules       | Explicit demonstration catalogue and deterministic rules            |
 | Nemotron action wording                  | Server-side Token Factory integration, enabled only by the operator |
 | SoilGrids / FAO quantitative acquisition | Future integration; not called by this build                        |
 
-The four reference profiles are deliberately contrasting examples, not regional soil measurements:
+The three reference profiles are deliberately contrasting examples, not regional soil measurements:
 
 | Map reference                      | Soil life | Water held |
 | ---------------------------------- | --------- | ---------- |
 | Sahel / Ouagadougou                | Weak      | Fair       |
-| Chilean dryland valley / Coquimbo  | Weak      | Low        |
 | Mediterranean farmland / Andalusia | Building  | Fair       |
 | East African plateau               | Strong    | Good       |
 

@@ -522,7 +522,7 @@ export const getGetNasaPowerUrl = (params: GetNasaPowerParams,) => {
 }
 
 /**
- * Observaciones reales de la celda NASA POWER más cercana, no medición de parcela ni pronóstico. Coordenadas acotadas al piloto de Coquimbo y ventana histórica de 1 a 31 días; no convierte precipitación en agua de riego ni modifica la rúbrica sintética.
+ * Observaciones reales de la celda NASA POWER más cercana, no medición de parcela ni pronóstico. Coordenadas globales válidas y ventana histórica de 1 a 31 días; no convierte precipitación en agua de riego ni modifica la rúbrica sintética.
  * @summary Serie diaria NASA POWER (celdas de referencia)
  */
 export const getNasaPower = async (params: GetNasaPowerParams, options?: Parameters<typeof customFetch>[1]): Promise<NasaPowerDaily> => {

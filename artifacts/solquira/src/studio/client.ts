@@ -15,7 +15,7 @@ export class StudioRequestError extends Error {
   }
 }
 
-const locations: Record<ProfileId, string> = { valle: 'Elqui Valley · Vicuña', secano: 'Limarí · Punitaqui', precordillera: 'Choapa · Salamanca' };
+const locations: Record<ProfileId, string> = { valle: 'No location assigned · reference valley', secano: 'No location assigned · reference dryland', precordillera: 'No location assigned · reference upland' };
 type FixtureRow = { id: string; crops: string[]; demandM3Ha: number; waterBalanceM3Ha: number; rotationAllowed: boolean; eligibleUnderDemoRules: boolean; score: number };
 type FixtureResult = { availableWaterM3Ha: number; ruleVersion: string; status: string; rotations: FixtureRow[] };
 const historyRows = fixtures.historyEvaluations as unknown as Record<string, FixtureResult>;
@@ -46,7 +46,7 @@ export function offlineEvaluate(scenario: Scenario): Envelope {
   const count = plans.filter(p => p.eligible).length;
   const report: ComparisonReport = {
     comparison_id: id, scenario_revision: `${fixtures.engineSha256}:${id}`, scenario: { ...scenario }, rule_version: row.ruleVersion,
-    engine_sha256: fixtures.engineSha256, scope: 'demo_coquimbo', synthetic: true, agronomicViability: 'not_assessed',
+    engine_sha256: fixtures.engineSha256, scope: 'demo_reference', synthetic: true, agronomicViability: 'not_assessed',
     status: row.status, available_water_m3_ha: row.availableWaterM3Ha, plans,
     explanation: `At ${row.availableWaterM3Ha.toLocaleString('en-US')} m³/ha of example water, ${count} of ${plans.length} plans match the synthetic rules. Water and previous-crop restrictions are independent. Agronomic viability has not been assessed.`,
     evidence: { sources: [{ id: 'parcel-input', kind: 'synthetic_example' }, { id: 'demo-rules', kind: 'synthetic', rule_version: row.ruleVersion }], not_available: ['Verified field weather', 'Observed soil and land cover', 'Validated field images or sensor readings', 'Agronomic validation'] },

@@ -14,7 +14,7 @@ export interface TerritorialProfile {
   climate: string;
   soil: string;
   waterM3Ha: number;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   dataStatus: string;
 }

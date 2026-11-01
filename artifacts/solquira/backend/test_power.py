@@ -18,7 +18,7 @@ class PowerTests(unittest.TestCase):
 
     def query(self):
         return power.fetch_nasa_power(
-            -30.031, -70.708, date(2025, 1, 1), date(2025, 1, 7)
+            10.0, 20.0, date(2025, 1, 1), date(2025, 1, 7)
         )
 
     def mocked(self, data):
@@ -83,14 +83,45 @@ class PowerTests(unittest.TestCase):
         with patch.object(power.urllib.request, "urlopen", side_effect=TimeoutError):
             self.assertEqual(
                 power.fetch_nasa_power(
-                    -30.031, -70.708, date(2025, 1, 1), date(2025, 1, 31)
+                    10.0, 20.0, date(2025, 1, 1), date(2025, 1, 31)
                 )["status"],
                 "unavailable",
             )
             with self.assertRaises(main.HTTPException):
                 power.fetch_nasa_power(
-                    -30.031, -70.708, date(2025, 1, 1), date(2025, 2, 1)
+                    10.0, 20.0, date(2025, 1, 1), date(2025, 2, 1)
                 )
+
+    def test_global_points_are_accepted_when_provider_confirms_location(self):
+        for latitude, longitude in ((45.0, -120.0), (-25.0, 135.0), (0.0, 0.0)):
+            with self.subTest(latitude=latitude, longitude=longitude):
+                power._CACHE.clear()
+                raw = copy.deepcopy(self.raw)
+                raw["geometry"]["coordinates"][:2] = [longitude, latitude]
+                with self.mocked(raw) as transport:
+                    result = power.fetch_nasa_power(
+                        latitude, longitude, date(2025, 1, 1), date(2025, 1, 7)
+                    )
+                    self.assertEqual(result["status"], "ok")
+                    self.assertEqual(
+                        result["location"], {"latitude": latitude, "longitude": longitude}
+                    )
+                    self.assertEqual(transport.call_count, 1)
+
+    def test_invalid_global_coordinates_are_rejected_before_network(self):
+        invalid = (
+            (90.001, 0), (-90.001, 0), (0, 180.001), (0, -180.001),
+            (float("nan"), 0), (float("inf"), 0), (0, float("-inf")),
+            (True, 0), (0, False),
+        )
+        with patch.object(power.urllib.request, "urlopen") as network:
+            for latitude, longitude in invalid:
+                with self.subTest(latitude=latitude, longitude=longitude):
+                    with self.assertRaises(main.HTTPException):
+                        power.fetch_nasa_power(
+                            latitude, longitude, date(2025, 1, 1), date(2025, 1, 7)
+                        )
+            network.assert_not_called()
 
     def test_cache_expiry(self):
         with self.mocked(self.raw) as transport:

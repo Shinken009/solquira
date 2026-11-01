@@ -60,15 +60,15 @@ export interface Parcel {
   /** @minItems 1 */
   priorities: ParcelPrioritiesItem[];
   /**
-     * @minimum -32.3
-     * @maximum -29
+     * @minimum -90
+     * @maximum 90
      */
-  latitude: number;
+  latitude?: number | null;
   /**
-     * @minimum -72
-     * @maximum -69
+     * @minimum -180
+     * @maximum 180
      */
-  longitude: number;
+  longitude?: number | null;
 }
 
 export interface TerritorialProfile {
@@ -79,8 +79,8 @@ export interface TerritorialProfile {
   climate: string;
   soil: string;
   waterM3Ha: number;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   dataStatus: string;
 }
 
@@ -224,13 +224,13 @@ export interface NasaPowerDaily {
 
 export type GetNasaPowerParams = {
 /**
- * @minimum -32.3
- * @maximum -29
+ * @minimum -90
+ * @maximum 90
  */
 latitude: number;
 /**
- * @minimum -72
- * @maximum -69
+ * @minimum -180
+ * @maximum 180
  */
 longitude: number;
 start: string;

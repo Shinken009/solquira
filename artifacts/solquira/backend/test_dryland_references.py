@@ -17,10 +17,9 @@ class ReferenceTableTests(unittest.TestCase):
         self.no_network.start()
         self.addCleanup(self.no_network.stop)
 
-    def test_four_places_have_four_distinct_server_bands(self):
+    def test_reference_places_have_distinct_server_bands(self):
         expected = {
             "ouagadougou": ("Weak", "Fair"),
-            "coquimbo": ("Weak", "Low"),
             "andalusia": ("Building", "Fair"),
             "east_african_plateau": ("Strong", "Good"),
         }
@@ -34,8 +33,7 @@ class ReferenceTableTests(unittest.TestCase):
                 self.assertTrue({path.id for path in brief.pathways}.issubset(payload.fao_crops))
 
     def test_existing_map_presets_are_exactly_reused(self):
-        expected = {"ouagadougou": (12.371, -1.519), "coquimbo": (-30.03, -70.71),
-                    "andalusia": (37.1, -4.6), "east_african_plateau": (-0.5, 36.9)}
+        expected = {"ouagadougou": (12.371, -1.519), "andalusia": (37.1, -4.6), "east_african_plateau": (-0.5, 36.9)}
         for place, coordinates in expected.items():
             self.assertEqual(reference_for_coordinates(*coordinates), place)
             payload = reference_payload(place)
@@ -50,7 +48,7 @@ class ReferenceTableTests(unittest.TestCase):
 
     def test_metadata_labels_all_inputs_as_synthetic_reference_table(self):
         records = list_reference_sites()
-        self.assertEqual(len(records), 4)
+        self.assertEqual(len(records), 3)
         for record in records:
             self.assertEqual(record["soil_source"], "reference-table")
             self.assertIs(record["synthetic"], True)
@@ -102,7 +100,7 @@ class ReferenceTableTests(unittest.TestCase):
         self.assertEqual(len(reference_payload().fao_crops), 3)
 
     def test_unknown_selections_fail_closed(self):
-        for place in ("", "coquimbo/../ouagadougou", "other", None, []):
+        for place in ("", "invalid/../ouagadougou", "other", None, []):
             with self.subTest(place=place), self.assertRaises(ValueError):
                 reference_payload(place)
         with self.assertRaises(ValueError):

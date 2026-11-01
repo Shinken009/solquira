@@ -36,11 +36,6 @@ REFERENCE_SITES = MappingProxyType({
         6.0, 0.23, 0.11, 600.0,
         ("sorghum_cowpea", "millet_cowpea", "amaranth"),
     ),
-    "coquimbo": ReferenceSite(
-        "coquimbo", "Coquimbo dryland valley", -30.03, -70.71,
-        5.0, 0.18, 0.10, 500.0,
-        ("quinoa", "opuntia", "amaranth"),
-    ),
     "andalusia": ReferenceSite(
         "andalusia", "Andalusia farmland", 37.1, -4.6,
         11.0, 0.28, 0.13, 600.0,

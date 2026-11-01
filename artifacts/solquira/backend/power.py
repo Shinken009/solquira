@@ -30,10 +30,16 @@ def fetch_nasa_power(latitude: float, longitude: float, start: date, end: date) 
     if (
         not 1 <= days <= 31
         or end > date.today()
-        or not (-32.3 <= latitude <= -29 and -72 <= longitude <= -69)
+        or any(
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(value)
+            or not -bound <= value <= bound
+            for value, bound in ((latitude, 90), (longitude, 180))
+        )
     ):
         raise HTTPException(
-            422, "Use coordenadas de Coquimbo y un intervalo histórico de 1 a 31 días."
+            422, "Use coordenadas geográficas válidas y un intervalo histórico de 1 a 31 días."
         )
     key = (latitude, longitude, start.isoformat(), end.isoformat())
     query = urllib.parse.urlencode(

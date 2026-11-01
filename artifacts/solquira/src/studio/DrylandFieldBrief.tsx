@@ -237,8 +237,8 @@ export default function DrylandFieldBrief({
         >
           <p>
             {point
-              ? "Your point has no prepared soil profile. The brief uses one of four synthetic reference landscapes; your coordinates and forecast stay yours."
-              : "Choose one of the four prepared reference landscapes to compose a field brief."}
+              ? "Your point has no prepared soil profile. The brief uses one of three synthetic reference landscapes; your coordinates and forecast stay yours."
+              : "Choose one of the three prepared reference landscapes to compose a field brief."}
           </p>
           <div className="qd-reference-options">
             {REFERENCE_PLACES.map((item) => (

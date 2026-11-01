@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import base64
-import os
 import re
 from datetime import datetime, timezone
 from typing import Literal, Optional
@@ -20,24 +19,10 @@ _DATA_URI = re.compile(
 )
 
 
-def _env_float(name: str, default: float) -> float:
-    try:
-        return float(os.environ.get(name, default))
-    except ValueError:
-        return default
-
-
-# Geodetic validation range: global by default because the project scope is the
-# agricultural sector internationally and Coquimbo is only the pilot validation
-# region. Set SOLQUIRA_PILOT_* to restrict one deployment to a single pilot.
-LAT_RANGE = (
-    _env_float("SOLQUIRA_PILOT_LAT_MIN", -90.0),
-    _env_float("SOLQUIRA_PILOT_LAT_MAX", 90.0),
-)
-LON_RANGE = (
-    _env_float("SOLQUIRA_PILOT_LON_MIN", -180.0),
-    _env_float("SOLQUIRA_PILOT_LON_MAX", 180.0),
-)
+# Coordinates are always validated worldwide. Deployment-specific regional
+# overrides cannot narrow the user's selected location.
+LAT_RANGE = (-90.0, 90.0)
+LON_RANGE = (-180.0, 180.0)
 
 FeedState = Literal[
     "nominal", "loading", "degraded", "stale", "fallback", "unavailable"

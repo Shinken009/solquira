@@ -520,9 +520,9 @@ async def bootstrap(request: Request):
         "precordillera": "Andean foothills",
     }
     locations = {
-        "valle": "Elqui valley · Vicuña",
-        "secano": "Limarí · Punitaqui",
-        "precordillera": "Choapa · Salamanca",
+        "valle": "No location assigned · reference valley",
+        "secano": "No location assigned · reference dryland",
+        "precordillera": "No location assigned · reference upland",
     }
     try:
         inference = _service().studio_status()

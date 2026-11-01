@@ -16,8 +16,8 @@ export const GetProfilesResponseItem = zod.object({
   "climate": zod.string(),
   "soil": zod.string(),
   "waterM3Ha": zod.number(),
-  "latitude": zod.number(),
-  "longitude": zod.number(),
+  "latitude": zod.number().nullable(),
+  "longitude": zod.number().nullable(),
   "dataStatus": zod.string()
 })
 export const GetProfilesResponse = zod.array(GetProfilesResponseItem)
@@ -36,11 +36,11 @@ export const getParcelResponsePreviousCropsItemMax = 60;
 export const getParcelResponsePreviousCropsMax = 10;
 
 
-export const getParcelResponseLatitudeMin = -32.3;
-export const getParcelResponseLatitudeMax = -29;
+export const getParcelResponseLatitudeMin = -90;
+export const getParcelResponseLatitudeMax = 90;
 
-export const getParcelResponseLongitudeMin = -72;
-export const getParcelResponseLongitudeMax = -69;
+export const getParcelResponseLongitudeMin = -180;
+export const getParcelResponseLongitudeMax = 180;
 
 
 
@@ -52,8 +52,8 @@ export const GetParcelResponse = zod.object({
   "soil": zod.enum(['franco', 'arenoso', 'arcilloso', 'desconocido']),
   "previousCrops": zod.array(zod.string().max(getParcelResponsePreviousCropsItemMax)).max(getParcelResponsePreviousCropsMax),
   "priorities": zod.array(zod.enum(['agua', 'suelo', 'diversidad'])).min(1),
-  "latitude": zod.number().min(getParcelResponseLatitudeMin).max(getParcelResponseLatitudeMax),
-  "longitude": zod.number().min(getParcelResponseLongitudeMin).max(getParcelResponseLongitudeMax)
+  "latitude": zod.number().min(getParcelResponseLatitudeMin).max(getParcelResponseLatitudeMax).nullable().optional(),
+  "longitude": zod.number().min(getParcelResponseLongitudeMin).max(getParcelResponseLongitudeMax).nullable().optional()
 })
 
 
@@ -70,11 +70,11 @@ export const saveParcelBodyPreviousCropsItemMax = 60;
 export const saveParcelBodyPreviousCropsMax = 10;
 
 
-export const saveParcelBodyLatitudeMin = -32.3;
-export const saveParcelBodyLatitudeMax = -29;
+export const saveParcelBodyLatitudeMin = -90;
+export const saveParcelBodyLatitudeMax = 90;
 
-export const saveParcelBodyLongitudeMin = -72;
-export const saveParcelBodyLongitudeMax = -69;
+export const saveParcelBodyLongitudeMin = -180;
+export const saveParcelBodyLongitudeMax = 180;
 
 
 
@@ -86,8 +86,8 @@ export const SaveParcelBody = zod.object({
   "soil": zod.enum(['franco', 'arenoso', 'arcilloso', 'desconocido']),
   "previousCrops": zod.array(zod.string().max(saveParcelBodyPreviousCropsItemMax)).max(saveParcelBodyPreviousCropsMax),
   "priorities": zod.array(zod.enum(['agua', 'suelo', 'diversidad'])).min(1),
-  "latitude": zod.number().min(saveParcelBodyLatitudeMin).max(saveParcelBodyLatitudeMax),
-  "longitude": zod.number().min(saveParcelBodyLongitudeMin).max(saveParcelBodyLongitudeMax)
+  "latitude": zod.number().min(saveParcelBodyLatitudeMin).max(saveParcelBodyLatitudeMax).nullable().optional(),
+  "longitude": zod.number().min(saveParcelBodyLongitudeMin).max(saveParcelBodyLongitudeMax).nullable().optional()
 })
 
 export const saveParcelResponseNameMax = 120;
@@ -103,11 +103,11 @@ export const saveParcelResponsePreviousCropsItemMax = 60;
 export const saveParcelResponsePreviousCropsMax = 10;
 
 
-export const saveParcelResponseLatitudeMin = -32.3;
-export const saveParcelResponseLatitudeMax = -29;
+export const saveParcelResponseLatitudeMin = -90;
+export const saveParcelResponseLatitudeMax = 90;
 
-export const saveParcelResponseLongitudeMin = -72;
-export const saveParcelResponseLongitudeMax = -69;
+export const saveParcelResponseLongitudeMin = -180;
+export const saveParcelResponseLongitudeMax = 180;
 
 
 
@@ -119,8 +119,8 @@ export const SaveParcelResponse = zod.object({
   "soil": zod.enum(['franco', 'arenoso', 'arcilloso', 'desconocido']),
   "previousCrops": zod.array(zod.string().max(saveParcelResponsePreviousCropsItemMax)).max(saveParcelResponsePreviousCropsMax),
   "priorities": zod.array(zod.enum(['agua', 'suelo', 'diversidad'])).min(1),
-  "latitude": zod.number().min(saveParcelResponseLatitudeMin).max(saveParcelResponseLatitudeMax),
-  "longitude": zod.number().min(saveParcelResponseLongitudeMin).max(saveParcelResponseLongitudeMax)
+  "latitude": zod.number().min(saveParcelResponseLatitudeMin).max(saveParcelResponseLatitudeMax).nullable().optional(),
+  "longitude": zod.number().min(saveParcelResponseLongitudeMin).max(saveParcelResponseLongitudeMax).nullable().optional()
 })
 
 
@@ -146,11 +146,11 @@ export const evaluateParcelBodyParcelPreviousCropsItemMax = 60;
 export const evaluateParcelBodyParcelPreviousCropsMax = 10;
 
 
-export const evaluateParcelBodyParcelLatitudeMin = -32.3;
-export const evaluateParcelBodyParcelLatitudeMax = -29;
+export const evaluateParcelBodyParcelLatitudeMin = -90;
+export const evaluateParcelBodyParcelLatitudeMax = 90;
 
-export const evaluateParcelBodyParcelLongitudeMin = -72;
-export const evaluateParcelBodyParcelLongitudeMax = -69;
+export const evaluateParcelBodyParcelLongitudeMin = -180;
+export const evaluateParcelBodyParcelLongitudeMax = 180;
 
 export const evaluateParcelBodyWaterPercentMin = 0;
 export const evaluateParcelBodyWaterPercentMax = 150;
@@ -166,8 +166,8 @@ export const EvaluateParcelBody = zod.object({
   "soil": zod.enum(['franco', 'arenoso', 'arcilloso', 'desconocido']),
   "previousCrops": zod.array(zod.string().max(evaluateParcelBodyParcelPreviousCropsItemMax)).max(evaluateParcelBodyParcelPreviousCropsMax),
   "priorities": zod.array(zod.enum(['agua', 'suelo', 'diversidad'])).min(1),
-  "latitude": zod.number().min(evaluateParcelBodyParcelLatitudeMin).max(evaluateParcelBodyParcelLatitudeMax),
-  "longitude": zod.number().min(evaluateParcelBodyParcelLongitudeMin).max(evaluateParcelBodyParcelLongitudeMax)
+  "latitude": zod.number().min(evaluateParcelBodyParcelLatitudeMin).max(evaluateParcelBodyParcelLatitudeMax).nullable().optional(),
+  "longitude": zod.number().min(evaluateParcelBodyParcelLongitudeMin).max(evaluateParcelBodyParcelLongitudeMax).nullable().optional()
 }),
   "waterPercent": zod.number().min(evaluateParcelBodyWaterPercentMin).max(evaluateParcelBodyWaterPercentMax)
 })
@@ -223,14 +223,14 @@ export const GetSourcesResponse = zod.array(GetSourcesResponseItem)
 
 
 /**
- * Observaciones reales de la celda NASA POWER más cercana, no medición de parcela ni pronóstico. Coordenadas acotadas al piloto de Coquimbo y ventana histórica de 1 a 31 días; no convierte precipitación en agua de riego ni modifica la rúbrica sintética.
+ * Observaciones reales de la celda NASA POWER más cercana, no medición de parcela ni pronóstico. Coordenadas globales válidas y ventana histórica de 1 a 31 días; no convierte precipitación en agua de riego ni modifica la rúbrica sintética.
  * @summary Serie diaria NASA POWER (celdas de referencia)
  */
-export const getNasaPowerQueryLatitudeMin = -32.3;
-export const getNasaPowerQueryLatitudeMax = -29;
+export const getNasaPowerQueryLatitudeMin = -90;
+export const getNasaPowerQueryLatitudeMax = 90;
 
-export const getNasaPowerQueryLongitudeMin = -72;
-export const getNasaPowerQueryLongitudeMax = -69;
+export const getNasaPowerQueryLongitudeMin = -180;
+export const getNasaPowerQueryLongitudeMax = 180;
 
 
 

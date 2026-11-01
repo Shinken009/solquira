@@ -218,7 +218,7 @@ class DemoTools:
         self.validate(name, args)
         if name == "leer_escenario":
             return {
-                "scope": "demo_coquimbo",
+                "scope": "demo_reference",
                 "synthetic": True,
                 "profile_label": PROFILE_LABELS[self.parcel["profileId"]],
                 "parcel": copy.deepcopy(self.parcel),
@@ -246,7 +246,7 @@ class DemoTools:
                 "scenario_revision": revision,
                 "rule_version": raw["ruleVersion"],
                 "engine_sha256": self.engine_sha,
-                "scope": "demo_coquimbo",
+                "scope": "demo_reference",
                 "synthetic": True,
                 "agronomicViability": "not_assessed",
                 "status": raw["status"],

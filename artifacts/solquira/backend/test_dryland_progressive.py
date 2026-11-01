@@ -152,15 +152,15 @@ class ProgressiveApiTests(unittest.TestCase):
         self.assertEqual(final['receipt']['reserved'], '1')
         self.assertEqual(self.ledger.snapshot()['calls_used'], 1)
 
-    def test_four_points_change_server_bands(self):
+    def test_reference_points_change_server_bands(self):
         pairs = set()
-        for place in ('ouagadougou','coquimbo','andalusia','east_african_plateau'):
+        for place in ('ouagadougou','andalusia','east_african_plateau'):
             _, events = self.post(place=place)
             final = events[-1][1]
             pairs.add((final['brief']['vital_signs']['soil_life'],final['brief']['vital_signs']['water_held']))
             self.assertEqual(final['receipt']['place'], place)
             self.assertEqual(final['receipt']['soil'], 'reference-table')
-        self.assertEqual(len(pairs), 4)
+        self.assertEqual(len(pairs), 3)
 
     def test_sse_csrf_and_forged_payload_fail_before_inference(self):
         payload = golden_payload().model_dump(mode='json')
@@ -318,7 +318,7 @@ class GroundedWordingTests(unittest.TestCase):
                     self.assertEqual(action.detail, expected)
 
     def test_observed_temperature_and_threshold_claims_reject(self):
-        cases = (('coquimbo', 'dry', 'delay_sowing', 'Wait until soil warms enough'),
+        cases = (('ouagadougou', 'dry', 'delay_sowing', 'Wait until soil warms enough'),
                  ('east_african_plateau', 'dry', 'delay_sowing',
                   'Wait until soil moisture improves'))
         for place, scenario, action_id, detail in cases:
@@ -327,7 +327,7 @@ class GroundedWordingTests(unittest.TestCase):
                 parse_compact(json.dumps(paraphrase_set(payload, {action_id: detail})), payload)
 
     def test_observed_planning_to_fieldwork_escalation_rejects(self):
-        cases = (('coquimbo', 'dry', 'zai_pits', 'Dig shallow pits, fill with mulch'),
+        cases = (('ouagadougou', 'dry', 'zai_pits', 'Dig shallow pits, fill with mulch'),
                  ('andalusia', 'rain', 'mulch', 'Spread mulch to shield crust'),
                  ('andalusia', 'rain', 'half_moons', 'Create half-moon depressions'))
         for place, scenario, action_id, detail in cases:
@@ -336,7 +336,7 @@ class GroundedWordingTests(unittest.TestCase):
                 parse_compact(json.dumps(paraphrase_set(payload, {action_id: detail})), payload)
 
     def test_stream_preview_rolls_back_before_unsafe_detail(self):
-        payload = reference_payload('coquimbo', 'dry')
+        payload = reference_payload('ouagadougou', 'dry')
         events = []
         stream = ValidatedFields(payload, lambda *v: events.append(v))
         stream.feed(json.dumps(paraphrase_set(

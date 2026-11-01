@@ -1905,12 +1905,11 @@ export default function Studio() {
                       Where this example comes from <ChevronRight size={15} />
                     </summary>
                     <p>
-                      Reference setting: Coquimbo, Chile. These three synthetic
-                      landscape profiles are not measured parcels. Solquira is
-                      being built for growers and support teams around the
-                      world. These examples are not agronomically validated;
-                      land degradation is not assessed and environmental impact
-                      is not measured.
+                      These comparison profiles are hypothetical teaching inputs,
+                      not measured conditions for your selected location.
+                      Location-based environmental evidence is kept separate;
+                      land degradation is not diagnosed and environmental
+                      impact has not been measured.
                     </p>
                   </details>
                 </div>

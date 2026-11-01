@@ -29,6 +29,9 @@ class APIContractTests(unittest.TestCase):
                 self.assertEqual(len(profiles.json()), 3)
                 parcel = client.get(prefix + "/parcela").json()
                 self.assertEqual(parcel["profileId"], "valle")
+                self.assertIsNone(parcel["latitude"])
+                self.assertIsNone(parcel["longitude"])
+                parcel["latitude"], parcel["longitude"] = 45.0, -120.0
                 parcel["waterM3Ha"] = 1800
                 self.assertEqual(
                     client.put(prefix + "/parcela", json=parcel).status_code, 200
@@ -44,6 +47,25 @@ class APIContractTests(unittest.TestCase):
                 self.assertEqual(len(r.json()["rotations"]), 3)
                 self.assertEqual(len(client.get(prefix + "/fuentes").json()), 8)
                 self.assertEqual(len(client.get(prefix + "/escenarios").json()), 4)
+
+    def test_global_point_valid_and_invalid_bounds_at_http_boundary(self):
+        client = TestClient(main.app)
+        p = main.default_parcel().model_dump()
+        for latitude, longitude in ((45.0, -120.0), (-25.0, 135.0)):
+            with self.subTest(latitude=latitude, longitude=longitude):
+                p["latitude"], p["longitude"] = latitude, longitude
+                response = client.post(
+                    main.API_PREFIX + "/evaluacion",
+                    json={"parcel": p, "waterPercent": 100},
+                )
+                self.assertEqual(response.status_code, 200)
+        p["latitude"], p["longitude"] = 90.1, 0
+        self.assertEqual(
+            client.post(
+                main.API_PREFIX + "/evaluacion", json={"parcel": p, "waterPercent": 100}
+            ).status_code,
+            422,
+        )
 
     def test_missing_data_and_bad_json(self):
         client = TestClient(main.app)
