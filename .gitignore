@@ -1,0 +1,75 @@
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+
+# compiled output
+dist
+tmp
+out-tsc
+*.tsbuildinfo
+.expo
+.expo-shared
+
+# dependencies
+node_modules
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+/typings
+
+# System Files
+.DS_Store
+Thumbs.db
+
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
+
+# Replit
+.cache/
+.local/
+
+.venv/
+__pycache__/
+.data/
+*.sqlite3
+.playwright-cli/
+output/
+.env
+.env.*
+.vercel/
+
+# Historical recovery documents remain in the original ZIP
+ENTREGA-1.1.md
+replit.md
+artifacts/solquira/API.md
+artifacts/solquira/qa-preview/README.md
+.env.*
+!.env.example
+!*.env.example
+# Secretos locales para smoke en vivo (nunca al repo)
+scripts/secrets.local.env
+*.db
+
+# Engram local memory artifacts (config stays on disk, chunks never committed)
+.engram/
+.playwright-mcp/

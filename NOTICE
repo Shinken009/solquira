@@ -1,0 +1,77 @@
+Solquira — Understand the land. Cultivate the future.
+Copyright 2026 Solquira
+
+This product includes software and data developed by third parties. Their notices are reproduced
+below and apply to the corresponding components only.
+
+CesiumJS
+  https://cesium.com
+  Licensed under the Apache License, Version 2.0.
+
+Open-Meteo
+  https://open-meteo.com
+  Seven-day forecast and reference evapotranspiration context.
+  Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0).
+
+NASA Global Imagery Browse Services (GIBS)
+  https://nasa-gibs.github.io/gibs-api-docs/
+  Satellite imagery layer served to the map: MODIS Terra Corrected Reflectance
+  (NASA EOSDIS / LP DAAC), accessed through NASA's public GIBS endpoints.
+  Imagery courtesy NASA EOSDIS GIBS. NASA data are not copyrighted and are used
+  under NASA's open data policy; this notice is the requested acknowledgment.
+
+NASA POWER
+  https://power.larc.nasa.gov
+  Legacy backend module for historical daily precipitation and temperature; not exposed in Studio mode (the /api surface is closed).
+  courtesy of the NASA Prediction Of Worldwide Energy Resources (POWER) project,
+  NASA Langley Research Center. Not copyrighted; used with acknowledgment.
+
+NASA HLS (Harmonized Landsat Sentinel-2)
+  https://hls.gsfc.nasa.gov
+  Named as an extension point for future land observations. No HLS product is
+  downloaded, cached or redistributed by this repository. NASA data are not
+  copyrighted; used with acknowledgment (NASA LP DAAC / USGS EROS).
+
+CHIRPS
+  https://www.chc.ucsb.edu/data/chirps
+  Climate Hazards Center, University of California Santa Barbara. Named as an
+  extension point; no CHIRPS dataset is bundled or redistributed.
+
+QField
+  https://qfield.org
+  OPENGIS.ch, licensed under GPL-3.0. Named as an interoperability target for
+  offline field capture; no QField code is included in this repository.
+
+CEAZAMET
+  https://www.ceazamet.cl
+  Red agroclimática CEAZAMET (CAZALAC). Referenced as a regional monitoring
+  network; no station data is bundled or redistributed.
+
+IPCC
+  https://www.ipcc.ch
+  Assessment reports cited as background reading in the land-care record.
+  Quoted material remains under the IPCC's terms; no report is redistributed.
+
+UNCCD
+  https://www.unccd.int
+  Convention documents cited as background reading in the land-care record.
+  No document is redistributed.
+
+Telegram Bot API
+  https://core.telegram.org/bots/api
+  Optional distribution channel. Coded but inactive unless an operator installs a bot token;
+  no message is sent and no field data leaves the server by default.
+
+Natural Earth
+  https://www.naturalearthdata.com
+  Basemap geometry. Public domain.
+
+Lucide
+  https://lucide.dev
+  Interface icons. Licensed under the ISC License.
+
+NVIDIA Nemotron 3 Nano
+  Accessed through Nebius Token Factory as a hosted inference service.
+  Model weights are not redistributed with this repository.
+
+No web font is bundled: the interface uses the operating system's sans-serif stack.

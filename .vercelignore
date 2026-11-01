@@ -1,0 +1,40 @@
+# Vercel CLI upload exclusions.
+# This file protects a CLI deploy; it does not remove files from Git history.
+# Preferred deployment unit: a clean staged release package under output/,
+# never the dirty monorepo root.
+
+# Secrets and local state
+.env
+.env.*
+scripts/.env
+scripts/secrets.local.env
+.data/
+*.sqlite3
+*.db
+*.pem
+*.key
+
+# Internal evidence, reviews and release work
+output/
+docs/
+deploy/
+
+# Local-only prototypes and tests (not needed by the Vite frontend build)
+prototypes/
+.playwright-mcp/
+.engram/
+.vercel/
+
+# Build/dependency outputs
+node_modules/
+dist/
+artifacts/solquira/dist/
+
+# Ad-hoc local debugging/capture scripts
+scripts/test-8036.mjs
+scripts/test-8055.mjs
+scripts/apply-refinements.py
+scripts/capture-cinematic-scenes.mjs
+scripts/deep-interaction-captures.mjs
+scripts/visual-audit-runner.mjs
+scripts/capture-audiovisual-demo.mjs

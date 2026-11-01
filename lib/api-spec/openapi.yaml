@@ -1,0 +1,564 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Solquira — comparación demostrativa con datos sintéticos. Sin validación agronómica.
+servers:
+  - url: /solquira-api
+    description: Base API path
+tags:
+  - name: studio
+    description: English, session-scoped synthetic dryland decision workflow
+  - name: health
+    description: Health operations
+paths:
+  /perfiles:
+    get:
+      operationId: getProfiles
+      responses:
+        "200":
+          description: Tres perfiles sintéticos de Coquimbo
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TerritorialProfile" }
+  /parcela:
+    get:
+      operationId: getParcel
+      responses:
+        "200":
+          description: Parcela demostrativa persistida
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Parcel" }
+    put:
+      operationId: saveParcel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Parcel" }
+      responses:
+        "200":
+          description: Parcela guardada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Parcel" }
+        "422": { description: Entrada inválida }
+  /escenarios:
+    get:
+      operationId: getScenarios
+      responses:
+        "200":
+          description: Multiplicadores sintéticos de disponibilidad
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Scenario" }
+  /evaluacion:
+    post:
+      operationId: evaluateParcel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EvaluationInput" }
+      responses:
+        "200":
+          description: Comparación determinista o datos insuficientes
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Evaluation" }
+        "422": { description: Entrada inválida }
+  /fuentes:
+    get:
+      operationId: getSources
+      responses:
+        "200":
+          description: Evidencia y estado de adaptadores
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Evidence" }
+  /fuentes/power:
+    get:
+      operationId: getNasaPower
+      summary: Serie diaria NASA POWER (celdas de referencia)
+      description: >-
+        Observaciones reales de la celda NASA POWER más cercana, no medición de
+        parcela ni pronóstico. Coordenadas acotadas al piloto de Coquimbo y
+        ventana histórica de 1 a 31 días; no convierte precipitación en agua de
+        riego ni modifica la rúbrica sintética.
+      parameters:
+        - { name: latitude, in: query, required: true, schema: { type: number, minimum: -32.3, maximum: -29 } }
+        - { name: longitude, in: query, required: true, schema: { type: number, minimum: -72, maximum: -69 } }
+        - { name: start, in: query, required: true, schema: { type: string, format: date } }
+        - { name: end, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        "200":
+          description: Serie diaria validada (status ok | unavailable | invalid_response)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NasaPowerDaily" }
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /studio/bootstrap:
+    get:
+      operationId: getStudioBootstrap
+      tags: [studio]
+      summary: Create or resume an ephemeral local Studio session
+      description: Requires Studio mode. Returns a CSRF token and a scoped HttpOnly cookie; never activates a provider.
+      responses:
+        "200":
+          description: English synthetic-example configuration, no-store
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudioBootstrap" }
+        "403": { description: Origin rejected }
+        "404": { description: Studio mode is disabled }
+        "429": { description: Session admission limit }
+  /studio/location:
+    post:
+      operationId: getStudioLocationContext
+      tags: [studio]
+      summary: Load independent, rounded-point geographic context
+      description: Explicit source opt-in; seven-day UTC model forecast and optional NASA imagery configuration. Does not change the crop example or send coordinates to the model.
+      parameters:
+        - { name: X-Solquira-CSRF, in: header, required: true, schema: { type: string } }
+      security: [{ studioSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudioLocation" }
+      responses:
+        "200":
+          description: Bounded location context; per-source readiness and provenance, no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [schema_version, location, retrieved_at, weather, imagery]
+                properties:
+                  schema_version: { type: string, enum: [solquira.location/1] }
+                  context_ref:
+                    type: [string, "null"]
+                    description: Opaque session-owned forecast reference, at most ten minutes from source retrieval. Null when weather is unavailable or the request was superseded.
+                  location:
+                    type: object
+                    required: [latitude, longitude, precision_degrees]
+                    properties:
+                      latitude: { type: number, minimum: -90, maximum: 90 }
+                      longitude: { type: number, minimum: -180, maximum: 180 }
+                      precision_degrees: { type: number, enum: [0.001] }
+                  retrieved_at: { type: string, format: date-time }
+                  weather: { type: object, description: Seven bounded UTC forecast days when ready or cached; otherwise an empty series. }
+                  imagery: { type: object, description: Allowlisted NASA GIBS MODIS true-colour template and dated regional context; no NDVI values. }
+        "401": { description: Missing or expired session }
+        "403": { description: CSRF or origin rejected }
+        "413": { description: Request exceeds 8192 bytes }
+        "422": { description: Invalid coordinates or unknown fields }
+        "429": { description: Session or concurrency limit }
+  /studio/evaluate:
+    post:
+      operationId: evaluateStudioScenario
+      tags: [studio]
+      summary: Compare the same explicit scenario using the deterministic motor
+      parameters:
+        - { name: X-Solquira-CSRF, in: header, required: true, schema: { type: string } }
+      security: [{ studioSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudioScenario" }
+      responses:
+        "200":
+          description: Scenario-linked deterministic comparison, no-store
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudioEnvelope" }
+        "401": { description: Missing or expired session }
+        "403": { description: CSRF or origin rejected }
+        "413": { description: Request exceeds 8192 bytes }
+        "422": { description: Invalid scenario or JSON }
+        "429": { description: Request or concurrency limit }
+        "503": { description: Local comparison unavailable }
+  /studio/agent:
+    post:
+      operationId: explainStudioScenario
+      tags: [studio]
+      summary: Execute bounded local tools and explain the current scenario
+      description: A remote provider is installed only by the explicitly authorized bounded connection-trial launcher. Default local execution and any fallback are explicitly labelled.
+      parameters:
+        - { name: X-Solquira-CSRF, in: header, required: true, schema: { type: string } }
+      security: [{ studioSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudioQuestion" }
+      responses:
+        "200":
+          description: English explanation, evidence gaps and tool trace
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudioEnvelope" }
+        "401": { description: Missing or expired session }
+        "403": { description: CSRF or origin rejected }
+        "413": { description: Request exceeds 8192 bytes }
+        "422": { description: Invalid scenario or question }
+        "429": { description: Request or concurrency limit }
+        "503": { description: Explanation unavailable; no result invented }
+        "409": { description: Attached location context expired, changed or belongs to another session. Reload and attach again. }
+components:
+  securitySchemes:
+    studioSession:
+      type: apiKey
+      in: cookie
+      name: solquira_studio_session
+  schemas:
+    StudioLocation:
+      type: object
+      additionalProperties: false
+      required: [latitude, longitude]
+      properties:
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+    StudioScenario:
+      type: object
+      additionalProperties: false
+      required: [profile_id, water_percent, previous_crop]
+      properties:
+        profile_id: { type: string, enum: [valle, secano, precordillera] }
+        water_percent: { type: integer, minimum: 40, maximum: 120, multipleOf: 10 }
+        previous_crop: { type: string, enum: [cereal, leguminosa, cubierta, descanso] }
+    StudioQuestion:
+      type: object
+      additionalProperties: false
+      required: [scenario, query]
+      properties:
+        scenario: { $ref: "#/components/schemas/StudioScenario" }
+        query: { type: string, minLength: 1, maxLength: 1000 }
+        context_ref:
+          type: [string, "null"]
+          minLength: 24
+          maxLength: 100
+          pattern: '^slq-context-[A-Za-z0-9_-]+$'
+          description: Include only after the user explicitly attaches a server-issued forecast; client weather is never accepted.
+    StudioBootstrap:
+      type: object
+      required: [schema_version, csrf_token, session_expires_in, profiles, history_options, inference, rule_version, synthetic]
+      properties:
+        schema_version: { type: string, const: solquira.studio/1 }
+        csrf_token: { type: string }
+        session_expires_in: { type: integer, minimum: 0, maximum: 3600 }
+        synthetic: { type: boolean, const: true }
+        rule_version: { type: string }
+        profiles:
+          type: array
+          items:
+            type: object
+            required: [id, name, location, water_m3_ha]
+            properties:
+              id: { type: string, enum: [valle, secano, precordillera] }
+              name: { type: string }
+              location: { type: string }
+              water_m3_ha: { type: number }
+        history_options:
+          type: array
+          items:
+            type: object
+            required: [id, label]
+            properties:
+              id: { type: string, enum: [cereal, leguminosa, cubierta, descanso] }
+              label: { type: string }
+        inference:
+          type: object
+          properties:
+            available: { type: boolean }
+            mode: { type: string }
+            provider: { type: string }
+            model: { type: [string, "null"] }
+    StudioPlan:
+      type: object
+      required: [id, name, sequence, demand_m3_ha, balance_m3_ha, history_ok, eligible]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        sequence: { type: array, items: { type: string } }
+        sequence_ids: { type: array, items: { type: string } }
+        demand_m3_ha: { type: number }
+        balance_m3_ha: { type: number }
+        history_ok: { type: boolean }
+        eligible: { type: boolean }
+        score: { type: number }
+    StudioReport:
+      type: object
+      required: [comparison_id, scenario_revision, status, synthetic, agronomicViability, plans, explanation, evidence, resilience, decision]
+      properties:
+        comparison_id: { type: string }
+        scenario_revision: { type: string }
+        scenario: { $ref: "#/components/schemas/StudioScenario" }
+        rule_version: { type: string }
+        engine_sha256: { type: string }
+        scope: { type: string }
+        status: { type: string }
+        synthetic: { type: boolean, const: true }
+        agronomicViability: { type: string, const: not_assessed }
+        available_water_m3_ha: { type: [number, "null"] }
+        missing_fields: { type: array, items: { type: string } }
+        plans: { type: array, items: { $ref: "#/components/schemas/StudioPlan" } }
+        explanation: { type: string }
+        field_brief: { $ref: "#/components/schemas/StudioFieldBrief" }
+        evidence: { type: object, additionalProperties: true }
+        resilience: { type: object, additionalProperties: true }
+        decision: { type: object, additionalProperties: true }
+    StudioFieldBrief:
+      type: object
+      required: [schema_version, context_ref, focus, location, created_at, forecast, pattern, summary, actions, sources, missing_inputs, external_actions_executed]
+      properties:
+        schema_version: { type: string, const: solquira.field-brief/1 }
+        context_ref: { type: string }
+        focus: { type: string, enum: [water, history, evidence, resilience, decision] }
+        location:
+          type: object
+          required: [latitude, longitude]
+          properties:
+            latitude: { type: number, minimum: -90, maximum: 90 }
+            longitude: { type: number, minimum: -180, maximum: 180 }
+        created_at: { type: string, format: date-time }
+        forecast:
+          type: object
+          required: [source, kind, time_zone, retrieved_at, period_start, period_end, rain_mm, reference_et0_mm, temperature_min_c, temperature_max_c, days_without_rain]
+          properties:
+            source: { type: string, const: Open-Meteo }
+            kind: { type: string, const: model_forecast }
+            time_zone: { type: string, const: UTC }
+            retrieved_at: { type: string, format: date-time }
+            period_start: { type: string, format: date }
+            period_end: { type: string, format: date }
+            rain_mm: { type: number, minimum: 0, maximum: 14000 }
+            reference_et0_mm: { type: number, minimum: 0, maximum: 700 }
+            temperature_min_c: { type: number, minimum: -100, maximum: 80 }
+            temperature_max_c: { type: number, minimum: -100, maximum: 80 }
+            days_without_rain: { type: integer, minimum: 0, maximum: 7 }
+        pattern: { type: string, enum: [rain_below_reference_et0, rain_at_or_above_reference_et0] }
+        summary: { type: string }
+        actions:
+          type: array
+          minItems: 3
+          maxItems: 3
+          items:
+            type: object
+            required: [id, title, detail, evidence_ids, destination]
+            properties:
+              id: { type: string }
+              title: { type: string }
+              detail: { type: string }
+              evidence_ids: { type: array, items: { type: string, enum: [forecast-7d, field-inputs] } }
+              destination: { type: string, enum: [weather, soil, question] }
+        sources:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: object
+            required: [id, label, kind]
+            properties:
+              id: { type: string, enum: [forecast-7d, field-inputs] }
+              label: { type: string }
+              kind: { type: string, enum: [model_forecast, missing_inputs] }
+              url: { type: string, enum: ['https://open-meteo.com/'] }
+        missing_inputs: { type: array, items: { type: string } }
+        external_actions_executed: { type: boolean, const: false }
+    StudioEnvelope:
+      type: object
+      required: [schema_version, scenario, report, run, request_id]
+      properties:
+        schema_version: { type: string, const: solquira.studio/1 }
+        scenario: { $ref: "#/components/schemas/StudioScenario" }
+        proposed_scenario: { $ref: "#/components/schemas/StudioScenario" }
+        requested_scenario: { $ref: "#/components/schemas/StudioScenario" }
+        report: { $ref: "#/components/schemas/StudioReport" }
+        request_id: { type: string }
+        run:
+          type: object
+          required: [inference_mode, outcome, model, trace]
+          properties:
+            inference_mode: { type: string }
+            outcome: { type: string }
+            model: { type: [string, "null"] }
+            trace:
+              type: array
+              items:
+                type: object
+                properties:
+                  tool: { type: string }
+                  status: { type: string }
+                  comparison_id: { type: [string, "null"] }
+    Parcel:
+      type: object
+      required: [name, profileId, areaHa, waterM3Ha, soil, previousCrops, priorities, latitude, longitude]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        profileId: { type: string, enum: [valle, secano, precordillera] }
+        areaHa: { type: number, minimum: 0.1, maximum: 1000 }
+        waterM3Ha: { type: [number, "null"], minimum: 0, maximum: 20000 }
+        soil: { type: string, enum: [franco, arenoso, arcilloso, desconocido] }
+        previousCrops:
+          type: array
+          maxItems: 10
+          items: { type: string, maxLength: 60 }
+        priorities:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: string, enum: [agua, suelo, diversidad] }
+        latitude: { type: number, minimum: -32.3, maximum: -29 }
+        longitude: { type: number, minimum: -72, maximum: -69 }
+    TerritorialProfile:
+      type: object
+      required: [id, name, location, description, climate, soil, waterM3Ha, latitude, longitude, dataStatus]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        location: { type: string }
+        description: { type: string }
+        climate: { type: string }
+        soil: { type: string }
+        waterM3Ha: { type: number }
+        latitude: { type: number }
+        longitude: { type: number }
+        dataStatus: { type: string }
+    Scenario:
+      type: object
+      required: [id, name, multiplier, description]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        multiplier: { type: number }
+        description: { type: string }
+    Evidence:
+      type: object
+      required: [id, title, status, detail, url]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        status: { type: string }
+        detail: { type: string }
+        url: { type: [string, "null"] }
+    EvaluationInput:
+      type: object
+      required: [parcel, waterPercent]
+      properties:
+        parcel: { $ref: "#/components/schemas/Parcel" }
+        waterPercent: { type: number, minimum: 0, maximum: 150 }
+    Rotation:
+      type: object
+      required: [id, name, crops, score, demandM3Ha, waterBalanceM3Ha, coveragePercent, diversity, compatibility, explanations, evidenceIds]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        crops: { type: array, items: { type: string } }
+        score: { type: number }
+        demandM3Ha: { type: number }
+        waterBalanceM3Ha: { type: number }
+        coveragePercent: { type: number }
+        diversity: { type: number }
+        compatibility: { type: string }
+        explanations: { type: array, items: { type: string } }
+        evidenceIds: { type: array, items: { type: string } }
+    Signal:
+      type: object
+      required: [id, label, level, detail, evidenceIds]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        level: { type: string }
+        detail: { type: string }
+        evidenceIds: { type: array, items: { type: string } }
+    Evaluation:
+      type: object
+      required: [status, dataStatus, availableWaterM3Ha, baselineLeaderId, scenarioLeaderId, summary, missingFields, rotations, signals, evidence, disclaimer, ruleVersion]
+      properties:
+        status: { type: string, enum: [ok, insufficient_data] }
+        dataStatus: { type: string }
+        availableWaterM3Ha: { type: [number, "null"] }
+        baselineLeaderId: { type: [string, "null"] }
+        scenarioLeaderId: { type: [string, "null"] }
+        summary: { type: string }
+        missingFields: { type: array, items: { type: string } }
+        rotations: { type: array, items: { $ref: "#/components/schemas/Rotation" } }
+        signals: { type: array, items: { $ref: "#/components/schemas/Signal" } }
+        evidence: { type: array, items: { $ref: "#/components/schemas/Evidence" } }
+        disclaimer: { type: string }
+        ruleVersion: { type: string }
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    NasaPowerDaily:
+      type: object
+      description: >-
+        Respuesta NASA POWER normalizada. status=unavailable|invalid_response
+        no lleva units/values (la consulta falló o la respuesta fue rechazada);
+        nunca se generan sustitutos sintéticos.
+      required: [provider, source, fetchedAt, location, period, limitations, dataOrigin, cacheHit, timeStandard, status]
+      properties:
+        provider: { type: string }
+        source: { type: string, description: URL de consulta de origen }
+        fetchedAt: { type: string, format: date-time }
+        location:
+          type: object
+          required: [latitude, longitude]
+          properties:
+            latitude: { type: number }
+            longitude: { type: number }
+        period:
+          type: object
+          required: [start, end]
+          properties:
+            start: { type: string, format: date }
+            end: { type: string, format: date }
+        limitations: { type: string }
+        dataOrigin: { type: string }
+        cacheHit: { type: boolean }
+        timeStandard: { type: string, enum: [UTC] }
+        status: { type: string, enum: [ok, unavailable, invalid_response] }
+        units:
+          type: object
+          additionalProperties: { type: string }
+        values:
+          type: object
+          description: Mapa variable -> día YYYYMMDD -> valor (null cuando falta)
+          additionalProperties:
+            type: object
+            additionalProperties: { type: [number, "null"] }
+        parameterDescriptions:
+          type: object
+          additionalProperties: { type: string }
+        sourceProducts: { type: array, items: { type: string } }
+        apiVersion: { type: string }
+        missingValueCount: { type: integer }
+        cacheExpiresAt: { type: string, format: date-time }
+        errorType: { type: string }
+
