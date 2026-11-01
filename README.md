@@ -20,20 +20,26 @@ Switching areas preserves the map, selected place, forecast, scenario, results,
 session and land record. Source requests occur through user actions, not navigation.
 
 
-1. **Start with a place.** Allow location to center the map on you, select a reference
-   landscape or enter coordinates. The optional Cesium view combines a detailed
-   OpenStreetMap reference layer with a bundled Natural Earth fallback and optional
-   NASA GIBS imagery. With `--geodata`, the server loads a seven-day Open-Meteo
-   forecast: rainfall, reference ET₀ and temperature, in UTC.
-2. **Explore a field question.** The forecast can be attached to a question in the context panel.
-   This forecast-linked workflow is separate from the reference scenarios below.
-3. **Build a field brief.** Four map-linked reference profiles provide distinct soil-life and
-   water-held bands. Choose a dry-week or returning-rain scenario, then build a complete card
-   with a labor-aware checklist and three crop pathways.
-4. **See useful wording arrive.** Python supplies the complete initial brief. When inference is
-   enabled, Nemotron writes three short action details; only complete validated fields render.
-5. **Take the next step.** Mark the checks to bring to a field visit. Open the receipt to see the
-   evidence type, model, input fingerprint, budget reservation and execution outcome.
+1. **Choose your place.** Mark the earth in Cesium or explicitly request device GPS, review
+   the marker, then confirm. Typed coordinates are an accessible alternative, not a requirement.
+   Without permission the map remains neutral. GPS and manually selected points stay distinct;
+   no late GPS reply replaces a newer choice. Confirmation requests the seven-day forecast when
+   geographic sources are enabled. The original selection is retained; only the request is rounded.
+2. **Tell us what matters.** A short conditional journey asks about land use, the concern or
+   exploration goal, a reported sign, duration and practical barriers. It asks four or six questions
+   including the place, without pretending these answers are instrumental measurements.
+3. **Prepare one manageable check.** Local deterministic guidance helps structure a field visit,
+   not prescribe sowing, irrigation or treatment. A person can review a suggested draft in the
+   existing land record; nothing is saved to Kobo or shared automatically.
+4. **Read the environmental context.** Inspect P1 forecast indicators; request ERA5 history only
+   when wanted. Dates, resolution, provenance and unavailable states stay visible.
+5. **Keep examples separate.** Four synthetic teaching landscapes, crop-path comparisons and
+   optional reference briefs remain available. They are not measurements of the selected place.
+   The optional AI wording remains an explicit action protected by the existing budget.
+
+The map uses an OpenStreetMap reference layer, bundled Natural Earth fallback and optional
+NASA GIBS imagery. Map selection does not establish a parcel boundary or survey accuracy.
+Kobo import, shared observation storage and team authorization are not implemented in this release.
 
 ## Environmental anticipation and historical context
 
@@ -184,7 +190,8 @@ Run from the repository root with the virtual environment active:
 python -m unittest discover -s artifacts/solquira/backend -p "test_*.py"
 pnpm.cmd run typecheck
 python scripts/check-fixtures.py
-node scripts/qa-dryland-brief.mjs http://127.0.0.1:8036
+node scripts/qa-environment-navigation.mjs http://127.0.0.1:8036
+node scripts/qa-territorial-journey.mjs http://127.0.0.1:8036
 ```
 
 Browser QA expects the default local, inference-disabled server. It checks the card, scenario

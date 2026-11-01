@@ -54,7 +54,10 @@ try {
   for (const width of [1440, 390, 320]) {
     const context = await browser.newContext({ viewport: { width, height: width === 1440 ? 1000 : 900 }, reducedMotion: 'reduce' });
     // Do not request the person's location or synthesize a GPS observation.
-    await context.addInitScript(() => Object.defineProperty(navigator, 'geolocation', { value: { getCurrentPosition() {} } }));
+    await context.addInitScript(() => {
+      window.__qaGPS = [];
+      Object.defineProperty(navigator, 'geolocation', { value: { getCurrentPosition(success, error) { window.__qaGPS.push({success,error}); } } });
+    });
     const calls = { location: 0, history: 0, model: 0, deterministicBrief: 0, blockedExternal: 0 };
     const locationSequence = [];
     let forecastMode = 'ready', historyMode = 'ready';
@@ -135,6 +138,12 @@ try {
     assert.equal(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches), true);
     assert.notEqual(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior), 'smooth');
 
+    // Declared permission/error fixtures, never the user's device location.
+    await page.getByTestId('geo-use-location').click();
+    await page.evaluate(() => window.__qaGPS[0].error({code:1,message:'Denied fixture'}));
+    assert.equal(calls.location, 0);
+    await page.getByTestId('geo-use-location').click(); // deliberately late GPS
+    await page.getByTestId('geo-manual').locator('summary').click();
     await page.getByTestId('geo-lat').fill('37.1');
     await page.getByTestId('geo-lon').fill('-4.6');
     await page.getByTestId('geo-load-context').click();
@@ -144,6 +153,9 @@ try {
     const mapNode = await page.getByTestId('geo-map-state').elementHandle();
     const canvas = await page.locator('.qg-map canvas').first().elementHandle();
     assert.equal(calls.location, 1, 'A manual forecast load must not double-fetch');
+    await page.evaluate(() => window.__qaGPS[1].success({coords:{latitude:-33.45,longitude:-70.66,accuracy:10},timestamp:Date.now()}));
+    assert.match(await page.getByTestId('geo-selected-point').innerText(), /37\.100, -4\.600/);
+    assert.equal(calls.location, 1, 'Late GPS must not replace the manual point or load data');
     await page.getByTestId('area-tab-anticipation').click();
     await page.getByTestId('anticipation-indicators').waitFor();
     assert.match(await page.getByTestId('anticipation-difference').innerText(), /-11\.4/);
@@ -180,7 +192,7 @@ try {
     assert.equal(dryActions[0], 'zai_pits');
     await page.getByTestId('dryland-checklist').locator('input[type="checkbox"]').first().check();
     const beforeNavigation = { ...calls };
-    for (const area of ['territory', 'anticipation', 'evidence', 'guidance']) {
+    for (const area of [...['territory', 'anticipation', 'evidence', 'guidance'], ...['territory', 'anticipation', 'evidence', 'guidance'], 'territory', 'guidance']) {
       await page.getByTestId(`area-tab-${area}`).click();
       await page.locator(`.qs-studio[data-active-area="${area}"]`).waitFor();
       assert.equal(await tabs.getByRole('tab', { selected: true }).count(), 1);
@@ -251,9 +263,38 @@ try {
     await page.getByTestId('area-tab-anticipation').click();
     await page.getByTestId('anticipation-unavailable').waitFor();
     assert.equal(await page.getByTestId('anticipation-indicators').count(), 0, 'Invalid indicator units must not render numbers');
+    assert.equal(calls.location, 3, 'Exactly three explicit loads, no duplicate forecast requests');
+    forecastMode = 'ready';
+    await page.getByTestId('area-tab-territory').click();
+    for (const sceneMode of ['2d','3d']) {
+      if (await page.getByTestId('geo-map-state').getAttribute('data-scene-mode') !== sceneMode) {
+        await page.getByRole('button',{name:sceneMode === '3d' ? 'Switch to 3D view' : 'Switch to 2D view'}).click();
+        await page.waitForFunction(mode => document.querySelector('[data-testid="geo-map-state"]')?.getAttribute('data-scene-mode') === mode && document.querySelector('[data-testid="geo-map-state"]')?.getAttribute('data-morphing') === 'false', sceneMode);
+      }
+      await page.getByTestId('geo-select-map').click();
+      const beforePick = calls.location;
+      const canvasBox = await page.locator('.qg-map canvas').first().boundingBox();
+      await page.locator('.qg-map canvas').first().click({position:{x:canvasBox.width/2,y:canvasBox.height/2}});
+      await page.locator('[data-testid="geo-point-review"][data-confirmed="false"]').waitFor();
+      assert.equal(calls.location,beforePick,'A map draft must not request forecast');
+      await page.getByTestId('geo-confirm-point').click();
+      await page.waitForFunction(() => document.querySelector('[data-testid="geo-weather"]')?.getAttribute('data-state') === 'ready');
+      assert.equal(calls.location,beforePick+1,'Map confirmation requests one forecast');
+      assert.equal(await page.getByTestId('geo-selected-point').getAttribute('data-source'),'map');
+    }
+    const beforeGPS = calls.location;
+    await page.getByTestId('geo-use-location').click();
+    await page.evaluate(() => window.__qaGPS.at(-1).success({coords:{latitude:-33.45,longitude:-70.66,accuracy:10},timestamp:Date.now()}));
+    assert.match(await page.getByTestId('geo-point-review').innerText(), /-33\.45000, -70\.66000/);
+    assert.equal(calls.location,beforeGPS,'GPS draft requires confirmation');
+    await page.getByTestId('geo-confirm-point').click();
+    await page.waitForFunction(() => document.querySelector('[data-testid="geo-weather"]')?.getAttribute('data-state') === 'ready');
+    assert.equal(calls.location,beforeGPS+1);
+    await page.screenshot({path:`${output}/territorial-journey-${width}.png`,fullPage:true,animations:'disabled'});
+    assert.equal(calls.history,4,'Selection and GPS must not load history');
     assert.equal(calls.model, 0, 'No model endpoint should be requested');
     checks.push({ width, primaryAreas: 4, keyboardRoving: true, focusVisible: true, reducedMotion: true, preservedScenarioResultAndRecord: true,
-      mapState, sameMapNode: true, sameCesiumCanvas: Boolean(canvas), navigationRefetches: 0, historyExplicit: true,
+      gpsDenied:true, lateGpsPreservesManual:true, gpsRequiresConfirmation:true, map2DAnd3DPicking:true, threeExplicitLoadsExactlyThreeRequests:true, mapState, sameMapNode: true, sameCesiumCanvas: Boolean(canvas), navigationRefetches: 0, historyExplicit: true,
       realDisabledProviderBriefs: calls.deterministicBrief, dryRainBriefPreserved: true, checklistPreservedAcrossAreas: true,
       staleHistoryRequestIgnored: true, missingHistoryNotZero: true, historyErrorHandled: true, invalidAnticipationRejected: true, modelRequests: calls.model, fixtureLocationRequests: calls.location,
       fixtureHistoryRequests: calls.history, blockedExternalRequests: calls.blockedExternal, horizontalOverflow: false });
