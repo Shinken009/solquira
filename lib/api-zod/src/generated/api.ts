@@ -360,6 +360,118 @@ export const GetStudioLocationContextResponse = zod.object({
 
 
 /**
+ * Reuses only an optional source-validated forecast from this session. No source acquisition, model calls, scores or diagnosis. Missing metadata do not mean land is healthy or degraded. Inventory snapshots are not scientific validation.
+ * @summary Explicit metadata-only evidence inventory for a confirmed global point
+ */
+export const GetLandEvidenceInventoryHeader = zod.object({
+  "X-Solquira-CSRF": zod.string()
+})
+
+export const getLandEvidenceInventoryBodyLatitudeMin = -90;
+export const getLandEvidenceInventoryBodyLatitudeMax = 90;
+
+export const getLandEvidenceInventoryBodyLongitudeMin = -180;
+export const getLandEvidenceInventoryBodyLongitudeMax = 180;
+
+export const getLandEvidenceInventoryBodyContextRefMin = 24;
+export const getLandEvidenceInventoryBodyContextRefMax = 100;
+
+
+export const getLandEvidenceInventoryBodyContextRefRegExp = new RegExp('^slq-context-[A-Za-z0-9_-]+$');
+
+
+export const GetLandEvidenceInventoryBody = zod.object({
+  "latitude": zod.number().min(getLandEvidenceInventoryBodyLatitudeMin).max(getLandEvidenceInventoryBodyLatitudeMax),
+  "longitude": zod.number().min(getLandEvidenceInventoryBodyLongitudeMin).max(getLandEvidenceInventoryBodyLongitudeMax),
+  "context_ref": zod.string().min(getLandEvidenceInventoryBodyContextRefMin).max(getLandEvidenceInventoryBodyContextRefMax).regex(getLandEvidenceInventoryBodyContextRefRegExp).nullish().describe('Optional opaque reference bound to this session. Never supplied forecast data.')
+})
+
+export const getLandEvidenceInventoryResponseLocationLatitudeMin = -90;
+export const getLandEvidenceInventoryResponseLocationLatitudeMax = 90;
+
+export const getLandEvidenceInventoryResponseLocationLongitudeMin = -180;
+export const getLandEvidenceInventoryResponseLocationLongitudeMax = 180;
+
+export const getLandEvidenceInventoryResponseLimitationsItemMax = 1500;
+
+export const getLandEvidenceInventoryResponseLimitationsMax = 20;
+
+export const getLandEvidenceInventoryResponseItemsItemLabelMax = 200;
+
+export const getLandEvidenceInventoryResponseItemsItemReasonMax = 1500;
+
+export const getLandEvidenceInventoryResponseItemsItemSpatialSupportResolutionMExclusiveMin = 0;
+
+export const getLandEvidenceInventoryResponseItemsItemSpatialSupportQueryPrecisionDegreesExclusiveMin = 0;
+
+export const getLandEvidenceInventoryResponseItemsItemUnitsMax = 10;
+
+export const getLandEvidenceInventoryResponseItemsItemCoverageBboxMin = 4;
+export const getLandEvidenceInventoryResponseItemsItemCoverageBboxMax = 4;
+
+export const getLandEvidenceInventoryResponseItemsItemUncertaintyMax = 1500;
+
+export const getLandEvidenceInventoryResponseItemsItemLimitationsItemMax = 1500;
+
+export const getLandEvidenceInventoryResponseItemsItemLimitationsMax = 20;
+
+export const getLandEvidenceInventoryResponseItemsItemNextObservationMax = 1500;
+
+export const getLandEvidenceInventoryResponseItemsMin = 7;
+export const getLandEvidenceInventoryResponseItemsMax = 7;
+
+
+
+export const GetLandEvidenceInventoryResponse = zod.object({
+  "schema_version": zod.enum(['solquira.land-evidence/1']),
+  "status": zod.enum(['inventory_only']),
+  "scientific_validation": zod.enum(['not_validated']),
+  "is_medalus_r": zod.literal(false),
+  "location": zod.object({
+  "latitude": zod.number().min(getLandEvidenceInventoryResponseLocationLatitudeMin).max(getLandEvidenceInventoryResponseLocationLatitudeMax),
+  "longitude": zod.number().min(getLandEvidenceInventoryResponseLocationLongitudeMin).max(getLandEvidenceInventoryResponseLocationLongitudeMax)
+}),
+  "generated_at": zod.coerce.date(),
+  "limitations": zod.array(zod.string().max(getLandEvidenceInventoryResponseLimitationsItemMax)).max(getLandEvidenceInventoryResponseLimitationsMax),
+  "items": zod.array(zod.object({
+  "id": zod.enum(['forecast_context', 'climate_baseline', 'land_cover_change', 'land_productivity', 'soil_organic_carbon', 'terrain', 'field_observations']),
+  "label": zod.string().max(getLandEvidenceInventoryResponseItemsItemLabelMax),
+  "state": zod.enum(['available', 'missing', 'unavailable', 'stale', 'not_applicable']),
+  "reason": zod.string().max(getLandEvidenceInventoryResponseItemsItemReasonMax),
+  "nature": zod.enum(['forecast', 'reanalysis', 'satellite', 'modeled_soil', 'terrain', 'self_reported']),
+  "source": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "version": zod.string().nullable(),
+  "method": zod.string(),
+  "url": zod.string().url(),
+  "license_url": zod.string().url()
+}).nullable(),
+  "period": zod.object({
+  "start": zod.coerce.date(),
+  "end": zod.coerce.date(),
+  "time_zone": zod.string()
+}).nullable(),
+  "retrieved_at": zod.coerce.date().nullable(),
+  "spatial_support": zod.object({
+  "description": zod.string(),
+  "resolution_m": zod.number().gt(getLandEvidenceInventoryResponseItemsItemSpatialSupportResolutionMExclusiveMin).nullable(),
+  "query_precision_degrees": zod.number().gt(getLandEvidenceInventoryResponseItemsItemSpatialSupportQueryPrecisionDegreesExclusiveMin).nullable()
+}).nullable(),
+  "units": zod.array(zod.string()).max(getLandEvidenceInventoryResponseItemsItemUnitsMax).nullable(),
+  "coverage": zod.object({
+  "crs": zod.enum(['EPSG:4326']),
+  "bbox": zod.array(zod.number()).min(getLandEvidenceInventoryResponseItemsItemCoverageBboxMin).max(getLandEvidenceInventoryResponseItemsItemCoverageBboxMax).describe('WGS84 west south east north; west greater than east crosses the antimeridian. Null if no verified footprint.')
+}).nullable(),
+  "quality": zod.enum(['metadata_checked', 'not_assessed']),
+  "uncertainty": zod.string().max(getLandEvidenceInventoryResponseItemsItemUncertaintyMax),
+  "limitations": zod.array(zod.string().max(getLandEvidenceInventoryResponseItemsItemLimitationsItemMax)).max(getLandEvidenceInventoryResponseItemsItemLimitationsMax),
+  "next_observation": zod.string().max(getLandEvidenceInventoryResponseItemsItemNextObservationMax)
+})).min(getLandEvidenceInventoryResponseItemsMin).max(getLandEvidenceInventoryResponseItemsMax)
+})
+
+
+/**
  * @summary Compare the same explicit scenario using the deterministic motor
  */
 export const EvaluateStudioScenarioHeader = zod.object({

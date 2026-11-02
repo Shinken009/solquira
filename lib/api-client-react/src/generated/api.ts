@@ -26,6 +26,8 @@ import type {
   GetNasaPowerParams,
   GetStudioLocationContext200,
   HealthStatus,
+  LandEvidenceInventory,
+  LandEvidenceRequest,
   NasaPowerDaily,
   Parcel,
   Scenario,
@@ -840,6 +842,95 @@ export const useGetStudioLocationContext = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getGetStudioLocationContextMutationOptions(options));
+    }
+
+export const getGetLandEvidenceInventoryUrl = () => {
+
+
+
+
+  return `/solquira-api/studio/evidence`
+}
+
+/**
+ * Reuses only an optional source-validated forecast from this session. No source acquisition, model calls, scores or diagnosis. Missing metadata do not mean land is healthy or degraded. Inventory snapshots are not scientific validation.
+ * @summary Explicit metadata-only evidence inventory for a confirmed global point
+ */
+export const getLandEvidenceInventory = async (landEvidenceRequest: LandEvidenceRequest, options?: Parameters<typeof customFetch>[1]): Promise<LandEvidenceInventory> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<LandEvidenceInventory>(getGetLandEvidenceInventoryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(landEvidenceRequest)
+  }
+);}
+
+
+
+
+
+export const getGetLandEvidenceInventoryMutationKey = () => ['getLandEvidenceInventory'] as const;
+
+export const getGetLandEvidenceInventoryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getLandEvidenceInventory>>, TError,GetLandEvidenceInventoryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof getLandEvidenceInventory>>, TError,GetLandEvidenceInventoryMutationVariables, TContext> => {
+
+const mutationKey = getGetLandEvidenceInventoryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getLandEvidenceInventory>>, GetLandEvidenceInventoryMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  getLandEvidenceInventory(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetLandEvidenceInventoryMutationResult = NonNullable<Awaited<ReturnType<typeof getLandEvidenceInventory>>>
+    export type GetLandEvidenceInventoryMutationBody = BodyType<LandEvidenceRequest>
+    export type GetLandEvidenceInventoryMutationError = ErrorType<void>
+    export type GetLandEvidenceInventoryMutationVariables = {data: BodyType<LandEvidenceRequest>}
+
+    /**
+ * @summary Explicit metadata-only evidence inventory for a confirmed global point
+ */
+export const useGetLandEvidenceInventory = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getLandEvidenceInventory>>, TError,GetLandEvidenceInventoryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof getLandEvidenceInventory>>,
+        TError,
+        GetLandEvidenceInventoryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGetLandEvidenceInventoryMutationOptions(options));
     }
 
 export const getEvaluateStudioScenarioUrl = () => {

@@ -71,6 +71,31 @@ Quantitative vegetation/NDVI/NDMI trends are **not implemented**: rendered GIBS
 true-color JPG tiles do not supply the required numeric bands, cloud/quality masks
 or seasonal comparisons. The current imagery and map functionality are preserved.
 
+## Territorial evidence inventory
+
+The explicit **Review what we know** action adds a metadata-only snapshot for the confirmed
+point. It does not fetch environmental sources or send answers to a model. Seven distinct
+entries cover the forecast context, long-term climate, land-cover change, land productivity,
+soil organic carbon, terrain and field observations. An optional opaque forecast reference
+can reuse only source-validated context belonging to the same session and rounded query point;
+coordinates in the inventory retain the original selection. A missing or expired reference
+never authorizes acquisition of another forecast.
+
+The inventory distinguishes **available, missing, unavailable, stale and not applicable**.
+Availability concerns the included metadata, not scientific validation of land condition.
+Missing source identity, version, coverage, resolution or units remain null, never zero or an
+invented global footprint. The 0.001° query rounding is not source resolution or GPS accuracy.
+All entries offer a concrete next observation or verification step. Local land-record notes
+and existing ERA5 comparisons are not silently imported, transmitted or persisted by this action.
+
+This is `inventory_only`, `scientific_validation=not_validated`, `is_medalus_r=false`.
+It computes no susceptibility score, degradation class, MEDALUS-R index, irrigation dose,
+restoration ranking or SDG 15.3.1 result. The [UNCCD LDN principles](https://www.unccd.int/land-and-life/land-degradation-neutrality/ldn-principles)
+identify land-cover change, productivity and soil organic carbon as distinct indicators and
+require local interpretation; merely listing metadata does not implement their assessment.
+The other layers remain explicit evidence gaps pending separately reviewed data adapters.
+No new data provider, background job, raster processing or inference dependency is introduced.
+
 ## Bounded orchestration
 
 **Python owns the calculations and policy; NVIDIA Nemotron improves the language.**
@@ -172,6 +197,7 @@ The model and spending boundaries can be inspected directly in
 | ------------------------------------------------------ | ----------------------------------------------------------------------- |
 | `GET /solquira-api/healthz`                            | Liveness                                                                |
 | `GET /solquira-api/studio/bootstrap`                   | Establish opaque session cookie and CSRF token; expose effective limits |
+| `POST /solquira-api/studio/evidence`                   | Explicit metadata-only territorial evidence inventory                    |
 | `POST /solquira-api/studio/evaluate`                   | Deterministic crop-path comparison                                      |
 | `POST /solquira-api/studio/history`                    | Explicit bounded ERA5 historical precipitation comparison               |
 | `POST /solquira-api/studio/location`                   | Optional Open-Meteo context for rounded coordinates                     |
@@ -192,6 +218,8 @@ pnpm.cmd run typecheck
 python scripts/check-fixtures.py
 node scripts/qa-environment-navigation.mjs http://127.0.0.1:8036
 node scripts/qa-territorial-journey.mjs http://127.0.0.1:8036
+node scripts/qa-land-evidence.mjs http://127.0.0.1:8036
+node --test scripts/test-land-evidence-client.mjs
 ```
 
 Browser QA expects the default local, inference-disabled server. It checks the card, scenario

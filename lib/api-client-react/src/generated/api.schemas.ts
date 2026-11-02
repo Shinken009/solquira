@@ -5,6 +5,186 @@
  * Solquira — comparación demostrativa con datos sintéticos. Sin validación agronómica.
  * OpenAPI spec version: 0.1.0
  */
+export interface LandEvidenceRequest {
+  /**
+     * @minimum -90
+     * @maximum 90
+     */
+  latitude: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
+  longitude: number;
+  /**
+     * Optional opaque reference bound to this session. Never supplied forecast data.
+     * @minLength 24
+     * @maxLength 100
+     * @nullable
+     * @pattern ^slq-context-[A-Za-z0-9_-]+$
+     */
+  context_ref?: string | null;
+}
+
+export type LandEvidenceInventorySchemaVersion = typeof LandEvidenceInventorySchemaVersion[keyof typeof LandEvidenceInventorySchemaVersion];
+
+
+export const LandEvidenceInventorySchemaVersion = {
+  'solquiraland-evidence/1': 'solquira.land-evidence/1',
+} as const;
+
+export type LandEvidenceInventoryStatus = typeof LandEvidenceInventoryStatus[keyof typeof LandEvidenceInventoryStatus];
+
+
+export const LandEvidenceInventoryStatus = {
+  inventory_only: 'inventory_only',
+} as const;
+
+export type LandEvidenceInventoryScientificValidation = typeof LandEvidenceInventoryScientificValidation[keyof typeof LandEvidenceInventoryScientificValidation];
+
+
+export const LandEvidenceInventoryScientificValidation = {
+  not_validated: 'not_validated',
+} as const;
+
+export type LandEvidenceInventoryItemsItemId = typeof LandEvidenceInventoryItemsItemId[keyof typeof LandEvidenceInventoryItemsItemId];
+
+
+export const LandEvidenceInventoryItemsItemId = {
+  forecast_context: 'forecast_context',
+  climate_baseline: 'climate_baseline',
+  land_cover_change: 'land_cover_change',
+  land_productivity: 'land_productivity',
+  soil_organic_carbon: 'soil_organic_carbon',
+  terrain: 'terrain',
+  field_observations: 'field_observations',
+} as const;
+
+export type LandEvidenceInventoryItemsItemState = typeof LandEvidenceInventoryItemsItemState[keyof typeof LandEvidenceInventoryItemsItemState];
+
+
+export const LandEvidenceInventoryItemsItemState = {
+  available: 'available',
+  missing: 'missing',
+  unavailable: 'unavailable',
+  stale: 'stale',
+  not_applicable: 'not_applicable',
+} as const;
+
+export type LandEvidenceInventoryItemsItemNature = typeof LandEvidenceInventoryItemsItemNature[keyof typeof LandEvidenceInventoryItemsItemNature];
+
+
+export const LandEvidenceInventoryItemsItemNature = {
+  forecast: 'forecast',
+  reanalysis: 'reanalysis',
+  satellite: 'satellite',
+  modeled_soil: 'modeled_soil',
+  terrain: 'terrain',
+  self_reported: 'self_reported',
+} as const;
+
+/**
+ * @nullable
+ */
+export type LandEvidenceInventoryItemsItemSource = {
+  id: string;
+  name: string;
+  /** @nullable */
+  version: string | null;
+  method: string;
+  url: string;
+  license_url: string;
+} | null;
+
+/**
+ * @nullable
+ */
+export type LandEvidenceInventoryItemsItemPeriod = {
+  start: string;
+  end: string;
+  time_zone: string;
+} | null;
+
+/**
+ * @nullable
+ */
+export type LandEvidenceInventoryItemsItemSpatialSupport = {
+  description: string;
+  /**
+     * @exclusiveMinimum 0
+     * @nullable
+     */
+  resolution_m: number | null;
+  /**
+     * @exclusiveMinimum 0
+     * @nullable
+     */
+  query_precision_degrees: number | null;
+} | null;
+
+export type LandEvidenceInventoryItemsItemCoverageCrs = typeof LandEvidenceInventoryItemsItemCoverageCrs[keyof typeof LandEvidenceInventoryItemsItemCoverageCrs];
+
+
+export const LandEvidenceInventoryItemsItemCoverageCrs = {
+  'EPSG:4326': 'EPSG:4326',
+} as const;
+
+/**
+ * @nullable
+ */
+export type LandEvidenceInventoryItemsItemCoverage = {
+  crs: LandEvidenceInventoryItemsItemCoverageCrs;
+  /**
+     * WGS84 west south east north; west greater than east crosses the antimeridian. Null if no verified footprint.
+     * @minItems 4
+     * @maxItems 4
+     */
+  bbox: number[];
+} | null;
+
+export type LandEvidenceInventoryItemsItemQuality = typeof LandEvidenceInventoryItemsItemQuality[keyof typeof LandEvidenceInventoryItemsItemQuality];
+
+
+export const LandEvidenceInventoryItemsItemQuality = {
+  metadata_checked: 'metadata_checked',
+  not_assessed: 'not_assessed',
+} as const;
+
+export type LandEvidenceInventoryItemsItem = {
+  id: LandEvidenceInventoryItemsItemId;
+  /** @maxLength 200 */
+  label: string;
+  state: LandEvidenceInventoryItemsItemState;
+  /** @maxLength 1500 */
+  reason: string;
+  nature: LandEvidenceInventoryItemsItemNature;
+  /** @nullable */
+  source: LandEvidenceInventoryItemsItemSource;
+  /** @nullable */
+  period: LandEvidenceInventoryItemsItemPeriod;
+  /** @nullable */
+  retrieved_at: string | null;
+  /** @nullable */
+  spatial_support: LandEvidenceInventoryItemsItemSpatialSupport;
+  /**
+     * @maxItems 10
+     * @nullable
+     */
+  units: string[] | null;
+  /** @nullable */
+  coverage: LandEvidenceInventoryItemsItemCoverage;
+  quality: LandEvidenceInventoryItemsItemQuality;
+  /** @maxLength 1500 */
+  uncertainty: string;
+  /**
+     * @maxItems 20
+     * @items.maxLength 1500
+     */
+  limitations: string[];
+  /** @maxLength 1500 */
+  next_observation: string;
+};
+
 export interface StudioLocation {
   /**
      * @minimum -90
@@ -16,6 +196,25 @@ export interface StudioLocation {
      * @maximum 180
      */
   longitude: number;
+}
+
+export interface LandEvidenceInventory {
+  schema_version: LandEvidenceInventorySchemaVersion;
+  status: LandEvidenceInventoryStatus;
+  scientific_validation: LandEvidenceInventoryScientificValidation;
+  is_medalus_r: false;
+  location: StudioLocation;
+  generated_at: string;
+  /**
+     * @maxItems 20
+     * @items.maxLength 1500
+     */
+  limitations: string[];
+  /**
+     * @minItems 7
+     * @maxItems 7
+     */
+  items: LandEvidenceInventoryItemsItem[];
 }
 
 export type StudioScenarioProfileId = typeof StudioScenarioProfileId[keyof typeof StudioScenarioProfileId];

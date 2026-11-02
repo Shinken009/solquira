@@ -31,6 +31,7 @@ class HostedPackageTests(unittest.TestCase):
             self.assertIn("artifacts/solquira/dist/public/index.html", manifest["files"])
             self.assertIn("scripts/run-studio-hosted.py", manifest["files"])
             self.assertIn("artifacts/solquira/backend/studio_budget.py", manifest["files"])
+            self.assertIn("artifacts/solquira/backend/land_evidence.py", manifest["files"])
             self.assertFalse((context / "scripts/.env").exists())
             self.assertFalse(any("credentials" in name for name in manifest["files"]))
             self.assertFalse(manifest["deployed"])

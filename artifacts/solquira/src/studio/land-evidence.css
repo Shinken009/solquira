@@ -27,7 +27,7 @@
 .le-card[data-state="stale"] .le-state,.le-card[data-state="unavailable"] .le-state { color:#7c592c; background:#fff4df; border-color:#e8d8b9; }
 .le-card h3 { font-size:16px; font-weight:600; line-height:1.4; margin:17px 0 9px; }.le-card > p { margin:0; font-size:12px; color:#56685d; line-height:1.65; }
 .le-next { margin-top:17px; padding-top:13px; border-top:1px solid #e0e5d7; }.le-next > span { font-size:9px; color:#6b785f; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }.le-next p { margin:7px 0 0; font-size:12px; line-height:1.65; }
-.le-metadata { margin-top:15px; font-size:11px; color:#50685c; }.le-panel summary { cursor:pointer; min-height:44px; align-content:center; line-height:1.5; }.le-metadata summary { display:list-item; }.le-metadata summary > svg { vertical-align:middle; margin-right:5px; }
+.le-metadata { margin-top:15px; font-size:11px; color:#50685c; }.le-panel summary { cursor:pointer; min-height:44px; align-content:center; line-height:1.5; }.le-metadata summary { display:list-item; }.le-metadata summary > svg { display:inline-block; vertical-align:middle; margin-right:5px; }
 .le-metadata dl { margin:5px 0 0; }.le-metadata dl > div { border-top:1px solid #e4e8de; padding:7px 0; overflow-wrap:anywhere; }.le-metadata dt { font-weight:600; color:#36574a; margin-bottom:4px; }.le-metadata dd { margin:0; line-height:1.6; }.le-metadata ul,.le-inventory-method ul { padding-left:18px; line-height:1.65; }
 .le-metadata a { color:#245b51; text-decoration:underline; text-underline-offset:3px; }
 .le-other { margin-top:16px; border-top:1px solid #cadbd1; padding-top:8px; }.le-other > summary { font-size:13px; font-weight:600; }.le-other > summary > span { margin-left:9px; font-size:10px; font-weight:400; color:#5e7568; }

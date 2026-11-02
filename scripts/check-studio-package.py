@@ -41,6 +41,7 @@ def source_files(root):
         "dryland_progressive",
         "dryland_references",
         "environmental_history",
+        "land_evidence",
         "main",
         "mcp_server",
         "power",
@@ -111,6 +112,10 @@ with TestClient(main.app, base_url="http://127.0.0.1") as client:
     assert not studio_service.studio_status()["available"]
     history = client.post("/solquira-api/studio/history", headers={"X-Solquira-CSRF":bootstrap.json()["csrf_token"]}, json={"latitude":37.1,"longitude":-4.6})
     assert history.status_code == 200 and history.json()["history"]["state"] == "disabled"
+    evidence = client.post("/solquira-api/studio/evidence", headers={"X-Solquira-CSRF":bootstrap.json()["csrf_token"]}, json={"latitude":37.1,"longitude":-4.6})
+    assert evidence.status_code == 200 and evidence.json()["status"] == "inventory_only"
+    assert evidence.json()["scientific_validation"] == "not_validated" and evidence.json()["is_medalus_r"] is False
+    assert len(evidence.json()["items"]) == 7 and all(item["state"] == "missing" for item in evidence.json()["items"])
     result = studio_service.evaluate_studio(scenario)
     explanation = studio_service.explain_studio(scenario, "What should I check about soil cover?")
     assert explanation["inference_mode"] == "local_fallback"
