@@ -29,7 +29,7 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from starlette.concurrency import run_in_threadpool
 
-from studio_schema import StudioQuestion, StudioScenario, StudioLocation
+from studio_schema import StudioQuestion, StudioScenario, StudioLocation, StudioEvidenceRequest
 from studio_runtime import current_provider
 from dryland_brief import (
     Attempt,
@@ -607,6 +607,22 @@ async def location(request: Request):
 
         result = await _run_service(lease, location_context, coordinates)
         result["context_ref"] = ADMISSION.bind_context(token, version, result)
+        return _json(result)
+
+
+@studio_router.post("/evidence")
+async def evidence(request: Request):
+    """Explicit offline inventory; references never acquire or refresh sources."""
+    async with _admitted(request) as lease:
+        value = _validate(StudioEvidenceRequest, await _body(request))
+        point = {"latitude": value.latitude, "longitude": value.longitude}
+        context = (ADMISSION.resolve_context(request.cookies.get(COOKIE), value.context_ref)
+                   if value.context_ref else None)
+        from land_evidence import evidence_inventory, query_point
+        if context is not None and any(context["location"].get(key) != coordinate
+                                       for key, coordinate in query_point(point).items()):
+            raise HTTPException(409, "The forecast reference does not match this point. Review the selected place.")
+        result = await _run_service(lease, evidence_inventory, point, context)
         return _json(result)
 
 

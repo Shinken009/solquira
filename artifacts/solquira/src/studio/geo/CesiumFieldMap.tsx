@@ -61,6 +61,7 @@ export default function CesiumFieldMap({
   const widgetRef = useRef<CesiumWidget | null>(null);
   const markerRef = useRef<PointPrimitive | null>(null);
   const latestPoint = useRef<Point | null>(point);
+  const pendingMapPick = useRef<Point | null>(null);
   const pick = useRef(onPick);
   const selectionEnabled = useRef(selecting);
   const imageryState = useRef(onImageryState);
@@ -314,7 +315,12 @@ export default function CesiumFieldMap({
           if (!Number.isFinite(latitude) || !Number.isFinite(longitude)
             || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return;
           setNotice("Marker placed. Confirm this point in the place panel before loading environmental context.");
-          pick.current({latitude, longitude});
+          // A map pick already lies in the user's current camera view. Moving
+          // the marker must not replace a carefully chosen zoom with the
+          // default regional camera height when React returns this draft.
+          const selected = {latitude, longitude};
+          pendingMapPick.current = selected;
+          pick.current(selected);
         }, ScreenSpaceEventType.LEFT_CLICK);
 
         recenter();
@@ -359,7 +365,12 @@ export default function CesiumFieldMap({
     const widget = widgetRef.current;
     if (!widget || widget.isDestroyed()) return;
     syncMarker(point);
-    if (state === "ready" && !morphingRef.current) recenter();
+    const picked = pendingMapPick.current;
+    const fromMap = Boolean(point && picked && point.latitude === picked.latitude
+      && point.longitude === picked.longitude);
+    pendingMapPick.current = null;
+    if (state === "ready" && !morphingRef.current && !fromMap) recenter();
+    else widget.scene.requestRender();
   }, [point?.latitude, point?.longitude, state, recenter, syncMarker]);
 
   useEffect(() => {

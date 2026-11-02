@@ -65,6 +65,7 @@ import type { FieldRecord } from "./types";
 import BrandMark from "./BrandMark";
 
 import LandCareRecord from "./LandCareRecord";
+import LandEvidencePanel from "./LandEvidencePanel";
 import GuidedExploration, { type GuidedRecordDraft } from "./GuidedExploration";
 
 import type { AttachedContext, Point } from "./geo/client";
@@ -389,6 +390,7 @@ export default function Studio() {
 
   const [refresh, setRefresh] = useState(0);
   const [briefPoint, setBriefPoint] = useState<Point | null>(null);
+  const [evidenceContextRef, setEvidenceContextRef] = useState<string | null>(null);
   const [requestedPoint, setRequestedPoint] = useState<Point | null>(null);
   const [guidedDraft, setGuidedDraft] = useState<GuidedRecordDraft | null>(null);
 
@@ -993,6 +995,7 @@ export default function Studio() {
           onAttach={attachContext}
           attachedRef={attachedContext?.reference}
           onPointChange={setBriefPoint}
+          onEvidenceContextChange={setEvidenceContextRef}
           externalPoint={requestedPoint}
         />
 
@@ -1013,6 +1016,15 @@ export default function Studio() {
               setGuidedDraft(draft);
               navigateArea("guidance", "qs-land-record");
             }}
+          />
+          <LandEvidencePanel
+            point={briefPoint}
+            contextRef={evidenceContextRef}
+            csrfToken={bootstrap?.csrf_token ?? ""}
+            enabled={mode === "service" && Boolean(bootstrap) && !connecting}
+            onChoosePlace={() => navigateArea("territory", "qs-landscape")}
+            onReviewForecast={() => navigateArea("territory", "qs-landscape")}
+            onOpenRecord={() => navigateArea("guidance", "qs-land-record")}
           />
           <div className="qs-prepared-heading">
             <span className="qs-index">Keep exploration and examples distinct</span>

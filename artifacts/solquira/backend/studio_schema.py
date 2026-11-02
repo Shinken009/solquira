@@ -58,3 +58,7 @@ class StudioLocation(BaseModel):
     latitude: float = Field(ge=-90, le=90)
     longitude: float = Field(ge=-180, le=180)
 
+
+class StudioEvidenceRequest(StudioLocation):
+    """Point plus optional server-owned forecast reference; never client metadata."""
+    context_ref: str | None = Field(default=None, min_length=24, max_length=100, pattern=r"^slq-context-[A-Za-z0-9_-]+$")
