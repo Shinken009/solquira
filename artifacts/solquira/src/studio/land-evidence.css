@@ -17,6 +17,13 @@
 .le-service-note,.le-status { font-size:12px; color:#526b5f; line-height:1.6; }.le-status:not(:empty) { margin:16px 0; }
 .le-error { margin:16px 0 0; padding:12px 15px; border-left:3px solid #9b632d; background:#fff6e7; font-size:13px; color:#754b23; line-height:1.6; }
 .le-snapshot { margin:18px 0 0; color:#5d6e64; font-size:11px; line-height:1.65; }
+.le-context { margin-top:18px; max-width:780px; }
+.le-no-context,.le-observation { display:flex; align-items:flex-start; gap:13px; margin-top:20px; padding:17px; border-left:3px solid #b5a26d; border-radius:0 10px 10px 0; background:#fffaf0; }
+.le-no-context > svg,.le-observation > svg { flex-shrink:0; margin-top:2px; }
+.le-no-context strong { font-size:14px; }
+.le-no-context p,.le-observation p { font-size:12px; line-height:1.7; margin:8px 0 0; color:#56685d; }
+.le-observation { border-left-color:#8fae9b; background:#f9fcf6; }
+.le-observation span { font-size:11px; font-weight:700; color:#456553; }
 .le-summary { display:grid; grid-template-columns:1fr 1fr; gap:22px; padding:22px 0; margin-top:12px; border-top:1px solid #cadbd1; }
 .le-summary span { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:#47695b; }.le-summary p { margin:8px 0 0; font-size:13px; line-height:1.65; }
 .le-priority { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; align-items:start; }

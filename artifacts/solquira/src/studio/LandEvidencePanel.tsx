@@ -1,19 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, BookOpen, CloudSun, Layers3, Leaf, MapPin, RefreshCw, Search, Sprout } from "lucide-react";
+import { ArrowRight, BookOpen, CloudSun, Layers3, Leaf, MapPin, RefreshCw, Search } from "lucide-react";
 import type { Point } from "./geo/client";
-import { fetchLandEvidence, type EvidenceId, type EvidenceState, type LandEvidenceInventory, type LandEvidenceItem } from "./land-evidence-client";
+import { fetchLandEvidence, type LandEvidenceInventory, type LandEvidenceItem } from "./land-evidence-client";
 import "./land-evidence.css";
 
-const labels: Record<EvidenceId, string> = {
-  forecast_context: "The coming weather", climate_baseline: "The long-term climate", land_cover_change: "How the land cover has changed",
-  land_productivity: "How vegetation productivity has changed", soil_organic_carbon: "What is known about soil carbon", terrain: "The shape of the land", field_observations: "What has been observed on site",
-};
-const stateLabels: Record<EvidenceState, string> = { available: "Source metadata available", missing: "Not included", unavailable: "Source unavailable", stale: "Needs a fresh check", not_applicable: "Not applicable" };
-const priority: EvidenceId[] = ["forecast_context", "land_cover_change", "soil_organic_carbon"];
 function Metadata({ item }: { item: LandEvidenceItem }) {
   return <details className="le-metadata"><summary><BookOpen size={14} aria-hidden="true"/> Source, scale & limits</summary><dl>
     <div><dt>Source</dt><dd>{item.source ? <a href={item.source.url} target="_blank" rel="noreferrer">{item.source.name}</a> : "No source included for this item"}</dd></div>
-    <div><dt>Version</dt><dd>{item.source?.version ?? "Not supplied"}</dd></div>
+    {item.source?.version && <div><dt>Version</dt><dd>{item.source.version}</dd></div>}
     <div><dt>Method</dt><dd>{item.source?.method ?? "No data-processing method applied"}</dd></div>
     <div><dt>Period</dt><dd>{item.period ? `${item.period.start} → ${item.period.end} (${item.period.time_zone})` : "No period supplied"}</dd></div>
     <div><dt>Retrieved</dt><dd>{item.retrieved_at ? new Date(item.retrieved_at).toLocaleString() : "Not retrieved"}</dd></div>
@@ -27,16 +21,15 @@ function Metadata({ item }: { item: LandEvidenceItem }) {
   </dl><ul>{item.limitations.map((limit, i) => <li key={i}>{limit}</li>)}</ul></details>;
 }
 function EvidenceCard({ item }: { item: LandEvidenceItem }) {
-  const Icon = item.id === "forecast_context" ? CloudSun : item.id === "soil_organic_carbon" ? Sprout : Leaf;
   return <article className="le-card" data-testid={`evidence-slot-${item.id}`} data-state={item.state}>
-    <div className="le-card-top"><Icon size={20} aria-hidden="true"/><span className="le-state" data-testid={`evidence-state-${item.id}`}>{stateLabels[item.state]}</span></div>
-    <h3>{labels[item.id]}</h3><p>{item.reason}</p>
-    <div className="le-next"><span>A useful next observation</span><p>{item.next_observation}</p></div>
+    <div className="le-card-top"><CloudSun size={20} aria-hidden="true"/><span className="le-state" data-testid={`evidence-state-${item.id}`}>Forecast source reviewed</span></div>
+    <h3>The coming weather, in context</h3><p>{item.reason}</p>
     <Metadata item={item}/>
   </article>;
 }
-export default function LandEvidencePanel({ point, contextRef, csrfToken, enabled, onChoosePlace }: {
-  point: Point | null; contextRef: string | null; csrfToken: string; enabled: boolean; onChoosePlace: () => void;
+export default function LandEvidencePanel({ point, contextRef, csrfToken, enabled, onChoosePlace, onReviewForecast, onOpenRecord }: {
+  point: Point | null; contextRef: string | null; csrfToken: string; enabled: boolean;
+  onChoosePlace: () => void; onReviewForecast: () => void; onOpenRecord: () => void;
 }) {
   const [snapshot, setSnapshot] = useState<{ scope: string; value: LandEvidenceInventory } | null>(null), [errorSnapshot, setErrorSnapshot] = useState<{ scope: string; message: string } | null>(null), [busyScope, setBusyScope] = useState<string | null>(null);
   const controller = useRef<AbortController | null>(null);
@@ -68,25 +61,29 @@ export default function LandEvidencePanel({ point, contextRef, csrfToken, enable
       if (!request.signal.aborted && controller.current === request && activeScope.current === scope) setBusyScope(null);
     }
   };
-  const available = inventory?.items.filter(item => item.state === "available") ?? [];
-  const rest = inventory?.items.filter(item => !priority.includes(item.id)) ?? [];
+  // The internal inventory remains complete, but the product exposes only an
+  // operational source. Missing adapters are not advertised as future features.
+  const forecast = inventory?.items.find(item => item.id === "forecast_context");
+  const available = forecast?.state === "available" ? forecast : null;
   return <section id="qs-land-evidence" className="le-panel" aria-labelledby="le-heading" data-testid="land-evidence-panel">
-    <header className="le-heading"><div><span className="qs-index"><Layers3 size={15} aria-hidden="true"/> Before drawing conclusions</span><h2 id="le-heading">What do we know about this place?</h2><p>See what supports the conversation, what is still missing, and what could be useful to observe next.</p></div><span className="le-inventory-tag">Evidence inventory · no land score</span></header>
+    <header className="le-heading"><div><span className="qs-index"><Layers3 size={15} aria-hidden="true"/> Before drawing conclusions</span><h2 id="le-heading">Put the forecast in perspective.</h2><p>Review the source behind the weather context, then bring one clear observation to your next visit.</p></div><span className="le-inventory-tag">Source review · no land score</span></header>
     {!point ? <div className="le-empty" data-testid="land-evidence-empty"><MapPin size={21} aria-hidden="true"/><div><strong>Start with a confirmed place.</strong><p>There is no land condition to infer from an unselected map.</p><button type="button" className="le-text-button" onClick={onChoosePlace}>Choose a place <ArrowRight size={15} aria-hidden="true"/></button></div></div>
       : <p className="le-place">For the confirmed point <strong>{point.latitude.toFixed(5)}, {point.longitude.toFixed(5)}</strong></p>}
     <div className="le-load-row"><button type="button" className="le-load" data-testid="land-evidence-load" onClick={() => void review()} disabled={!point || !enabled || !csrfToken || busy}>
-      {busy ? <RefreshCw size={17} className="qs-spin" aria-hidden="true"/> : <Search size={17} aria-hidden="true"/>}{busy ? "Reviewing the inventory…" : inventory ? "Refresh this inventory" : "Review what we know"}
+      {busy ? <RefreshCw size={17} className="qs-spin" aria-hidden="true"/> : <Search size={17} aria-hidden="true"/>}{busy ? "Reviewing source context…" : inventory ? "Review source context again" : "Review forecast evidence"}
     </button><p>Your selected point goes only to this service to review existing metadata. This does not acquire new environmental data, read field notes or contact historical sources or AI.</p></div>
-    {point && !enabled && <p className="le-service-note">Reconnect to the workspace to review this inventory. Existing local exploration remains available.</p>}
-    <div className="le-status" role="status" aria-live="polite" aria-atomic="true">{busy ? "Reviewing source metadata for the confirmed place." : inventory ? "Evidence inventory ready. Available metadata are not a diagnosis or a validation of this land." : ""}</div>
-    {error && <p className="le-error" role="alert" data-testid="land-evidence-error">{error}</p>}
-    {inventory && <div className="le-result" data-testid="land-evidence-result">
+    {point && !enabled && <p className="le-service-note">Reconnect to the workspace to review the source context. Existing local exploration remains available.</p>}
+    <div className="le-status" role="status" aria-live="polite" aria-atomic="true">{busy ? "Reviewing source metadata for the confirmed place." : inventory ? available ? "Forecast source reviewed. This is not a diagnosis or a validation of this land." : "No usable forecast was found for this review. No land condition has been inferred." : ""}</div>
+    {error && <div className="le-error" role="alert" data-testid="land-evidence-error"><p>{error}</p><button type="button" className="le-text-button" data-testid="land-evidence-review-forecast" onClick={onReviewForecast}>Review forecast <ArrowRight size={15} aria-hidden="true"/></button></div>}
+    {inventory && available && <div className="le-result" data-testid="land-evidence-result">
       <p className="le-snapshot">Snapshot reviewed {new Date(inventory.generated_at).toLocaleString()}. This is not a live assessment; review again after the point’s source context changes.</p>
-      <div className="le-summary"><div><span>What is known</span><p>{available.length ? "Forecast source metadata are included for the confirmed point." : "No environmental evidence is included in this inventory yet."}</p></div><div><span>What is missing</span><p>Comparable changes in land cover, vegetation productivity and soil carbon are not established here. Missing evidence is not proof that degradation is absent.</p></div></div>
-      <div className="le-priority">{priority.map(id => inventory.items.find(item => item.id === id)).filter((item): item is LandEvidenceItem => Boolean(item)).map(item => <EvidenceCard key={item.id} item={item}/>)}</div>
-      <details className="le-other"><summary>Other evidence gaps <span>{rest.length} items</span></summary><div className="le-other-grid">{rest.map(item => <EvidenceCard key={item.id} item={item}/>)}</div></details>
-      <p className="le-boundary"><strong>A starting point, not a desertification assessment.</strong> Metadata availability does not validate a source for a parcel. This inventory calculates no MEDALUS-R index, land-degradation indicator, restoration outcome or irrigation recommendation.</p>
-      <details className="le-inventory-method"><summary>Inventory method & limitations</summary><p>Inventory generated {new Date(inventory.generated_at).toLocaleString()}. Method: {inventory.schema_version}. Scientific validation: not validated.</p><ul>{inventory.limitations.map((limit, i) => <li key={i}>{limit}</li>)}</ul></details>
+      <div className="le-context"><EvidenceCard item={available}/></div>
+      <p className="le-boundary"><strong>A starting point, not a desertification assessment.</strong> Forecast metadata do not measure the soil, establish land degradation or prescribe irrigation.</p>
+      <details className="le-inventory-method"><summary>Review method & limitations</summary><p>Method: {inventory.schema_version}. Scientific validation: not validated.</p><ul>{inventory.limitations.map((limit, i) => <li key={i}>{limit}</li>)}</ul></details>
     </div>}
+    {inventory && !available && <div className="le-no-context" data-testid="land-evidence-no-context" data-forecast-state={forecast?.state ?? "missing"}>
+      <CloudSun size={22} aria-hidden="true"/><div><strong>There is no usable forecast to interpret here.</strong><p>{forecast?.reason ?? "The source context could not be established."}</p><p>No conclusion about the condition of this land has been calculated.</p><button type="button" className="le-text-button" data-testid="land-evidence-review-forecast" onClick={onReviewForecast}>Review forecast <ArrowRight size={15} aria-hidden="true"/></button></div>
+    </div>}
+    {inventory && <div className="le-observation" data-testid="land-evidence-observation"><Leaf size={20} aria-hidden="true"/><div><span>One useful check for your next visit</span><p>At a safe, accessible place, note the date and describe the visible cover. Repeat the same observation before interpreting change.</p><button type="button" className="le-text-button" data-testid="land-evidence-open-record" onClick={onOpenRecord}>Keep a dated observation <ArrowRight size={15} aria-hidden="true"/></button></div></div>}
   </section>;
 }

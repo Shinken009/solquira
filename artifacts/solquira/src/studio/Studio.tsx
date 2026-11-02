@@ -1023,6 +1023,8 @@ export default function Studio() {
             csrfToken={bootstrap?.csrf_token ?? ""}
             enabled={mode === "service" && Boolean(bootstrap) && !connecting}
             onChoosePlace={() => navigateArea("territory", "qs-landscape")}
+            onReviewForecast={() => navigateArea("territory", "qs-landscape")}
+            onOpenRecord={() => navigateArea("guidance", "qs-land-record")}
           />
           <div className="qs-prepared-heading">
             <span className="qs-index">Keep exploration and examples distinct</span>
