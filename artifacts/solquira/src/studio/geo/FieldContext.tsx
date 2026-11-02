@@ -37,6 +37,7 @@ export default function FieldContext({
   onAttach,
   attachedRef,
   onPointChange,
+  onEvidenceContextChange,
   externalPoint,
   activeArea,
   onNavigate,
@@ -47,6 +48,7 @@ export default function FieldContext({
   onAttach: (context: AttachedContext | null) => void;
   attachedRef?: string;
   onPointChange?: (point: Point | null) => void;
+  onEvidenceContextChange?: (reference: string | null) => void;
   externalPoint?: Point | null;
   activeArea: WorkspaceArea;
   onNavigate: (area: WorkspaceArea, target?: string) => void;
@@ -83,14 +85,16 @@ export default function FieldContext({
     revision.current++;
     setBusy(false);
     setData(null);
+    onEvidenceContextChange?.(null);
     setNasa(false);
     setImageryState("off");
     onAttach(null);
-  }, [offline, enabled, csrfToken, onAttach]);
+  }, [offline, enabled, csrfToken, onAttach, onEvidenceContextChange]);
   const invalidate = () => {
     controller.current?.abort();
     revision.current++;
     setData(null);
+    onEvidenceContextChange?.(null);
     setNasa(false);
     setBusy(false);
     setError("");
@@ -159,6 +163,8 @@ export default function FieldContext({
         if (!samePoint(value.location, selected))
           throw new Error("The returned point is different.");
         setData(value);
+        // Metadata inventory is separate from explicit attachment to the assistant.
+        onEvidenceContextChange?.(value.context_ref ?? null);
       }
     } catch (caught) {
       if (!request.signal.aborted && version === revision.current)
