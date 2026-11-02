@@ -69,9 +69,8 @@ import LandEvidencePanel from "./LandEvidencePanel";
 import GuidedExploration, { type GuidedRecordDraft } from "./GuidedExploration";
 
 import type { AttachedContext, Point } from "./geo/client";
-
-const number = (value: number) =>
-  new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(value);
+import { StudioPreferenceControls, useStudioCopy } from "./StudioPreferences";
+import { studioCopy } from "./studio-copy";
 
 const toolLabels: Record<string, string> = {
   read_landscape_context: "Connect the location forecast",
@@ -117,25 +116,25 @@ const areas: {
 }[] = [
   {
     id: "territory",
-    label: "Territorio",
+    label: "Territory",
     target: "qs-landscape",
     detail: "Choose a place",
   },
   {
     id: "anticipation",
-    label: "Anticipación",
+    label: "Anticipation",
     target: "qs-anticipation",
     detail: "Read the coming week",
   },
   {
     id: "guidance",
-    label: "Orientación",
+    label: "Guidance",
     target: "qs-guidance",
     detail: "Your knowledge, one next check",
   },
   {
     id: "evidence",
-    label: "Evidencia",
+    label: "Evidence",
     target: "qs-evidence-area",
     detail: "Review sources and limits",
   },
@@ -150,13 +149,16 @@ const areaForTarget = (target: string): WorkspaceArea =>
         : "guidance";
 
 function TerrainStudy() {
+  const { t } = useStudioCopy(studioCopy);
   return (
     <figure className="qs-terrain">
       <div className="qs-terrain-frame">
         <img
           className="qs-terrain-art"
           src={`${import.meta.env.BASE_URL}solquira-rural-landscape.svg`}
-          alt="A grower tending crop paths beside a river in a planted valley"
+          alt={t(
+            "A grower tending crop paths beside a river in a planted valley",
+          )}
           width={2048}
           height={1152}
           loading="eager"
@@ -164,9 +166,9 @@ function TerrainStudy() {
         />
       </div>
       <figcaption>
-        <span>One landscape. Many livelihoods.</span>
+        <span>{t("One landscape. Many livelihoods.")}</span>
         <span>
-          Water <i /> Soil <i /> People
+          {t("Water")} <i /> {t("Soil")} <i /> {t("People")}
         </span>
       </figcaption>
     </figure>
@@ -186,6 +188,11 @@ function CropIcon({ crop }: { crop: string }) {
 }
 
 function PlanRow({ plan, available }: { plan: Plan; available: number }) {
+  const { t, locale } = useStudioCopy(studioCopy);
+  const number = (value: number) =>
+    new Intl.NumberFormat(locale === "es" ? "es-CL" : "en-US", {
+      maximumFractionDigits: 1,
+    }).format(value);
   const shortage = plan.balance_m3_ha < 0;
 
   const status = plan.eligible
@@ -208,31 +215,33 @@ function PlanRow({ plan, available }: { plan: Plan; available: number }) {
           {plan.id.replace("rotation-", "").toUpperCase()}
         </span>
         <div>
-          <h3>{plan.sequence.join(" → ")}</h3>
+          <h3>{plan.sequence.map((crop) => t(crop)).join(" → ")}</h3>
           <span className="qs-plan-status">
             {plan.eligible ? (
               <Check size={13} />
             ) : (
               <span className="qs-status-dash" />
             )}
-            {status}
+            {t(status)}
           </span>
         </div>
       </div>
 
-      <ol className="qs-cycles" aria-label="Illustrative crop sequence">
+      <ol className="qs-cycles" aria-label={t("Illustrative crop sequence")}>
         {plan.sequence.map((crop, index) => (
           <li key={`${plan.id}-${index}`}>
             <CropIcon crop={crop} />
-            <span>Cycle {index + 1}</span>
-            <strong>{crop}</strong>
+            <span>
+              {t("Cycle")} {index + 1}
+            </span>
+            <strong>{t(crop)}</strong>
           </li>
         ))}
       </ol>
 
       <div className="qs-water-chart">
         <div className="qs-water-caption">
-          <span>Assumed demand</span>
+          <span>{t("Assumed demand")}</span>
           <strong>
             {number(plan.demand_m3_ha)} <small>m³/ha</small>
           </strong>
@@ -247,8 +256,8 @@ function PlanRow({ plan, available }: { plan: Plan; available: number }) {
         </div>
         <div className="qs-water-balance">
           {shortage
-            ? `${number(Math.abs(plan.balance_m3_ha))} m³/ha below assumption`
-            : `${number(plan.balance_m3_ha)} m³/ha above assumption`}
+            ? `${number(Math.abs(plan.balance_m3_ha))} ${t("m³/ha below assumption")}`
+            : `${number(plan.balance_m3_ha)} ${t("m³/ha above assumption")}`}
         </div>
       </div>
 
@@ -256,28 +265,34 @@ function PlanRow({ plan, available }: { plan: Plan; available: number }) {
         <div className="qs-rule-checks">
           <span className={shortage ? "qs-check-hold" : "qs-check-pass"}>
             <Droplets size={14} />
-            {shortage ? "Water: shortfall" : "Water: enough in example"}
+            {shortage ? t("Water: shortfall") : t("Water: enough in example")}
           </span>
           <span className={plan.history_ok ? "qs-check-pass" : "qs-check-hold"}>
             <Sprout size={14} />
             {plan.history_ok
-              ? "History: different group"
-              : "History: repeats group"}
+              ? t("History: different group")
+              : t("History: repeats group")}
           </span>
         </div>
         <details>
           <summary>
-            Understand these checks <ChevronRight size={14} />
+            {t("Understand these checks")} <ChevronRight size={14} />
           </summary>
           <p>
             {shortage
-              ? "The scenario water is below this sequence’s assumed demand."
-              : "The scenario water covers this sequence’s assumed demand."}{" "}
+              ? t("The scenario water is below this sequence’s assumed demand.")
+              : t(
+                  "The scenario water covers this sequence’s assumed demand.",
+                )}{" "}
             {!plan.history_ok
-              ? "Its first cycle repeats the previous crop group. More water alone does not resolve that restriction."
-              : "Its first cycle differs from the previous crop group."}
+              ? t(
+                  "Its first cycle repeats the previous crop group. More water alone does not resolve that restriction.",
+                )
+              : t("Its first cycle differs from the previous crop group.")}
           </p>
-          <p>Use these checks to start a conversation with your adviser.</p>
+          <p>
+            {t("Use these checks to start a conversation with your adviser.")}
+          </p>
         </details>
       </div>
     </article>
@@ -285,6 +300,11 @@ function PlanRow({ plan, available }: { plan: Plan; available: number }) {
 }
 
 export default function Studio() {
+  const { t, locale } = useStudioCopy(studioCopy);
+  const number = (value: number) =>
+    new Intl.NumberFormat(locale === "es" ? "es-CL" : "en-US", {
+      maximumFractionDigits: 1,
+    }).format(value);
   const [area, setArea] = useState<WorkspaceArea>(() =>
     window.location.hash
       ? areaForTarget(window.location.hash.slice(1))
@@ -296,6 +316,13 @@ export default function Studio() {
       const node = document.getElementById(
         target ?? areas.find((item) => item.id === next)!.target,
       );
+      // Explicit links to examples also reveal their progressive disclosure.
+      for (
+        let parent = node?.parentElement;
+        parent;
+        parent = parent.parentElement
+      )
+        if (parent instanceof HTMLDetailsElement) parent.open = true;
       scrollToSection(node);
       if (node && !node.matches("a,button,input,select,textarea,[tabindex]"))
         node.tabIndex = -1;
@@ -390,9 +417,13 @@ export default function Studio() {
 
   const [refresh, setRefresh] = useState(0);
   const [briefPoint, setBriefPoint] = useState<Point | null>(null);
-  const [evidenceContextRef, setEvidenceContextRef] = useState<string | null>(null);
+  const [evidenceContextRef, setEvidenceContextRef] = useState<string | null>(
+    null,
+  );
   const [requestedPoint, setRequestedPoint] = useState<Point | null>(null);
-  const [guidedDraft, setGuidedDraft] = useState<GuidedRecordDraft | null>(null);
+  const [guidedDraft, setGuidedDraft] = useState<GuidedRecordDraft | null>(
+    null,
+  );
 
   const revision = useRef(0);
 
@@ -696,7 +727,7 @@ export default function Studio() {
   };
 
   const usePrompt = (prompt: string) => {
-    setQuery(prompt);
+    setQuery(t(prompt));
     queryRef.current?.focus();
   };
 
@@ -750,18 +781,18 @@ export default function Studio() {
     mode === "service" && briefPoint
       ? "Place selected"
       : mode === "offline"
-      ? "Sample workspace"
-      : connecting
-        ? "Connecting…"
-        : bootstrap
-          ? "Demo · prepared examples"
-          : "Local workspace";
+        ? "Sample workspace"
+        : connecting
+          ? "Connecting…"
+          : bootstrap
+            ? "Ready to choose a place"
+            : "Service unavailable · retry";
 
   // The chip used to describe an internal transport state ("Studio connected").
   // It now states what the visitor is actually looking at, and the full
   // explanation travels with it for assistive tech and hover.
   const sourceHint = bootstrap
-    ? "Selected-place environmental sources and hypothetical teaching examples are separate. No field measurements are inferred."
+    ? "Your place stays selected across all four areas."
     : undefined;
 
   const returnedTools = agentResult?.run.trace ?? [];
@@ -848,38 +879,40 @@ export default function Studio() {
       data-testid={bootstrap && !connecting ? "studio-ready" : "studio-loading"}
     >
       <a className="qs-skip" href="#qs-landscape">
-        Skip to the landscape
+        {t("Skip to the landscape")}
       </a>
 
       <header className="qs-header">
         <a
           className="qs-brand"
           href={import.meta.env.BASE_URL}
-          aria-label="Solquira home"
+          aria-label={t("Solquira home")}
         >
           <BrandMark className="qs-brand-symbol" />
           <span>
-            Solquira<small>Understand the land. Cultivate the future.</small>
+            Solquira
+            <small>{t("Understand the land. Cultivate the future.")}</small>
           </span>
         </a>
         <div className="qs-header-status">
+          <StudioPreferenceControls />
           <a className="qs-about-link" href="#qs-about">
-            About Solquira
+            {t("About Solquira")}
           </a>
           <span
             data-testid="connection-mode"
             className={`qs-connection ${mode === "offline" ? "qs-is-offline" : ""}`}
-            title={sourceHint}
-            aria-label={sourceHint}
+            title={sourceHint ? t(sourceHint) : undefined}
+            aria-label={sourceHint ? t(sourceHint) : undefined}
           >
             {mode === "offline" ? <Layers3 size={14} /> : <Wifi size={14} />}
-            <span>{sourceMode}</span>
+            <span>{t(sourceMode)}</span>
           </span>
         </div>
       </header>
 
-      <nav className="qs-area-nav" aria-label="Solquira workspace">
-        <div role="tablist" aria-label="Workspace areas">
+      <nav className="qs-area-nav" aria-label={t("Solquira workspace")}>
+        <div role="tablist" aria-label={t("Workspace areas")}>
           {areas.map((item, index) => (
             <button
               key={item.id}
@@ -894,85 +927,118 @@ export default function Studio() {
               onKeyDown={(event) => areaKeys(event, index)}
             >
               <span>{String(index + 1).padStart(2, "0")}</span>
-              <strong>{item.label}</strong>
-              <small>{item.detail}</small>
+              <strong>{t(item.label)}</strong>
+              <small>{t(item.detail)}</small>
             </button>
           ))}
         </div>
       </nav>
 
       <main className="qs-main">
+        <section
+          className="qs-journey-status"
+          aria-label={t("Field journey")}
+          data-testid="journey-next-step"
+        >
+          <div>
+            <strong>{t("Place → forecast → next check")}</strong>
+            <p>
+              {briefPoint
+                ? t("Your place stays selected across all four areas.")
+                : t("Choose and confirm a place to begin.")}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              navigateArea(
+                briefPoint ? "anticipation" : "territory",
+                briefPoint ? "qs-anticipation" : "qs-landscape",
+              )
+            }
+          >
+            {briefPoint ? t("Next: read the forecast") : t("Choose a place")}
+            <ArrowRight size={16} aria-hidden="true" />
+          </button>
+        </section>
         <div className="qs-area-intro" hidden={area !== "territory"}>
           <section className="qs-intro" aria-labelledby="qs-title">
             <div className="qs-intro-copy">
               <div className="qs-kicker">
-                <span className="qs-dot" /> For the land. For the people who
-                care for it.
+                <span className="qs-dot" />{" "}
+                {t("For the land. For the people who care for it.")}
               </div>
               <h1 id="qs-title">
-                Start with a place.
+                {t("Start with a place.")}
                 <br />
-                Find your next step.
+                {t("Find your next step.")}
               </h1>
               <p>
                 {mode === "offline"
-                  ? "Explore a landscape and prepared examples. Choose one useful question for your next visit."
-                  : "Choose the land you care for. Bring what you notice, understand the weather context, and keep one manageable next check."}
+                  ? t(
+                      "Explore a landscape and prepared examples. Choose one useful question for your next visit.",
+                    )
+                  : t(
+                      "Choose the land you care for. Bring what you notice, understand the weather context, and keep one manageable next check.",
+                    )}
               </p>
               <div className="qs-hero-actions">
                 <a className="qs-hero-cta" href="#qs-landscape">
-                  Start with a place <MapPin size={18} />
+                  {t("Start with a place")} <MapPin size={18} />
                 </a>
                 <a className="qs-hero-secondary" href="#qs-scenario">
-                  Try a crop example
+                  {t("Try a crop example")}
                 </a>
               </div>
             </div>
             <TerrainStudy />
           </section>
 
-          <section className="qs-purpose" aria-label="Our purpose">
+          <section className="qs-purpose" aria-label={t("Our purpose")}>
             <span className="qs-purpose-symbol">
               <BrandMark />
             </span>
             <div>
-              <strong>Healthy land. Resilient communities.</strong>
+              <strong>{t("Healthy land. Resilient communities.")}</strong>
               <p>
-                Water, soil and livelihoods belong in the same conversation.
-                Turn what you know about your land into a practical next
-                observation, with sources and limits you can review.
+                {t(
+                  "Water, soil and livelihoods belong in the same conversation. Turn what you know about your land into a practical next observation, with sources and limits you can review.",
+                )}
               </p>
             </div>
             <a href="#qs-land-record">
-              Make the next visit count <ArrowRight size={17} />
+              {t("Make the next visit count")} <ArrowRight size={17} />
             </a>
           </section>
 
-          <nav className="qs-workflow" aria-label="Field journey">
+          <nav className="qs-workflow" aria-label={t("Field journey")}>
             <a className="qs-step-water" href="#qs-landscape">
               <span>
                 <MapPin size={19} />
               </span>
               <div>
-                <small>1. Understand the place</small>
+                <small>{t("1. Understand the place")}</small>
                 {mode === "service" && bootstrap?.geodata?.enabled
-                  ? "Read the coming weather"
-                  : "See the wider landscape"}
+                  ? t("Read the coming weather")
+                  : t("See the wider landscape")}
               </div>
             </a>
-            <button className="qs-step-soil" onClick={() => navigateArea("guidance", "qs-exploration")}>
+            <button
+              className="qs-step-soil"
+              onClick={() => navigateArea("guidance", "qs-exploration")}
+            >
               <span>
                 <Leaf size={19} />
               </span>
               <div>
                 <small>
                   {mode === "offline"
-                    ? "2. Explore a choice"
-                    : "2. Share what matters"}
+                    ? t("2. Explore a choice")
+                    : t("2. Share what matters")}
                 </small>
                 {mode === "offline"
-                  ? "Connect water, soil & cover"
-                  : "Connect your knowledge to a next check"}
+                  ? t("Connect water, soil & cover")
+                  : t("Connect your knowledge to a next check")}
               </div>
             </button>
             <button className="qs-step-decision" onClick={openFieldBrief}>
@@ -980,7 +1046,8 @@ export default function Studio() {
                 <FileCheck2 size={19} />
               </span>
               <div>
-                <small>3. Keep the brief</small>Record what you find
+                <small>{t("3. Keep the brief")}</small>
+                {t("Record what you find")}
               </div>
             </button>
           </nav>
@@ -1008,11 +1075,15 @@ export default function Studio() {
           data-testid="area-guidance"
         >
           <GuidedExploration
-            key={briefPoint ? `guided:${briefPoint.latitude}:${briefPoint.longitude}` : "guided:no-place"}
+            key={
+              briefPoint
+                ? `guided:${briefPoint.latitude}:${briefPoint.longitude}`
+                : "guided:no-place"
+            }
             point={briefPoint}
             onChoosePlace={() => navigateArea("territory", "qs-landscape")}
             onWeather={() => navigateArea("anticipation", "qs-anticipation")}
-            onRecord={draft => {
+            onRecord={(draft) => {
               setGuidedDraft(draft);
               navigateArea("guidance", "qs-land-record");
             }}
@@ -1026,24 +1097,42 @@ export default function Studio() {
             onReviewForecast={() => navigateArea("territory", "qs-landscape")}
             onOpenRecord={() => navigateArea("guidance", "qs-land-record")}
           />
-          <div className="qs-prepared-heading">
-            <span className="qs-index">Keep exploration and examples distinct</span>
-            <p>The guided check above comes from your answers. Prepared crop scenarios below are teaching examples, not properties or recommendations for your selected land.</p>
-          </div>
-          {mode === "service" && (
-            <DrylandFieldBrief
-              key={
-                briefPoint
-                  ? `brief:${briefPoint.latitude}:${briefPoint.longitude}`
-                  : "brief:unselected"
-              }
-              point={briefPoint}
-              inference={bootstrap?.inference}
-              csrf={bootstrap?.csrf_token ?? ""}
-              enabled={Boolean(bootstrap) && !connecting}
-              onSelectPlace={point => { setRequestedPoint({ ...point }); navigateArea("territory", "qs-landscape"); }}
-            />
-          )}
+          <details
+            className="qs-prepared-examples"
+            data-testid="prepared-field-examples"
+          >
+            <summary>
+              {t("Prepared crop examples")}{" "}
+              <ChevronRight size={16} aria-hidden="true" />
+            </summary>
+            <div className="qs-prepared-heading">
+              <span className="qs-index">
+                {t("Keep exploration and examples distinct")}
+              </span>
+              <p>
+                {t(
+                  "The guided check above comes from your answers. Prepared crop scenarios below are teaching examples, not properties or recommendations for your selected land.",
+                )}
+              </p>
+            </div>
+            {mode === "service" && (
+              <DrylandFieldBrief
+                key={
+                  briefPoint
+                    ? `brief:${briefPoint.latitude}:${briefPoint.longitude}`
+                    : "brief:unselected"
+                }
+                point={briefPoint}
+                inference={bootstrap?.inference}
+                csrf={bootstrap?.csrf_token ?? ""}
+                enabled={Boolean(bootstrap) && !connecting}
+                onSelectPlace={(point) => {
+                  setRequestedPoint({ ...point });
+                  navigateArea("territory", "qs-landscape");
+                }}
+              />
+            )}
+          </details>
 
           {mode === "offline" ? (
             <section
@@ -1055,32 +1144,36 @@ export default function Studio() {
               <div className="qs-agent-heading">
                 <FileCheck2 size={26} strokeWidth={1.5} />
                 <div>
-                  <span className="qs-index">A choice worth understanding</span>
+                  <span className="qs-index">
+                    {t("A choice worth understanding")}
+                  </span>
                   <h2 id="qs-agent-title" tabIndex={-1}>
-                    Less guesswork. A clearer next conversation.
+                    {t("Less guesswork. A clearer next conversation.")}
                   </h2>
                 </div>
               </div>
               {report ? (
                 <p className="qs-offline-explanation">
-                  At {number(available)} m³/ha of example water,{" "}
+                  {t("At")} {number(available)} {t("m³/ha of example water,")}{" "}
                   <strong>
-                    {count} of {report.plans.length} crop paths
+                    {count} {t("of")} {report.plans.length} {t("crop paths")}
                   </strong>{" "}
-                  meet the water and rotation checks. Explore the trade-offs,
-                  then record what needs a closer look.
+                  {t(
+                    "meet the water and rotation checks. Explore the trade-offs, then record what needs a closer look.",
+                  )}
                 </p>
               ) : (
                 <p className="qs-offline-explanation">
-                  Choose your inputs and compare the crop paths to explore their
-                  trade-offs.
+                  {t(
+                    "Choose your inputs and compare the crop paths to explore their trade-offs.",
+                  )}
                 </p>
               )}
               <div className="qs-sample-actions">
                 <button type="button" onClick={openComparison}>
-                  Explore crop paths <ArrowRight size={15} />
+                  {t("Explore crop paths")} <ArrowRight size={15} />
                 </button>
-                <a href="#qs-land-record">Start your field record</a>
+                <a href="#qs-land-record">{t("Start your field record")}</a>
               </div>
             </section>
           ) : (
@@ -1094,51 +1187,61 @@ export default function Studio() {
                   <BrandMark />
                 </div>
                 <div>
-                  <span className="qs-index">From context to conversation</span>
+                  <span className="qs-index">
+                    {t("From context to conversation")}
+                  </span>
                   <h2 id="qs-agent-title" tabIndex={-1}>
-                    Ask about your next field visit.
+                    {t("Ask about your next field visit.")}
                   </h2>
                 </div>
                 <span className="qs-mode-label">
                   {liveResponse
-                    ? "Live model response"
+                    ? t("Live model response")
                     : inferenceMode === "provider_stub"
-                      ? "Test composition"
+                      ? t("Test composition")
                       : providerFallback || budgetStatus
-                        ? "Field rules · always on"
+                        ? t("Field rules · always on")
                         : inferenceAvailable
-                          ? "Nemotron ready when you ask"
-                          : "Field rules · always on"}
+                          ? t("Nemotron ready when you ask")
+                          : t("Field rules · always on")}
                 </span>
               </div>
               <p className="qs-agent-intro">
                 {attachedRecord ? (
-                  "Your selected observations are attached. Ask which check is most useful with the resources and time you have."
+                  t(
+                    "Your selected observations are attached. Ask which check is most useful with the resources and time you have.",
+                  )
                 ) : attachedContext ? (
-                  "Your forecast is attached. Ask what to check about water, soil or living cover, then take the brief into a conversation with your adviser."
+                  t(
+                    "Your forecast is attached. Ask what to check about water, soil or living cover, then take the brief into a conversation with your adviser.",
+                  )
                 ) : (
                   <>
-                    Attach a forecast above to prepare field checks. Without
-                    one, questions use the separate{" "}
-                    <a href="#qs-scenario">synthetic crop example</a> below.
+                    {t(
+                      "Attach a forecast above to prepare field checks. Without one, questions use the separate",
+                    )}{" "}
+                    <a href="#qs-scenario">{t("synthetic crop example")}</a>{" "}
+                    {t("below.")}
                   </>
                 )}
               </p>
               <div className="qs-prompts">
                 {(attachedContext
                   ? [
-                      "What does this forecast mean for my next field checks?",
-                      "What should I check about soil cover?",
-                      "Which field observations should I bring?",
+                      t(
+                        "What does this forecast mean for my next field checks?",
+                      ),
+                      t("What should I check about soil cover?"),
+                      t("Which field observations should I bring?"),
                     ]
                   : prompts
                 ).map((prompt) => (
                   <button
                     key={prompt}
                     disabled={!canAsk || agentBusy}
-                    onClick={() => usePrompt(prompt)}
+                    onClick={() => usePrompt(t(prompt))}
                   >
-                    {prompt}
+                    {t(prompt)}
                     <ChevronRight size={13} />
                   </button>
                 ))}
@@ -1150,7 +1253,7 @@ export default function Studio() {
                 >
                   <Leaf size={18} />
                   <div>
-                    <strong>Seven-day forecast attached</strong>
+                    <strong>{t("Seven-day forecast attached")}</strong>
                     <span>
                       {attachedContext.location.latitude.toFixed(3)},{" "}
                       {attachedContext.location.longitude.toFixed(3)} ·
@@ -1158,7 +1261,7 @@ export default function Studio() {
                     </span>
                   </div>
                   <button type="button" onClick={() => attachContext(null)}>
-                    Remove
+                    {t("Remove")}
                   </button>
                 </div>
               )}
@@ -1169,20 +1272,20 @@ export default function Studio() {
                 >
                   <Leaf size={18} />
                   <div>
-                    <strong>Your selected field observations</strong>
+                    <strong>{t("Your selected field observations")}</strong>
                     <span>
-                      {attachedRecord.observed_at} · Self-reported cover, water
-                      access and constraint
+                      {attachedRecord.observed_at}{" "}
+                      {t("· Self-reported cover, water access and constraint")}
                     </span>
                   </div>
                   <button type="button" onClick={() => attachRecord(null)}>
-                    Remove
+                    {t("Remove")}
                   </button>
                 </div>
               )}
               <form className="qs-question-form" onSubmit={ask}>
                 <label className="qs-sr-only" htmlFor="qs-query">
-                  Question about the current scenario
+                  {t("Question about the current scenario")}
                 </label>
                 <textarea
                   id="qs-query"
@@ -1195,19 +1298,29 @@ export default function Studio() {
                   disabled={!canAsk || agentBusy}
                   placeholder={
                     attachedContext
-                      ? "What should I check on my next field visit?"
-                      : "Ask about the crop example, or attach a forecast first."
+                      ? t("What should I check on my next field visit?")
+                      : t(
+                          "Ask about the crop example, or attach a forecast first.",
+                        )
                   }
                 />
                 <div className="qs-question-bottom">
                   <span>
                     {attachedRecord
-                      ? "Includes only your selected observations. Private notes stay on this page."
+                      ? t(
+                          "Includes only your selected observations. Private notes stay on this page.",
+                        )
                       : attachedContext
-                        ? "Uses the attached forecast. Crop examples stay separate."
+                        ? t(
+                            "Uses the attached forecast. Crop examples stay separate.",
+                          )
                         : inferenceAvailable
-                          ? "No forecast attached. Uses the synthetic crop example; your question is sent to the connected service. Model wording is used only when available."
-                          : "No forecast attached. Uses the synthetic crop example; answers use field rules in this workspace."}
+                          ? t(
+                              "No forecast attached. Uses the synthetic crop example; your question is sent to the connected service. Model wording is used only when available.",
+                            )
+                          : t(
+                              "No forecast attached. Uses the synthetic crop example; answers use field rules in this workspace.",
+                            )}
                   </span>
                   {agentBusy ? (
                     <button
@@ -1217,11 +1330,13 @@ export default function Studio() {
                         agentController.current?.abort();
                         setAgentBusy(false);
                         setAgentError(
-                          "The request was cancelled. Your scenario is unchanged.",
+                          t(
+                            "The request was cancelled. Your scenario is unchanged.",
+                          ),
                         );
                       }}
                     >
-                      <X size={15} /> Cancel
+                      <X size={15} /> {t("Cancel")}
                     </button>
                   ) : (
                     <button
@@ -1231,14 +1346,14 @@ export default function Studio() {
                       disabled={!canAsk || !query.trim()}
                     >
                       <Send size={15} />{" "}
-                      {attachedContext ? "Build field brief" : "Ask"}
+                      {attachedContext ? t("Build field brief") : t("Ask")}
                     </button>
                   )}
                 </div>
               </form>
               {agentError && (
                 <div className="qs-inline-error" role="alert">
-                  <p>{agentError}</p>
+                  <p>{t(agentError)}</p>
                   {agentRecovery && (
                     <button
                       type="button"
@@ -1246,7 +1361,7 @@ export default function Studio() {
                       data-testid="agent-reconnect"
                       onClick={reconnectSession}
                     >
-                      <RefreshCw size={14} /> Reconnect session
+                      <RefreshCw size={14} /> {t("Reconnect session")}
                     </button>
                   )}
                 </div>
@@ -1257,14 +1372,14 @@ export default function Studio() {
                   data-testid="agent-fallback-notice"
                   role="status"
                 >
-                  {fallbackStatus}. Your source-linked checks remain available
-                  below.
+                  {t(fallbackStatus)}
+                  {t(". Your source-linked checks remain available below.")}
                 </p>
               )}
               {agentBusy && (
                 <p className="qs-agent-progress" role="status">
                   <LoaderCircle size={14} className="qs-spin" />
-                  Checking the scenario, comparison and evidence…
+                  {t("Checking the scenario, comparison and evidence…")}
                 </p>
               )}
               {agentResult && (
@@ -1275,12 +1390,12 @@ export default function Studio() {
                 >
                   <span className="qs-result-kicker">
                     {agentResult.run.inference_mode === "nebius_live"
-                      ? "Live model response"
+                      ? t("Live model response")
                       : agentResult.run.inference_mode === "provider_stub"
-                        ? "Test composition"
+                        ? t("Test composition")
                         : agentResult.report.field_brief
-                          ? "Field checks from your forecast"
-                          : "Guided comparison checks"}
+                          ? t("Field checks from your forecast")
+                          : t("Guided comparison checks")}
                   </span>
                   {agentResult.report.synthesis && (
                     <EvidenceSynthesis
@@ -1301,12 +1416,16 @@ export default function Studio() {
                   <>
                     {agentResult.report.field_brief ? (
                       <details className="qs-comparison-explanation">
-                        <summary>About the separate crop example</summary>
+                        <summary>
+                          {t("About the separate crop example")}
+                        </summary>
                         <p>{agentResult.report.explanation}</p>
                       </details>
                     ) : (
                       <details className="qs-comparison-explanation">
-                        <summary>How this comparison was prepared</summary>
+                        <summary>
+                          {t("How this comparison was prepared")}
+                        </summary>
                         <p>{agentResult.report.explanation}</p>
                       </details>
                     )}
@@ -1318,7 +1437,7 @@ export default function Studio() {
                       data-testid="tool-checks"
                     >
                       <h3 id="qs-tool-checks-title" tabIndex={-1}>
-                        How this answer was checked
+                        {t("How this answer was checked")}
                       </h3>
                       <ol>
                         {agentResult.run.trace.map((step, i) => (
@@ -1333,20 +1452,22 @@ export default function Studio() {
                                 data-testid="tool-step-link"
                                 onClick={() => openTool(step.tool)}
                               >
-                                <span>{toolLabels[step.tool]}</span>
+                                <span>{t(toolLabels[step.tool])}</span>
                                 <ChevronRight size={14} />
                               </button>
                             ) : (
-                              <strong>Review the returned tool result</strong>
+                              <strong>
+                                {t("Review the returned tool result")}
+                              </strong>
                             )}
                             <span className="qs-tool-status">
                               {step.status === "executed" ? (
                                 <>
                                   <Check size={14} />
-                                  Checked
+                                  {t("Checked")}
                                 </>
                               ) : (
-                                (step.status ?? "Status not provided")
+                                (step.status ?? t("Status not provided"))
                               )}
                             </span>
                           </li>
@@ -1358,15 +1479,17 @@ export default function Studio() {
               )}
               {proposal && (
                 <div className="qs-proposal">
-                  <strong>A different scenario was proposed.</strong>
+                  <strong>{t("A different scenario was proposed.")}</strong>
                   <p>
-                    Your current comparison has not changed. Review{" "}
-                    {PROFILE_LABELS[proposal.profile_id]},{" "}
-                    {proposal.water_percent}% water, after{" "}
-                    {CROP_LABELS[proposal.previous_crop].toLowerCase()}.
+                    {t("Your current comparison has not changed. Review")}{" "}
+                    {t(PROFILE_LABELS[proposal.profile_id])},{" "}
+                    {proposal.water_percent}
+                    {t("% water, after")}{" "}
+                    {t(CROP_LABELS[proposal.previous_crop]).toLowerCase()}.
                   </p>
                   <button onClick={() => changeScenario(proposal)}>
-                    Use these inputs, then compare <ArrowRight size={14} />
+                    {t("Use these inputs, then compare")}{" "}
+                    <ArrowRight size={14} />
                   </button>
                 </div>
               )}
@@ -1381,297 +1504,322 @@ export default function Studio() {
             onAttachRecord={attachRecord}
           />
 
-          <div className="qs-example-intro">
-            <div>
-              <span className="qs-index">Understand the trade-offs</span>
-              <h2>Explore the crop example.</h2>
-            </div>
-            <p>
-              Work through water availability and crop history in a sample
-              scenario. See which constraint changes the options.
-            </p>
-          </div>
-
-          <div className="qs-workspace">
-            <aside className="qs-scenario-rail">
-              <section
-                id="qs-scenario"
-                className="qs-scenario"
-                aria-labelledby="qs-scenario-title"
-              >
-                <div className="qs-section-heading">
-                  <span className="qs-index">Example inputs</span>
-                  <span className="qs-example-tag">Sample data</span>
-                </div>
-                <h2 id="qs-scenario-title">Change the assumptions.</h2>
-                <form onSubmit={compare}>
-                  <label className="qs-label" htmlFor="qs-profile">
-                    Choose an example profile
-                  </label>
-                  <select
-                    id="qs-profile"
-                    data-testid="profile-select"
-                    value={scenario.profile_id}
-                    disabled={!bootstrap || connecting}
-                    onChange={(event) =>
-                      changeScenario({
-                        profile_id: event.target
-                          .value as Scenario["profile_id"],
-                      })
-                    }
-                  >
-                    {(bootstrap?.profiles ?? offlineBootstrap().profiles).map(
-                      (value) => (
-                        <option key={value.id} value={value.id}>
-                          {value.name}
-                        </option>
-                      ),
-                    )}
-                  </select>
-                  <p className="qs-input-hint">
-                    {profileHints[scenario.profile_id]}
-                  </p>
-
-                  <div className="qs-label-line">
-                    <label className="qs-label" htmlFor="qs-water">
-                      Water in this example
-                    </label>
-                    <output htmlFor="qs-water">
-                      {scenario.water_percent}%
-                    </output>
-                  </div>
-                  <input
-                    id="qs-water"
-                    data-testid="water-input"
-                    type="range"
-                    min="40"
-                    max="120"
-                    step="10"
-                    value={scenario.water_percent}
-                    disabled={!bootstrap || connecting}
-                    onChange={(event) =>
-                      changeScenario({
-                        water_percent: Number(event.target.value),
-                      })
-                    }
-                    aria-valuetext={`${scenario.water_percent} percent of the profile's example water`}
-                  />
-                  <div className="qs-range-ends">
-                    <span>40% · constrained</span>
-                    <span>120%</span>
-                  </div>
-                  <div
-                    className="qs-water-presets"
-                    aria-label="Water example presets"
-                  >
-                    {[40, 70, 100, 120].map((value) => (
-                      <button
-                        key={value}
-                        type="button"
-                        aria-pressed={scenario.water_percent === value}
-                        disabled={!bootstrap || connecting}
-                        onClick={() => changeScenario({ water_percent: value })}
-                      >
-                        {value}%
-                      </button>
-                    ))}
-                  </div>
-
-                  <label className="qs-label" htmlFor="qs-history">
-                    What grew before?
-                  </label>
-                  <select
-                    id="qs-history"
-                    data-testid="history-select"
-                    value={scenario.previous_crop}
-                    disabled={!bootstrap || connecting}
-                    onChange={(event) =>
-                      changeScenario({
-                        previous_crop: event.target
-                          .value as Scenario["previous_crop"],
-                      })
-                    }
-                  >
-                    {Object.entries(CROP_LABELS).map(([id, label]) => (
-                      <option key={id} value={id}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="qs-input-hint">
-                    We check whether the first crop group repeats.
-                  </p>
-
-                  <button
-                    className="qs-primary"
-                    data-testid="compare-button"
-                    type="submit"
-                    disabled={!bootstrap || busy || connecting}
-                  >
-                    {busy || connecting ? (
-                      <LoaderCircle size={16} className="qs-spin" />
-                    ) : (
-                      <ArrowRight size={16} />
-                    )}{" "}
-                    {busy
-                      ? "Comparing…"
-                      : connecting
-                        ? "Connecting…"
-                        : "Compare crop paths"}
-                  </button>
-                </form>
-                <details className="qs-assumptions">
-                  <summary>
-                    <CircleHelp size={14} /> What is assumed?
-                  </summary>
-                  <p>
-                    Water, soil, priorities and crop demands come from a fixed
-                    synthetic example. They are not field measurements or
-                    locally validated recommendations.
-                  </p>
-                  <p>
-                    Changing the controls explores the example without saving a
-                    real parcel.
-                  </p>
-                </details>
-              </section>
-              <div className="qs-rail-foot">
-                <ShieldCheck size={17} />
-                <p>
-                  Your local knowledge.
-                  <br />
-                  <strong>Your next informed step.</strong>
-                </p>
+          <details
+            className="qs-prepared-examples"
+            data-testid="prepared-comparison-examples"
+          >
+            <summary>
+              {t("Explore the crop example.")}{" "}
+              <ChevronRight size={16} aria-hidden="true" />
+            </summary>
+            <div className="qs-example-intro">
+              <div>
+                <span className="qs-index">
+                  {t("Understand the trade-offs")}
+                </span>
+                <h2>{t("Explore the crop example.")}</h2>
               </div>
-            </aside>
+              <p>
+                {t(
+                  "Work through water availability and crop history in a sample scenario. See which constraint changes the options.",
+                )}
+              </p>
+            </div>
 
-            <div className="qs-decision-space">
-              {error && (
-                <section className="qs-error" role="alert">
-                  <strong>The comparison did not run.</strong>
-                  <p>{error}</p>
-                  <div>
-                    <button onClick={reconnectSession}>
-                      <RefreshCw size={14} /> Reconnect service
+            <div className="qs-workspace">
+              <aside className="qs-scenario-rail">
+                <section
+                  id="qs-scenario"
+                  className="qs-scenario"
+                  aria-labelledby="qs-scenario-title"
+                >
+                  <div className="qs-section-heading">
+                    <span className="qs-index">{t("Example inputs")}</span>
+                    <span className="qs-example-tag">{t("Sample data")}</span>
+                  </div>
+                  <h2 id="qs-scenario-title">{t("Change the assumptions.")}</h2>
+                  <form onSubmit={compare}>
+                    <label className="qs-label" htmlFor="qs-profile">
+                      {t("Choose an example profile")}
+                    </label>
+                    <select
+                      id="qs-profile"
+                      data-testid="profile-select"
+                      value={scenario.profile_id}
+                      disabled={!bootstrap || connecting}
+                      onChange={(event) =>
+                        changeScenario({
+                          profile_id: event.target
+                            .value as Scenario["profile_id"],
+                        })
+                      }
+                    >
+                      {(bootstrap?.profiles ?? offlineBootstrap().profiles).map(
+                        (value) => (
+                          <option key={value.id} value={value.id}>
+                            {t(PROFILE_LABELS[value.id])}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                    <p className="qs-input-hint">
+                      {t(profileHints[scenario.profile_id])}
+                    </p>
+
+                    <div className="qs-label-line">
+                      <label className="qs-label" htmlFor="qs-water">
+                        {t("Water in this example")}
+                      </label>
+                      <output htmlFor="qs-water">
+                        {scenario.water_percent}%
+                      </output>
+                    </div>
+                    <input
+                      id="qs-water"
+                      data-testid="water-input"
+                      type="range"
+                      min="40"
+                      max="120"
+                      step="10"
+                      value={scenario.water_percent}
+                      disabled={!bootstrap || connecting}
+                      onChange={(event) =>
+                        changeScenario({
+                          water_percent: Number(event.target.value),
+                        })
+                      }
+                      aria-valuetext={`${scenario.water_percent} ${t("percent of the profile's example water")}`}
+                    />
+                    <div className="qs-range-ends">
+                      <span>{t("40% · constrained")}</span>
+                      <span>120%</span>
+                    </div>
+                    <div
+                      className="qs-water-presets"
+                      aria-label={t("Water example presets")}
+                    >
+                      {[40, 70, 100, 120].map((value) => (
+                        <button
+                          key={value}
+                          type="button"
+                          aria-pressed={scenario.water_percent === value}
+                          disabled={!bootstrap || connecting}
+                          onClick={() =>
+                            changeScenario({ water_percent: value })
+                          }
+                        >
+                          {value}%
+                        </button>
+                      ))}
+                    </div>
+
+                    <label className="qs-label" htmlFor="qs-history">
+                      {t("What grew before?")}
+                    </label>
+                    <select
+                      id="qs-history"
+                      data-testid="history-select"
+                      value={scenario.previous_crop}
+                      disabled={!bootstrap || connecting}
+                      onChange={(event) =>
+                        changeScenario({
+                          previous_crop: event.target
+                            .value as Scenario["previous_crop"],
+                        })
+                      }
+                    >
+                      {Object.entries(CROP_LABELS).map(([id, label]) => (
+                        <option key={id} value={id}>
+                          {t(label)}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="qs-input-hint">
+                      {t("We check whether the first crop group repeats.")}
+                    </p>
+
+                    <button
+                      className="qs-primary"
+                      data-testid="compare-button"
+                      type="submit"
+                      disabled={!bootstrap || busy || connecting}
+                    >
+                      {busy || connecting ? (
+                        <LoaderCircle size={16} className="qs-spin" />
+                      ) : (
+                        <ArrowRight size={16} />
+                      )}{" "}
+                      {busy
+                        ? t("Comparing…")
+                        : connecting
+                          ? t("Connecting…")
+                          : t("Compare crop paths")}
                     </button>
-                    {!STATIC_STUDIO && mode !== "offline" && (
-                      <button onClick={() => setMode("offline")}>
-                        Explore a saved example instead <ArrowRight size={14} />
+                  </form>
+                  <details className="qs-assumptions">
+                    <summary>
+                      <CircleHelp size={14} /> {t("What is assumed?")}
+                    </summary>
+                    <p>
+                      {t(
+                        "Water, soil, priorities and crop demands come from a fixed synthetic example. They are not field measurements or locally validated recommendations.",
+                      )}
+                    </p>
+                    <p>
+                      {t(
+                        "Changing the controls explores the example without saving a real parcel.",
+                      )}
+                    </p>
+                  </details>
+                </section>
+                <div className="qs-rail-foot">
+                  <ShieldCheck size={17} />
+                  <p>
+                    {t("Your local knowledge.")}
+                    <br />
+                    <strong>{t("Your next informed step.")}</strong>
+                  </p>
+                </div>
+              </aside>
+
+              <div className="qs-decision-space">
+                {error && (
+                  <section className="qs-error" role="alert">
+                    <strong>{t("The comparison did not run.")}</strong>
+                    <p>{t(error)}</p>
+                    <div>
+                      <button onClick={reconnectSession}>
+                        <RefreshCw size={14} /> {t("Reconnect service")}
                       </button>
+                      {!STATIC_STUDIO && mode !== "offline" && (
+                        <button onClick={() => setMode("offline")}>
+                          {t("Explore a saved example instead")}{" "}
+                          <ArrowRight size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </section>
+                )}
+
+                <section
+                  className="qs-comparison"
+                  id="qs-comparison"
+                  ref={comparisonRef}
+                  aria-labelledby="qs-comparison-title"
+                  aria-busy={busy || connecting}
+                >
+                  <div className="qs-section-heading">
+                    <span className="qs-index">{t("Example crop paths")}</span>
+                    <span className="qs-technical-label">
+                      {mode === "offline"
+                        ? t("Prepared example results")
+                        : t("Calculated from your inputs")}
+                    </span>
+                  </div>
+                  <div className="qs-comparison-heading">
+                    <div>
+                      <h2 id="qs-comparison-title" tabIndex={-1}>
+                        {t("Three paths.")}
+                        <br className="qs-mobile-break" />{" "}
+                        {t("Visible trade-offs.")}
+                      </h2>
+                      <p>
+                        {t(
+                          "See what fits the water and crop-history rules—and what needs a closer look.",
+                        )}
+                      </p>
+                    </div>
+                    {report && (
+                      <div className="qs-fit" data-testid="fit-count">
+                        <strong>
+                          {count}
+                          <span> / {report.plans.length}</span>
+                        </strong>
+                        <span>{t("fit this example")}</span>
+                      </div>
                     )}
                   </div>
-                </section>
-              )}
 
-              <section
-                className="qs-comparison"
-                id="qs-comparison"
-                ref={comparisonRef}
-                aria-labelledby="qs-comparison-title"
-                aria-busy={busy || connecting}
-              >
-                <div className="qs-section-heading">
-                  <span className="qs-index">Example crop paths</span>
-                  <span className="qs-technical-label">
-                    {mode === "offline"
-                      ? "Prepared example results"
-                      : "Calculated from your inputs"}
-                  </span>
-                </div>
-                <div className="qs-comparison-heading">
-                  <div>
-                    <h2 id="qs-comparison-title" tabIndex={-1}>
-                      Three paths.
-                      <br className="qs-mobile-break" /> Visible trade-offs.
-                    </h2>
-                    <p>
-                      See what fits the water and crop-history rules—and what
-                      needs a closer look.
-                    </p>
-                  </div>
-                  {report && (
-                    <div className="qs-fit" data-testid="fit-count">
-                      <strong>
-                        {count}
-                        <span> / {report.plans.length}</span>
-                      </strong>
-                      <span>fit this example</span>
+                  {report ? (
+                    <>
+                      <div className="qs-scenario-strip">
+                        <span>
+                          <Droplets size={16} />
+                          <strong>{number(available)}</strong> m³/ha{" "}
+                          <small>{t("example water")}</small>
+                        </span>
+                        <span>
+                          <Sprout size={15} />
+                          {t(CROP_LABELS[scenario.previous_crop])}{" "}
+                          <small>{t("previous group")}</small>
+                        </span>
+                        <span>{t(PROFILE_LABELS[scenario.profile_id])}</span>
+                      </div>
+                      {report.status === "ok" && report.plans.length ? (
+                        <div className="qs-plans">
+                          {report.plans.map((plan) => (
+                            <PlanRow
+                              key={plan.id}
+                              plan={plan}
+                              available={available}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="qs-empty">
+                          <FileCheck2 size={23} />
+                          <h3>{t("More information is needed.")}</h3>
+                          <p>
+                            {t(
+                              "The engine did not return comparable alternatives. No plan is being recommended.",
+                            )}
+                          </p>
+                        </div>
+                      )}
+                      {report.status === "ok" && count === 0 && (
+                        <p className="qs-no-match" role="status">
+                          <span />
+                          {t(
+                            "No plan matches both rules. Try a different water or crop-history input to see what changes.",
+                          )}
+                        </p>
+                      )}
+                      <p className="qs-chart-note">
+                        <span className="qs-water-key" />{" "}
+                        {t(
+                          "m³/ha = cubic metres of water per hectare. Line = example water. Bar = assumed demand.",
+                        )}
+                      </p>
+                    </>
+                  ) : (
+                    <div className="qs-empty" role="status">
+                      {connecting || busy ? (
+                        <LoaderCircle size={25} className="qs-spin" />
+                      ) : (
+                        <Layers3 size={25} />
+                      )}
+                      <h3>
+                        {connecting
+                          ? t("Preparing your workspace.")
+                          : busy
+                            ? t("Comparing this scenario.")
+                            : t("Your scenario is ready to explore.")}
+                      </h3>
+                      <p>
+                        {connecting
+                          ? t(
+                              "The Studio is checking its local session and engine.",
+                            )
+                          : t(
+                              "Use “Compare crop paths” to see the current inputs. Previous results are never shown as a new comparison.",
+                            )}
+                      </p>
                     </div>
                   )}
-                </div>
-
-                {report ? (
-                  <>
-                    <div className="qs-scenario-strip">
-                      <span>
-                        <Droplets size={16} />
-                        <strong>{number(available)}</strong> m³/ha{" "}
-                        <small>example water</small>
-                      </span>
-                      <span>
-                        <Sprout size={15} />
-                        {CROP_LABELS[scenario.previous_crop]}{" "}
-                        <small>previous group</small>
-                      </span>
-                      <span>{PROFILE_LABELS[scenario.profile_id]}</span>
-                    </div>
-                    {report.status === "ok" && report.plans.length ? (
-                      <div className="qs-plans">
-                        {report.plans.map((plan) => (
-                          <PlanRow
-                            key={plan.id}
-                            plan={plan}
-                            available={available}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="qs-empty">
-                        <FileCheck2 size={23} />
-                        <h3>More information is needed.</h3>
-                        <p>
-                          The engine did not return comparable alternatives. No
-                          plan is being recommended.
-                        </p>
-                      </div>
-                    )}
-                    {report.status === "ok" && count === 0 && (
-                      <p className="qs-no-match" role="status">
-                        <span />
-                        No plan matches both rules. Try a different water or
-                        crop-history input to see what changes.
-                      </p>
-                    )}
-                    <p className="qs-chart-note">
-                      <span className="qs-water-key" /> m³/ha = cubic metres of
-                      water per hectare. Line = example water. Bar = assumed
-                      demand.
-                    </p>
-                  </>
-                ) : (
-                  <div className="qs-empty" role="status">
-                    {connecting || busy ? (
-                      <LoaderCircle size={25} className="qs-spin" />
-                    ) : (
-                      <Layers3 size={25} />
-                    )}
-                    <h3>
-                      {connecting
-                        ? "Preparing your workspace."
-                        : busy
-                          ? "Comparing this scenario."
-                          : "Your scenario is ready to explore."}
-                    </h3>
-                    <p>
-                      {connecting
-                        ? "The Studio is checking its local session and engine."
-                        : "Use “Compare crop paths” to see the current inputs. Previous results are never shown as a new comparison."}
-                    </p>
-                  </div>
-                )}
-              </section>
+                </section>
+              </div>
             </div>
-          </div>
+          </details>
         </section>
         <section
           id="qs-evidence-area"
@@ -1688,8 +1836,10 @@ export default function Studio() {
             data-testid="connection-panel"
           >
             <div className="qs-connections-heading">
-              <h2 id="qs-connections-title">Your evidence, working together</h2>
-              <span>Sources, checks and reasoning</span>
+              <h2 id="qs-connections-title">
+                {t("Your evidence, working together")}
+              </h2>
+              <span>{t("Sources, checks and reasoning")}</span>
             </div>
 
             <div className="qs-connection-line">
@@ -1710,20 +1860,20 @@ export default function Studio() {
                   <MapPin size={17} />
                 </span>
                 <div>
-                  <h3>Landscape & weather</h3>
+                  <h3>{t("Landscape & weather")}</h3>
                   <p className="qs-node-status">
                     {attachedContext
-                      ? "Seven-day forecast attached"
+                      ? t("Seven-day forecast attached")
                       : mode === "offline"
-                        ? "Regional landscape explorer"
+                        ? t("Regional landscape explorer")
                         : bootstrap?.geodata?.enabled
-                          ? "Choose a place to load a forecast"
-                          : "Landscape exploration"}
+                          ? t("Choose a place to load a forecast")
+                          : t("Landscape exploration")}
                   </p>
                   <button type="button" onClick={() => reviewField("weather")}>
                     {attachedContext
-                      ? "Review Open-Meteo context"
-                      : "Explore your place"}{" "}
+                      ? t("Review Open-Meteo context")
+                      : t("Explore your place")}{" "}
                     <ChevronRight size={13} />
                   </button>
                 </div>
@@ -1754,30 +1904,30 @@ export default function Studio() {
                 <div>
                   <h3>
                     {mode === "offline"
-                      ? "Saved engine report"
-                      : "Comparison API"}
+                      ? t("Saved engine report")
+                      : t("Comparison API")}
                   </h3>
                   <p className="qs-node-status">
                     {connecting
-                      ? "Connecting…"
+                      ? t("Connecting…")
                       : busy
-                        ? "Comparing your inputs…"
+                        ? t("Comparing your inputs…")
                         : error
-                          ? "Comparison needs retry"
+                          ? t("Comparison needs retry")
                           : report
                             ? mode === "offline"
-                              ? "Example snapshot loaded"
-                              : "Current comparison linked"
+                              ? t("Example snapshot loaded")
+                              : t("Current comparison linked")
                             : bootstrap
-                              ? "Ready to compare"
-                              : "Local workspace"}
+                              ? t("Ready to compare")
+                              : t("Local workspace")}
                   </p>
                   <button
                     type="button"
                     disabled={!report}
                     onClick={openComparison}
                   >
-                    View crop paths <ChevronRight size={13} />
+                    {t("View crop paths")} <ChevronRight size={13} />
                   </button>
                 </div>
               </div>
@@ -1801,23 +1951,23 @@ export default function Studio() {
                   <FileCheck2 size={17} />
                 </span>
                 <div>
-                  <h3>Source & rule checks</h3>
+                  <h3>{t("Source & rule checks")}</h3>
                   <p className="qs-node-status">
                     {mode === "offline"
-                      ? "Water and rotation rules"
+                      ? t("Water and rotation rules")
                       : agentBusy
-                        ? "Running local checks…"
+                        ? t("Running local checks…")
                         : agentError
-                          ? "No completed response"
+                          ? t("No completed response")
                           : returnedTools.length
                             ? `${returnedTools.length} tool results returned`
                             : canAsk
-                              ? "Ready when you ask"
-                              : "Waiting for a comparison"}
+                              ? t("Ready when you ask")
+                              : t("Waiting for a comparison")}
                   </p>
                   {mode === "offline" ? (
                     <span className="qs-node-caption">
-                      Explore the prepared crop paths
+                      {t("Explore the prepared crop paths")}
                     </span>
                   ) : (
                     <button
@@ -1833,13 +1983,15 @@ export default function Studio() {
                             ?.focus({ preventScroll: true });
                         } else
                           usePrompt(
-                            "What should I check before using this comparison?",
+                            t(
+                              "What should I check before using this comparison?",
+                            ),
                           );
                       }}
                     >
                       {returnedTools.length
-                        ? "Inspect returned checks"
-                        : "Ask about this example"}{" "}
+                        ? t("Inspect returned checks")
+                        : t("Ask about this example")}{" "}
                       <ChevronRight size={13} />
                     </button>
                   )}
@@ -1867,15 +2019,17 @@ export default function Studio() {
                   <BrandMark className="qs-model-glyph" />
                 </span>
                 <div>
-                  <h3>{mode === "offline" ? "Workspace mode" : "Reasoning"}</h3>
+                  <h3>
+                    {mode === "offline" ? t("Workspace mode") : t("Reasoning")}
+                  </h3>
                   <p className="qs-node-status">
-                    {mode === "offline" ? "Sample data" : aiStatus}
+                    {mode === "offline" ? t("Sample data") : t(aiStatus)}
                   </p>
                   <span className="qs-node-caption" title={model ?? undefined}>
                     {modelLabel ??
                       (mode === "offline"
-                        ? "Prepared examples and field records"
-                        : "Calculation-backed guidance")}
+                        ? t("Prepared examples and field records")
+                        : t("Calculation-backed guidance"))}
                     {providerLabel && mode === "service" && (
                       <>
                         <br />
@@ -1892,30 +2046,31 @@ export default function Studio() {
             {report && (
               <details className="qs-report-receipt">
                 <summary>
-                  Inspect the comparison receipt <ChevronRight size={13} />
+                  {t("Inspect the comparison receipt")}{" "}
+                  <ChevronRight size={13} />
                 </summary>
                 <dl>
                   <div>
-                    <dt>Comparison</dt>
+                    <dt>{t("Comparison")}</dt>
                     <dd>{report.comparison_id}</dd>
                   </div>
                   <div>
-                    <dt>Scenario revision</dt>
+                    <dt>{t("Scenario revision")}</dt>
                     <dd>{report.scenario_revision}</dd>
                   </div>
                   <div>
-                    <dt>Rule version</dt>
+                    <dt>{t("Rule version")}</dt>
                     <dd>{report.rule_version}</dd>
                   </div>
                   {provider && (
                     <div>
-                      <dt>Provider identifier</dt>
+                      <dt>{t("Provider identifier")}</dt>
                       <dd>{provider}</dd>
                     </div>
                   )}
                   {model && (
                     <div>
-                      <dt>Model identifier</dt>
+                      <dt>{t("Model identifier")}</dt>
                       <dd>{model}</dd>
                     </div>
                   )}
@@ -1931,22 +2086,22 @@ export default function Studio() {
             aria-labelledby="qs-review-title"
           >
             <div className="qs-section-heading">
-              <span className="qs-index">Local knowledge matters</span>
-              <span className="qs-example-tag">Better together</span>
+              <span className="qs-index">{t("Local knowledge matters")}</span>
+              <span className="qs-example-tag">{t("Better together")}</span>
             </div>
             <h2 id="qs-review-title">
-              Bring local knowledge into the picture.
+              {t("Bring local knowledge into the picture.")}
             </h2>
             <div
               className="qs-review-tabs"
               role="tablist"
-              aria-label="Evidence and decision review"
+              aria-label={t("Evidence and decision review")}
             >
               {(
                 [
-                  { id: "soil", label: "Soil & cover", icon: Leaf },
-                  { id: "evidence", label: "Evidence", icon: Layers3 },
-                  { id: "decision", label: "Next checks", icon: FileCheck2 },
+                  { id: "soil", label: t("Soil & cover"), icon: Leaf },
+                  { id: "evidence", label: t("Evidence"), icon: Layers3 },
+                  { id: "decision", label: t("Next checks"), icon: FileCheck2 },
                 ] as const
               ).map(({ id, label, icon: Icon }) => (
                 <button
@@ -1980,7 +2135,7 @@ export default function Studio() {
                   onClick={() => setTab(id)}
                 >
                   <Icon size={15} />
-                  {label}
+                  {t(label)}
                 </button>
               ))}
             </div>
@@ -1995,25 +2150,27 @@ export default function Studio() {
                 className="qs-review-panel"
               >
                 <span className="qs-observation-label">
-                  Questions for your land
+                  {t("Questions for your land")}
                 </span>
-                <h3>You know more than a water balance.</h3>
+                <h3>{t("You know more than a water balance.")}</h3>
                 <p>
-                  Bring what you notice about soil, vegetation and water paths
-                  into a shared review. Your field record keeps those
-                  observations in your own words.
+                  {t(
+                    "Bring what you notice about soil, vegetation and water paths into a shared review. Your field record keeps those observations in your own words.",
+                  )}
                 </p>
                 <ul>
                   {(
                     displayedReport?.resilience.open_questions ?? [
-                      "What soil cover was observed, and when?",
-                      "Are signs of erosion documented locally?",
-                      "Which soil and land-management information has a source?",
+                      t("What soil cover was observed, and when?"),
+                      t("Are signs of erosion documented locally?"),
+                      t(
+                        "Which soil and land-management information has a source?",
+                      ),
                     ]
                   ).map((question) => (
                     <li key={question}>
                       <span className="qs-open-circle" />
-                      {question}
+                      {t(question)}
                     </li>
                   ))}
                 </ul>
@@ -2030,49 +2187,49 @@ export default function Studio() {
                 className="qs-review-panel"
               >
                 <span className="qs-observation-label">
-                  Behind the comparison
+                  {t("Behind the comparison")}
                 </span>
-                <h3>Know what the answer is built on.</h3>
+                <h3>{t("Know what the answer is built on.")}</h3>
                 <div className="qs-source-list">
                   {displayedReport?.evidence.sources.map((source) => (
                     <div key={source.id}>
                       <span>
                         <Layers3 size={15} />
-                        {sourceLabels[source.id] ?? source.id}
+                        {t(sourceLabels[source.id] ?? source.id)}
                       </span>
-                      <strong>Synthetic</strong>
+                      <strong>{t("Synthetic")}</strong>
                     </div>
-                  )) ?? <p>Run a comparison to see its sources.</p>}
+                  )) ?? <p>{t("Run a comparison to see its sources.")}</p>}
                 </div>
-                <h4>Not covered by this example</h4>
+                <h4>{t("Not covered by this example")}</h4>
                 <ul>
                   {(
                     displayedReport?.evidence.not_available ?? [
-                      "Verified field weather",
-                      "Soil and land-cover observations",
-                      "Agronomic validation",
+                      t("Verified field weather"),
+                      t("Soil and land-cover observations"),
+                      t("Agronomic validation"),
                     ]
                   ).map((gap) => (
                     <li key={gap}>
                       <span className="qs-open-circle" />
-                      {gap}
+                      {t(gap)}
                     </li>
                   ))}
                 </ul>
                 <p className="qs-small-note">
-                  Missing coverage is not evidence that degradation is absent.
-                  Sources do not automatically support every claim.
+                  {t(
+                    "Missing coverage is not evidence that degradation is absent. Sources do not automatically support every claim.",
+                  )}
                 </p>
                 <details className="qs-method">
                   <summary>
-                    Where this example comes from <ChevronRight size={15} />
+                    {t("Where this example comes from")}{" "}
+                    <ChevronRight size={15} />
                   </summary>
                   <p>
-                    These comparison profiles are hypothetical teaching inputs,
-                    not measured conditions for your selected location.
-                    Location-based environmental evidence is kept separate;
-                    land degradation is not diagnosed and environmental impact
-                    has not been measured.
+                    {t(
+                      "These comparison profiles are hypothetical teaching inputs, not measured conditions for your selected location. Location-based environmental evidence is kept separate; land degradation is not diagnosed and environmental impact has not been measured.",
+                    )}
                   </p>
                 </details>
               </div>
@@ -2088,26 +2245,27 @@ export default function Studio() {
                 className="qs-review-panel"
               >
                 <span className="qs-observation-label">
-                  Your next conversation
+                  {t("Your next conversation")}
                 </span>
-                <h3>Make the next conversation count.</h3>
+                <h3>{t("Make the next conversation count.")}</h3>
                 <ol className="qs-next-checks">
                   {(
                     displayedReport?.decision.pending ?? [
-                      "Compare a scenario.",
-                      "Check assumptions against local evidence.",
-                      "Review the alternatives with agronomic support.",
+                      t("Compare a scenario."),
+                      t("Check assumptions against local evidence."),
+                      t("Review the alternatives with agronomic support."),
                     ]
                   ).map((item, index) => (
                     <li key={item}>
                       <span>{String(index + 1).padStart(2, "0")}</span>
-                      {item}
+                      {t(item)}
                     </li>
                   ))}
                 </ol>
                 <p className="qs-small-note">
-                  Take your questions to a local adviser or grower group, and
-                  agree on one check for your next visit.
+                  {t(
+                    "Take your questions to a local adviser or grower group, and agree on one check for your next visit.",
+                  )}
                 </p>
               </div>
             )}
@@ -2124,22 +2282,20 @@ export default function Studio() {
             <BrandMark />
           </div>
           <div>
-            <span className="qs-index">Why we build Solquira</span>
+            <span className="qs-index">{t("Why we build Solquira")}</span>
             <h2 id="qs-about-title">
-              Understand the land.
+              {t("Understand the land.")}
               <br />
-              Cultivate the future.
+              {t("Cultivate the future.")}
             </h2>
             <p>
-              Born in Latin America and built for drylands everywhere, Solquira
-              brings landscape evidence and local knowledge together, place by
-              place. It supports growers, advisers and communities facing water
-              stress, a changing climate and desertification as they choose a
-              practical next step for the land they care for.
+              {t(
+                "Born in Latin America and built for drylands everywhere, Solquira brings landscape evidence and local knowledge together, place by place. It supports growers, advisers and communities facing water stress, a changing climate and desertification as they choose a practical next step for the land they care for.",
+              )}
             </p>
           </div>
           <a href="#qs-landscape">
-            Start with a place <MapPin size={17} />
+            {t("Start with a place")} <MapPin size={17} />
           </a>
         </section>
 
@@ -2147,67 +2303,79 @@ export default function Studio() {
           <div className="qs-footer-identity">
             <BrandMark className="qs-footer-symbol" />
             <span className="qs-footer-brand">
-              Solquira <small>Understand the land. Cultivate the future.</small>
+              Solquira{" "}
+              <small>{t("Understand the land. Cultivate the future.")}</small>
             </span>
             <p className="qs-footer-tagline">
-              Built for drylands, from Latin America.
+              {t("Built for drylands, from Latin America.")}
             </p>
           </div>
 
-          <nav className="qs-footer-nav" aria-label="Product and methods">
-            <a href="#qs-about">Our purpose</a>
+          <nav className="qs-footer-nav" aria-label={t("Product and methods")}>
+            <a href="#qs-about">{t("Our purpose")}</a>
             <button type="button" onClick={() => openReview("evidence")}>
-              Explore evidence
+              {t("Explore evidence")}
             </button>
             <details
               className="qs-footer-methods"
               data-testid="methods-version"
             >
               <summary>
-                Methods & sources <ChevronRight size={14} />
+                {t("Methods & sources")} <ChevronRight size={14} />
               </summary>
               <div className="qs-footer-method-panel">
                 <p className="qs-workspace-basis" data-testid="workspace-basis">
                   {mode === "offline"
-                    ? "Sample workspace: crop results are precomputed from synthetic example inputs. The regional map and field records stay on this device."
+                    ? t(
+                        "Sample workspace: crop results are precomputed from synthetic example inputs. The regional map and field records stay on this device.",
+                      )
                     : liveResponse
-                      ? "Connected workspace: this answer includes a response from the named model and the tool results shown in its receipt."
-                      : "Connected workspace: comparison and field checks are available. The current model status is shown in the connection receipt."}
+                      ? t(
+                          "Connected workspace: this answer includes a response from the named model and the tool results shown in its receipt.",
+                        )
+                      : t(
+                          "Connected workspace: comparison and field checks are available. The current model status is shown in the connection receipt.",
+                        )}
                 </p>
                 <h3>
-                  Comparison method{methodVersion ? ` ${methodVersion}` : ""}
+                  {t("Comparison method")}
+                  {methodVersion ? ` ${methodVersion}` : ""}
                 </h3>
                 <p>
-                  Crop examples use fixed water-demand and rotation assumptions;
-                  they are not measured farms or validated agronomic
-                  recommendations. A matching path does not assess field
-                  suitability or environmental impact. The same calculation
-                  engine powers comparisons and guided checks.
+                  {t(
+                    "Crop examples use fixed water-demand and rotation assumptions; they are not measured farms or validated agronomic recommendations. A matching path does not assess field suitability or environmental impact. The same calculation engine powers comparisons and guided checks.",
+                  )}
                 </p>
                 <dl>
                   <div>
-                    <dt>Composition basis</dt>
+                    <dt>{t("Composition basis")}</dt>
                     <dd>
                       {mode === "offline"
-                        ? "Precomputed example results, composed by field rules."
+                        ? t(
+                            "Precomputed example results, composed by field rules.",
+                          )
                         : model
-                          ? `${modelLabel} · ${aiStatus}`
-                          : "Field rules compose the wording; no model provider is configured."}
+                          ? `${modelLabel} · ${t(aiStatus)}`
+                          : t(
+                              "Field rules compose the wording; no model provider is configured.",
+                            )}
                     </dd>
                   </div>
                   <div>
-                    <dt>Rule identifier</dt>
-                    <dd>{ruleVersion ?? "Shown when the Studio is ready."}</dd>
+                    <dt>{t("Rule identifier")}</dt>
+                    <dd>
+                      {ruleVersion ?? t("Shown when the Studio is ready.")}
+                    </dd>
                   </div>
                 </dl>
                 <button type="button" onClick={() => openReview("evidence")}>
-                  Review sources & assumptions <ChevronRight size={13} />
+                  {t("Review sources & assumptions")} <ChevronRight size={13} />
                 </button>
               </div>
             </details>
             {!STATIC_STUDIO && mode === "offline" && (
               <button type="button" onClick={() => setMode("service")}>
-                <RefreshCw size={13} /> Reconnect Studio
+                <RefreshCw size={13} /> {t("Reconnect Studio")}
               </button>
             )}
           </nav>

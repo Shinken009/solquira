@@ -1,3 +1,5 @@
+import { useStudioCopy } from "../StudioPreferences";
+import { GEO_COPY } from "./geo-copy";
 import {
   lazy,
   Suspense,
@@ -53,6 +55,9 @@ export default function FieldContext({
   activeArea: WorkspaceArea;
   onNavigate: (area: WorkspaceArea, target?: string) => void;
 }) {
+  const { t, locale } = useStudioCopy(GEO_COPY);
+  const language = locale === "es" ? "es-CL" : "en-US";
+  const number = (value: number, digits = 1) => new Intl.NumberFormat(language, {minimumFractionDigits: digits, maximumFractionDigits: digits}).format(value);
   const [latitude, setLatitude] = useState(""),
     [longitude, setLongitude] = useState("");
   const [point, setPoint] = useState<Point | null>(null);
@@ -114,7 +119,7 @@ export default function FieldContext({
     setLocationSource(source);
     setLatitude(String(value.latitude));
     setLongitude(String(value.longitude));
-    setLocationNote("Review the marker, then confirm this place. No weather request has been sent.");
+    setLocationNote("Review the marker, then confirm your place.");
   };
   // Only an explicit selection from the demonstration controls supplies this
   // prop. It previews a place; it does not turn example data into observations.
@@ -187,7 +192,7 @@ export default function FieldContext({
     onPointChange?.(selected);
     setLatitude(String(selected.latitude));
     setLongitude(String(selected.longitude));
-    setLocationNote("Place confirmed. Your environmental context belongs to this point; field observations remain separate.");
+    setLocationNote(enabled && !offline ? "Place confirmed. Continue to the coming week." : "Place confirmed");
     await requestForecast(roundedPoint(selected));
   };
   const load = async (event: FormEvent) => {
@@ -247,10 +252,10 @@ export default function FieldContext({
     ...days.flatMap((d) => [d.precipitation_mm, d.reference_et0_mm]),
   );
   const sourceLabel = locationSource === "device"
-    ? "Device GPS" : locationSource === "reference"
-      ? "Demonstration location · not field observations" : locationSource === "map"
-      ? "Chosen on map · GPS accuracy not measured" : locationSource === "manual"
-        ? "Entered coordinates · GPS accuracy not measured" : "No point yet";
+    ? "Device location" : locationSource === "reference"
+      ? "Reference place" : locationSource === "map"
+      ? "Map selection" : locationSource === "manual"
+        ? "Entered coordinates" : "No point yet";
   return (
     <>
       <section
@@ -266,15 +271,11 @@ export default function FieldContext({
         <div className="qg-heading">
           <div>
             <span className="qg-eyebrow">
-              <MapPin size={17} /> Start with a place
-            </span>
+              <MapPin size={17} /> {t("Start with a place")}</span>
             <h2 id="qg-title" tabIndex={-1}>
-              Put your land in context.
-            </h2>
+              {t("Put your land in context.")}</h2>
             <p>
-              Choose a point once. Its map, forecast and field record stay with
-              you as you move through the workspace.
-            </p>
+              {t("Choose a point once. Its map, forecast and field record stay with you as you move through the workspace.")}</p>
           </div>
           <button
             type="button"
@@ -285,110 +286,88 @@ export default function FieldContext({
             onClick={() => setOpened(!opened)}
           >
             <Layers3 size={17} />
-            {opened ? "Close landscape view" : "Open landscape view"}
+            {opened ? t("Close landscape view") : t("Open landscape view")}
           </button>
         </div>
         <div className="qg-grid">
           <div className="qg-location">
-            <span className="qg-step">01 / Choose your place</span>
-            <h3>The story starts here.</h3>
+            <span className="qg-step">{t("01 / Choose your place")}</span>
+            <h3>{t("The story starts here.")}</h3>
             <p className="qg-location-hint">
-              Mark the land you want to understand. You do not need an address,
-              a parcel boundary or a GPS permission to explore.
-            </p>
+              {t("Choose on the map or use your location. Review the marker before continuing.")}</p>
             <div className="qg-place-actions">
               <button type="button" className="qg-load" data-testid="geo-select-map"
                 aria-pressed={selecting} onClick={beginSelection}>
-                <MapPin size={17}/>{selecting ? "Tap the map to choose" : "Select a place on the map"}
+                <MapPin size={17}/>{selecting ? t("Tap the map to choose") : t("Select a place on the map")}
               </button>
               <button type="button" className="qg-locate" data-testid="geo-use-location"
                 onClick={locate} disabled={locating}>
-                <LocateFixed size={16}/>{locating ? "Finding your location…" : "Use my location"}
+                <LocateFixed size={16}/>{locating ? t("Finding your location…") : t("Use my location")}
               </button>
             </div>
-            {locationNote && <p className="qg-location-note" role="status">{locationNote}</p>}
+            {locationNote && <p className="qg-location-note" role="status">{t(locationNote)}</p>}
             {draft && <div className="qg-point-card" data-testid="geo-point-review" data-confirmed={Boolean(point)}>
-              <span>{point ? "Analysis point confirmed" : "Review your chosen place"}</span>
+              <span>{point ? t("Place confirmed") : t("Ready to confirm")}</span>
               <strong>{draft.latitude.toFixed(5)}, {draft.longitude.toFixed(5)}</strong>
-              <small>{sourceLabel}</small>
+              <small>{t(sourceLabel)}</small>
               {locationSource === "device" && deviceLocation && <small>
-                Reported GPS accuracy: {deviceLocation.accuracyMeters === null ? "not available" : `±${Math.round(deviceLocation.accuracyMeters)} m`} · {new Date(deviceLocation.capturedAt).toLocaleTimeString()}
+                {t("Reported GPS accuracy:")}{" "}{deviceLocation.accuracyMeters === null ? t("not available") : `±${Math.round(deviceLocation.accuracyMeters)} m`} · {new Date(deviceLocation.capturedAt).toLocaleTimeString(language)}
               </small>}
-              <button type="button" className="qg-load" data-testid="geo-confirm-point" disabled={busy}
+              <button type="button" className="qg-load" data-testid="geo-confirm-point" disabled={busy || Boolean(point && (!enabled || offline))}
                 onClick={() => void confirm(draft, draftSource.current)}>
-                {busy ? "Reading the forecast…" : point ? "Refresh this point’s context" : "Confirm this point"}
+                {busy ? t("Reading the forecast…") : point ? (enabled && !offline ? t("Refresh forecast") : t("Confirm this place")) : enabled && !offline ? t("Confirm place & see forecast") : t("Confirm this place")}
               </button>
               {point && <button type="button" className="qg-next" data-testid="geo-next-guidance"
-                onClick={() => onNavigate("guidance", "qs-exploration")}>
-                Next: tell us what concerns you →
-              </button>}
+                onClick={() => onNavigate(enabled && !offline ? "anticipation" : "guidance")}>
+                {enabled && !offline ? t("Next: read the coming week →") : t("Next: choose a useful check →")}</button>}
             </div>}
             <details className="qg-manual" data-testid="geo-manual">
-              <summary>Enter coordinates instead</summary>
+              <summary>{t("Enter coordinates instead")}</summary>
               <form onSubmit={load}>
                 <div className="qg-coordinate-inputs">
-                  <label>Latitude<input data-testid="geo-lat" inputMode="decimal" value={latitude}
+                  <label>{t("Latitude")}<input data-testid="geo-lat" inputMode="decimal" value={latitude}
                     onChange={(e) => {invalidate();setPoint(null);setDraft(null);onPointChange?.(null);setLatitude(e.target.value);}}/></label>
-                  <label>Longitude<input data-testid="geo-lon" inputMode="decimal" value={longitude}
+                  <label>{t("Longitude")}<input data-testid="geo-lon" inputMode="decimal" value={longitude}
                     onChange={(e) => {invalidate();setPoint(null);setDraft(null);onPointChange?.(null);setLongitude(e.target.value);}}/></label>
                 </div>
                 <button type="submit" className="qg-load" data-testid="geo-load-context" disabled={busy}>
                   {busy ? <RefreshCw size={16} className="qs-spin"/> : <Globe2 size={16}/>}
-                  {busy ? "Reading local context…" : "Confirm coordinates & load context"}
+                  {busy ? t("Reading local context…") : t("Confirm coordinates & see forecast")}
                 </button>
               </form>
             </details>
-            <p className="qg-sharing">Confirmation requests a forecast for rounded coordinates.
-              It does not save a field observation or contact the AI assistant.</p>
-            {error && <p role="alert" className="qg-error">{error}</p>}
+            {error && <p role="alert" className="qg-error">{t(error)}</p>}
             <details className="qg-method" data-testid="geo-methods">
-              <summary>Sources & map details</summary>
+              <summary>{t("Sources, privacy & map details")}</summary>
+              <p>{t("Confirmation sends rounded coordinates to Open-Meteo for a forecast. It does not save a field observation or contact the AI assistant.")}</p>
               <p>
-                The Cesium view uses OpenStreetMap reference tiles (
-                <a
+                {t("The Cesium view uses OpenStreetMap reference tiles (")}<a
                   href="https://www.openstreetmap.org/copyright"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  © OpenStreetMap contributors
-                </a>
-                ), with Natural Earth as a coarse offline fallback, and an
-                ellipsoid, not surveyed terrain. The public tile service is
-                best-effort; a deployment can configure a contracted provider.
-                If a reference tile is wrong,{" "}
+                  {t("© OpenStreetMap contributors")}</a>
+                {t("), with Natural Earth as a coarse offline fallback, and an ellipsoid, not surveyed terrain. The public tile service is best-effort; a deployment can configure a contracted provider. If a reference tile is wrong,")}{" "}
                 <a
                   href="https://www.openstreetmap.org/fixthemap"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  report a map issue
-                </a>
-                . The selected point and forecast are independent of any
-                synthetic crop examples.
-              </p>
+                  {t("report a map issue")}</a>
+                {t(". The selected point and forecast are independent of any synthetic crop examples.")}</p>
               <p>
-                Loading a forecast sends rounded coordinates to Open-Meteo. The
-                agent receives weather only after explicit attachment, without
-                those coordinates.
-              </p>
+                {t("Loading a forecast sends rounded coordinates to Open-Meteo. The agent receives weather only after explicit attachment, without those coordinates.")}</p>
               <p>
-                Weather is a seven-day model forecast in UTC from{" "}
+                {t("Weather is a seven-day model forecast in UTC from")}{" "}
                 <a
                   href="https://open-meteo.com/"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Open-Meteo
-                </a>{" "}
-                (CC BY 4.0). Reference ET₀ describes a standard reference
-                surface, not an irrigation prescription.
-              </p>
+                  {t("Open-Meteo")}</a>{" "}
+                {t("(CC BY 4.0). Reference ET₀ describes a standard reference surface, not an irrigation prescription.")}</p>
               <p>
-                Optional NASA MODIS imagery provides regional visual context
-                from a 250 m product. Its date is shown beside the layer. The
-                Web Mercator layer covers approximately 85°S to 85°N. It is not
-                an NDVI calculation or a field boundary.
-              </p>
+                {t("Optional NASA MODIS imagery provides regional visual context from a 250 m product. Its date is shown beside the layer. The Web Mercator layer covers approximately 85°S to 85°N. It is not an NDVI calculation or a field boundary.")}</p>
             </details>
           </div>
           <div className="qg-context">
@@ -398,8 +377,7 @@ export default function FieldContext({
                 <Suspense
                   fallback={
                     <div className="qg-map-loading">
-                      Opening the landscape tools…
-                    </div>
+                      {t("Opening the landscape tools…")}</div>
                   }
                 >
                   <Landscape
@@ -422,77 +400,33 @@ export default function FieldContext({
                   <MapPin size={14} />
                   {point
                     ? `${point.latitude.toFixed(3)}, ${point.longitude.toFixed(3)}`
-                    : "No point confirmed"}
+                    : draft ? t("Marker ready · confirm your place") : t("Choose your place on the map")}
                   {point && (
-                    <small className="qg-location-source">{sourceLabel}</small>
+                    <small className="qg-location-source">{t(sourceLabel)}</small>
                   )}
                 </span>
-                <label className="qg-layer-toggle">
-                  <input
-                    type="checkbox"
-                    data-testid="geo-nasa-toggle"
-                    aria-describedby="qg-layer-detail"
-                    checked={nasa}
-                    disabled={
-                      !opened ||
-                      !point ||
-                      data?.imagery.state !== "ready_to_load"
-                    }
-                    onChange={(e) => {
-                      setNasa(e.target.checked);
-                      setImageryState(e.target.checked ? "loading" : "off");
-                    }}
-                  />
-                  <span>
-                    <strong>NASA MODIS detail</strong>
-                    <small>
-                      {!point
-                        ? "Choose a point to enable"
-                        : data?.imagery.state === "ready_to_load"
-                          ? `250 m regional / ${data.imagery.date}`
-                          : "Load local context to enable"}
-                    </small>
-                  </span>
-                </label>
               </div>
-              <p
-                id="qg-layer-detail"
-                className={nasa ? "qg-source-note" : "qg-layer-hint"}
-                role="status"
-              >
-                {!point ? (
-                  <>
-                    Choose a point on the map or use your location, then confirm it. The map shows OpenStreetMap reference
-                    tiles (not satellite imagery) with a coarse Natural Earth
-                    fallback.
-                  </>
-                ) : nasa ? (
-                  <>
-                    NASA EOSDIS GIBS / MODIS Terra /{" "}
-                    {data?.imagery.date ?? "date pending"} / regional 250 m;
-                    clouds and availability vary.{" "}
-                    {imageryState === "received"
-                      ? "Imagery received."
-                      : imageryState === "unavailable"
-                        ? "Satellite tiles are unavailable; the reference map remains available."
-                        : "Loading regional imagery…"}
-                  </>
-                ) : (
-                  <>
-                    OpenStreetMap provides a detailed reference map (not
-                    satellite imagery).{" "}
-                    <a
-                      href="https://www.openstreetmap.org/copyright"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      © OpenStreetMap contributors
-                    </a>
-                    . NASA MODIS offers optional 250 m regional imagery once
-                    local context loads; clouds, date and availability vary.
-                  </>
-                )}
+              <p className="qg-map-reference" data-testid="geo-map-attribution">
+                {t("Reference map ·")}{" "}<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">{t("© OpenStreetMap contributors")}</a>
               </p>
+              <details className="qg-method qg-map-layers" data-testid="geo-map-layers">
+                <summary>{t("Map layers")}</summary>
+                {data?.imagery.state === "ready_to_load" && point ? (
+                  <label className="qg-layer-toggle">
+                    <input type="checkbox" data-testid="geo-nasa-toggle" aria-describedby="qg-layer-detail"
+                      checked={nasa} disabled={!opened}
+                      onChange={(e) => {setNasa(e.target.checked);setImageryState(e.target.checked ? "loading" : "off");}} />
+                    <span><strong>{t("NASA MODIS regional imagery")}</strong><small>{t("250 m ·")}{" "}{data.imagery.date}</small></span>
+                  </label>
+                ) : <p>{t("Confirm your place and load its forecast to see available regional layers.")}</p>}
+                <p id="qg-layer-detail" className="qg-source-note" role="status">
+                  {nasa ? <>
+                    {t("NASA EOSDIS GIBS / MODIS Terra /")}{" "}{data?.imagery.date} {t("· 250 m.")}{imageryState === "received"
+                      ? t("Imagery received.") : imageryState === "unavailable"
+                        ? t("Satellite tiles are unavailable; the reference map remains available.") : t("Loading regional imagery…")}
+                  </> : t("OpenStreetMap is a reference map, not satellite imagery. Natural Earth provides a coarse fallback. Optional NASA MODIS imagery is regional; clouds, date and availability vary.")}
+                </p>
+              </details>
             </div>
           </div>
         </div>
@@ -508,12 +442,10 @@ export default function FieldContext({
       >
         <div className="qg-heading">
           <div>
-            <span className="qg-eyebrow">Anticipación ambiental</span>
-            <h2>The coming week, with its limits.</h2>
+            <span className="qg-eyebrow">{t("Plan your next visit")}</span>
+            <h2>{t("The coming week at your place.")}</h2>
             <p>
-              Read forecast indicators before choosing checks for your next
-              visit. No model call is needed.
-            </p>
+              {t("See when rain and temperature may change, then choose what to check on your next visit.")}</p>
           </div>
         </div>
         <div
@@ -525,21 +457,21 @@ export default function FieldContext({
           <div className="qg-weather-heading">
             <h3 tabIndex={-1}>
               {enabled && !offline
-                ? "The next seven days"
-                : "Read the landscape."}
+                ? t("The next seven days")
+                : t("Read the landscape.")}
             </h3>
             <span>
               {data
                 ? data.weather.state === "cached"
-                  ? "Recent cached forecast"
+                  ? t("Recent cached forecast")
                   : data.weather.state === "ready"
-                    ? "Forecast received"
+                    ? t("Forecast received")
                     : data.weather.state === "disabled"
-                      ? "Local map mode"
-                      : "Forecast needs retry"
+                      ? t("Local map mode")
+                      : t("Forecast needs retry")
                 : enabled && !offline
-                  ? "Choose a point, then load context"
-                  : "Three questions for your next visit"}
+                  ? t("Start by confirming your place")
+                  : t("Three questions for your next visit")}
             </span>
           </div>
           {days.length === 7 ? (
@@ -548,38 +480,36 @@ export default function FieldContext({
                 <div>
                   <Droplets size={20} />
                   <strong>
-                    {totalRain.toFixed(1)}
-                    <small> mm</small>
+                    {number(totalRain)}
+                    <small> {t("mm")}</small>
                   </strong>
-                  <span>Forecast precipitation</span>
+                  <span>{t("Forecast precipitation")}</span>
                 </div>
                 <div>
                   <Sun size={20} />
                   <strong>
-                    {totalET.toFixed(1)}
-                    <small> mm</small>
+                    {number(totalET)}
+                    <small> {t("mm")}</small>
                   </strong>
-                  <span>Reference ET₀</span>
+                  <span>{t("Reference ET₀")}</span>
                 </div>
               </div>
               <div className="qg-chart-legend">
                 <span>
-                  <i /> Precipitation
-                </span>
+                  <i /> {t("Precipitation")}</span>
                 <span>
-                  <i /> Reference ET₀
-                </span>
-                <small>mm per day · UTC</small>
+                  <i /> {t("Reference ET₀")}</span>
+                <small>{t("mm per day · UTC")}</small>
               </div>
               <div
                 className="qg-chart"
                 role="img"
                 aria-label={
-                  "Daily forecast in UTC: " +
+                  t("Daily forecast in UTC:") + " " +
                   days
                     .map(
                       (d) =>
-                        `${d.date}: precipitation ${d.precipitation_mm} millimetres, reference ET0 ${d.reference_et0_mm} millimetres, temperature ${d.temperature_min_c} to ${d.temperature_max_c} degrees Celsius`,
+                        `${d.date}: ${t("precipitation")} ${number(d.precipitation_mm)} ${t("millimetres, reference ET0")} ${number(d.reference_et0_mm)} ${t("millimetres, temperature")} ${number(d.temperature_min_c)} ${t("to")} ${number(d.temperature_max_c)} ${t("degrees Celsius")}`,
                     )
                     .join("; ")
                 }
@@ -598,71 +528,64 @@ export default function FieldContext({
                         }}
                       />
                     </div>
-                    <span>{day.date.slice(5)}</span>
+                    <span title={`${day.date} UTC`}>{new Intl.DateTimeFormat(language, {weekday: "short", day: "numeric", timeZone: "UTC"}).format(new Date(`${day.date}T00:00:00Z`))}</span>
                     <small>
-                      {day.precipitation_mm.toFixed(1)} /{" "}
-                      {day.reference_et0_mm.toFixed(1)}
+                      {number(day.precipitation_mm)} /{" "}
+                      {number(day.reference_et0_mm)}
                     </small>
                     <small>
-                      {day.temperature_min_c.toFixed(0)}–
-                      {day.temperature_max_c.toFixed(0)}°C
-                    </small>
+                      {number(day.temperature_min_c, 0)}–
+                      {number(day.temperature_max_c, 0)}{t("°C")}</small>
                   </div>
                 ))}
               </div>
               <p className="qg-guidance">
-                Compare rain with atmospheric water demand, then check soil
-                moisture and irrigation records with local agronomic support.
-              </p>
+                {t("Compare rain with atmospheric water demand, then check soil moisture and irrigation records with local agronomic support.")}</p>
               <p className="qg-source-note">
-                Open-Meteo · Model forecast · Retrieved{" "}
+                {t("Open-Meteo · Model forecast · Retrieved")}{" "}
                 {new Date(data!.retrieved_at)
                   .toISOString()
                   .slice(0, 16)
                   .replace("T", " ")}{" "}
-                UTC
-              </p>
+                {t("UTC")}</p>
             </>
           ) : (
             <p className="qg-weather-empty">
-              {data?.weather.note ??
+              {data?.weather.note ? t(data.weather.note) :
                 (enabled && !offline
-                  ? "Load the forecast to explore rain, temperature and reference water demand for this point."
-                  : "Follow the water paths. Notice where the soil is exposed. Bring local knowledge into what you check next.")}
+                  ? t("Load the forecast to explore rain, temperature and reference water demand for this point.")
+                  : t("Follow the water paths. Notice where the soil is exposed. Bring local knowledge into what you check next."))}
             </p>
           )}
           {(!enabled || offline) && (
             <div className="qg-landscape-lens">
               <div>
                 <Droplets size={21} />
-                <strong>Water</strong>
-                <span>Where does it move?</span>
+                <strong>{t("Water")}</strong>
+                <span>{t("Where does it move?")}</span>
               </div>
               <div>
                 <Sun size={21} />
-                <strong>Cover</strong>
-                <span>What protects the soil?</span>
+                <strong>{t("Cover")}</strong>
+                <span>{t("What protects the soil?")}</span>
               </div>
               <div>
                 <MapPin size={21} />
-                <strong>People</strong>
-                <span>Who knows this place?</span>
+                <strong>{t("People")}</strong>
+                <span>{t("Who knows this place?")}</span>
               </div>
               <a href="#qs-land-record">
-                Bring your observations into a record
-              </a>
+                {t("Bring your observations into a record")}</a>
             </div>
           )}
         </div>
-        <AnticipationIndicators data={data?.anticipation} />
+        {data && <AnticipationIndicators data={data.anticipation} />}
         {data?.context_ref && days.length === 7 && !offline && (
           <div className="qg-connect" data-testid="geo-connect">
             <div>
-              <strong>Forecast ready. What should you check?</strong>
+              <strong>{t("Forecast ready. What should you check?")}</strong>
               <p>
-                Bring these seven days into your question about water, soil or
-                living cover.
-              </p>
+                {t("Bring these seven days into your question about water, soil or living cover.")}</p>
             </div>
             <button
               type="button"
@@ -678,18 +601,19 @@ export default function FieldContext({
               }}
             >
               {attachedRef === data.context_ref
-                ? "Forecast attached · go to question"
-                : "Use this forecast in my question"}
+                ? t("Forecast attached · go to question")
+                : t("Use this forecast in my question")}
             </button>
           </div>
         )}
 
         <button
           type="button"
-          className="qg-open"
-          onClick={() => onNavigate("territory")}
+          className={point ? "qg-open" : "qg-load"}
+          data-testid="anticipation-choose-place"
+          onClick={() => onNavigate("territory", draft ? "geo-confirm-point" : "qs-landscape")}
         >
-          Choose or change the place
+          {draft && !point ? t("Confirm your chosen place") : point ? t("Change the place") : t("Choose a place to see its forecast")}
         </button>
         <HistoricalContext
           point={point}

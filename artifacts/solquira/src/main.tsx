@@ -1,17 +1,20 @@
-import { createRoot } from 'react-dom/client';
+import { createRoot } from "react-dom/client";
 
-import App from './App';
-import { ErrorBoundary } from '@/components/error-boundary';
+import App from "./App";
+import { ErrorBoundary } from "@/components/error-boundary";
 
-import './index.css';
+import "./index.css";
+import { StudioPreferencesProvider } from "./studio/StudioPreferences";
 
-createRoot(document.getElementById('root')!, {
+createRoot(document.getElementById("root")!, {
   // Keeps caught errors off reportError(), which would raise the dev overlay.
   onCaughtError: (error, errorInfo) => {
     console.error(error, errorInfo.componentStack);
   },
 }).render(
-  <ErrorBoundary>
-    <App />
-  </ErrorBoundary>,
+  <StudioPreferencesProvider>
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  </StudioPreferencesProvider>,
 );

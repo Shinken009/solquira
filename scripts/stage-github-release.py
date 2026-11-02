@@ -73,6 +73,7 @@ def sources(root):
         "qa-territorial-journey.mjs",
         "qa-land-evidence.mjs",
         "qa-cesium-selection.mjs",
+        "qa-studio-preferences.mjs",
         "test-land-evidence-client.mjs",
         "qa-studio.mjs",
         "qa-solquira-experience.mjs",

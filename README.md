@@ -14,6 +14,19 @@ and scientific limits. Planned integrations are identified separately from worki
 
 ## The experience
 
+The header offers **Español / English** and **Light / Dark** controls. The first
+visit follows the browser language (Spanish or English) and starts in light
+mode unless the visitor explicitly saved another theme. Only those two
+preferences are stored locally; location, answers and field notes are not added
+to persistent storage by these controls. Switching language or appearance does
+not recreate the Cesium map, change the selected point, or refresh sources.
+
+The journey is **place → forecast → next check**. Device location and map picks
+first show a marker to review; confirmation remains a separate action. Source,
+privacy and method details stay available in accessible disclosures, while map
+attribution stays visible. Teaching examples are opt-in disclosures, separate
+from the selected place; an explicit example link opens the relevant section.
+
 The workspace has four keyboard-accessible areas: **Territorio (Territory),
 Anticipación (Anticipation), Orientación (Guidance), and Evidencia (Evidence)**.
 Switching areas preserves the map, selected place, forecast, scenario, results,
@@ -222,12 +235,17 @@ node scripts/qa-environment-navigation.mjs http://127.0.0.1:8036
 node scripts/qa-territorial-journey.mjs http://127.0.0.1:8036
 node scripts/qa-land-evidence.mjs http://127.0.0.1:8036
 node scripts/qa-cesium-selection.mjs http://127.0.0.1:8036
+node scripts/qa-studio-preferences.mjs http://127.0.0.1:8036
 node --test scripts/test-land-evidence-client.mjs
 ```
 
 Browser QA expects the default local, inference-disabled server. It checks the card, scenario
 changes, reference selection, source labels, contrast and layout without contacting a provider.
 The fixture check compares the stored examples with the current Python engine and its hash.
+The preferences regression exercises both languages and themes at 1440, 390 and
+320 px, a declared device-location fixture, persistent preferences, unchanged
+draft coordinates and Cesium canvas, disclosures, and measured text contrast.
+It blocks external requests and never confirms the fixture point or calls a model.
 
 ## Sources and credit
 

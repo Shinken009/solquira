@@ -1,3 +1,4 @@
+import { usePanelCopy } from "./panel-copy";
 import { useEffect, useRef, useState } from "react";
 import {
   Check,
@@ -43,6 +44,7 @@ export default function DrylandFieldBrief({
   inference?: unknown;
   onSelectPlace?: (place: { latitude: number; longitude: number }) => void;
 }) {
+  const { t, locale, number, date } = usePanelCopy();
   const [scenario, setScenario] = useState<DrylandScenario>("dry");
   const [result, setResult] = useState<DrylandResult | null>(null);
   const [checked, setChecked] = useState<string[]>([]);
@@ -172,47 +174,43 @@ export default function DrylandFieldBrief({
     >
       <header className="qd-heading">
         <div>
-          <h2 id="qd-title">Read the land. Choose the next step.</h2>
-          <p>A field brief that joins soil, water and the work ahead.</p>
+          <h2 id="qd-title">{t("Read the land. Choose the next step.")}</h2>
+          <p>{t("A field brief that joins soil, water and the work ahead.")}</p>
         </div>
         <span className="qd-example">
-          {place?.label ??
+          {place ? t(place.label) :
             (point
-              ? "Your point · no soil profile"
-              : "Choose a reference point")}
+              ? t("Your point · no soil profile")
+              : t("Choose a reference point"))}
         </span>
       </header>
       <div className="qd-setup">
         <div>
-          <strong>One place. Two possible weeks.</strong>
+          <strong>{t("One place. Two possible weeks.")}</strong>
           <p>
             {place
-              ? `${place.latitude}, ${place.longitude} · reference table`
+              ? `${place.latitude}, ${place.longitude} ${t("· reference table")}`
               : point
-                ? "Map and forecast follow your point. The brief needs a reference landscape."
-                : "Choose a reference landscape above to explore its prepared soil profile."}
+                ? t("Map and forecast follow your point. The brief needs a reference landscape.")
+                : t("Choose a reference landscape above to explore its prepared soil profile.")}
           </p>
           <div
             className="qd-scenarios"
             role="group"
-            aria-label="Example weather pattern"
+            aria-label={t("Example weather pattern")}
           >
             <button
               type="button"
               aria-pressed={scenario === "dry"}
               onClick={() => select("dry")}
               data-testid="dryland-dry"
-            >
-              Dry week
-            </button>
+            >{t("Dry week")}</button>
             <button
               type="button"
               aria-pressed={scenario === "rain"}
               onClick={() => select("rain")}
               data-testid="dryland-rain"
-            >
-              Rain may return
-            </button>
+            >{t("Rain may return")}</button>
           </div>
         </div>
         <button
@@ -227,7 +225,7 @@ export default function DrylandFieldBrief({
           ) : (
             <ClipboardCheck size={18} />
           )}{" "}
-          {busy ? "Building your field brief…" : "Build field brief"}
+          {busy ? t("Building your field brief…") : t("Build field brief")}
         </button>
       </div>
       {!place && (
@@ -237,8 +235,8 @@ export default function DrylandFieldBrief({
         >
           <p>
             {point
-              ? "Your point has no prepared soil profile. The brief uses one of four synthetic reference landscapes; your coordinates and forecast stay yours."
-              : "Choose one of the four prepared reference landscapes to compose a field brief."}
+              ? t("Your point has no prepared soil profile. The brief uses one of four synthetic reference landscapes; your coordinates and forecast stay yours.")
+              : t("Choose one of the four prepared reference landscapes to compose a field brief.")}
           </p>
           <div className="qd-reference-options">
             {REFERENCE_PLACES.map((item) => (
@@ -253,7 +251,7 @@ export default function DrylandFieldBrief({
                   })
                 }
               >
-                {item.label}
+                {t(item.label)}
               </button>
             ))}
           </div>
@@ -262,20 +260,20 @@ export default function DrylandFieldBrief({
       <p className="qd-live-status" role="status">
         {busy
           ? result
-            ? "Field rules are ready. Validated wording can now improve the checks."
-            : "Preparing your field rules…"
+            ? t("Field rules are ready. Validated wording can now improve the checks.")
+            : t("Preparing your field rules…")
           : result
-            ? "Brief ready. Mark the steps you want to bring to your next visit."
-            : "Explore a prepared soil and weather scenario. Nothing is sent to the model until you build."}
+            ? t("Brief ready. Mark the steps you want to bring to your next visit.")
+            : t("Explore a prepared soil and weather scenario. Nothing is sent to the model until you build.")}
       </p>
       <p className="qd-budget" data-testid="dryland-budget">
         {remaining === null
-          ? "Field rules are ready without a model allowance."
-          : `${remaining} compositions remain at the last server check.`}
+          ? t("Field rules are ready without a model allowance.")
+          : locale === "es" ? `${remaining} redacciones disponibles en la última consulta al servidor.` : `${remaining} compositions remain at the last server check.`}
       </p>
       {error && (
         <p className="qd-error" role="alert">
-          {error}
+          {t(error)}
         </p>
       )}
       {brief && result && (
@@ -286,47 +284,47 @@ export default function DrylandFieldBrief({
           data-phase={phase}
         >
           <div className="qd-result-heading">
-            <h3 id="qd-vitals-title">Field vital signs</h3>
+            <h3 id="qd-vitals-title">{t("Field vital signs")}</h3>
             <span className="qd-source" data-testid="dryland-source">
               {provenance.map((line) => (
-                <span key={line}>{line}</span>
+                <span key={t(line)}>{t(line)}</span>
               ))}
             </span>
           </div>
           <div
             className="qd-vitals"
-            aria-label="Field vital signs"
+            aria-label={t("Field vital signs")}
             data-testid="field-vital-signs"
           >
             <div className="qd-vital-soil">
               <Leaf aria-hidden="true" />
-              <span>Soil life</span>
+              <span>{t("Soil life")}</span>
               <strong data-testid="vital-soil">
-                {brief.vital_signs.soil_life}
+                {t(brief.vital_signs.soil_life)}
               </strong>
-              <small>Organic carbon band</small>
+              <small>{t("Organic carbon band")}</small>
             </div>
             <div className="qd-vital-water">
               <Droplets aria-hidden="true" />
-              <span>Water held</span>
+              <span>{t("Water held")}</span>
               <strong data-testid="vital-water">
-                {brief.vital_signs.water_held}
+                {t(brief.vital_signs.water_held)}
               </strong>
-              <small>Available water band</small>
+              <small>{t("Available water band")}</small>
             </div>
             <div className="qd-vital-rain">
               <CloudSun aria-hidden="true" />
-              <span>Rain outlook</span>
+              <span>{t("Rain outlook")}</span>
               <strong data-testid="vital-rain">
-                {brief.vital_signs.rain_outlook}
+                {t(brief.vital_signs.rain_outlook)}
               </strong>
-              <small>Prepared scenario</small>
+              <small>{t("Prepared scenario")}</small>
             </div>
           </div>
           <div className="qd-check-heading">
-            <h3>The work, in order</h3>
+            <h3>{t("The work, in order")}</h3>
             <span aria-live="polite">
-              {checked.length} of {brief.actions.length} marked
+              {checked.length} {locale === "es" ? "de" : "of"} {brief.actions.length} {locale === "es" ? "marcados" : "marked"}
             </span>
           </div>
           <ol className="qd-actions" data-testid="dryland-checklist">
@@ -357,127 +355,117 @@ export default function DrylandFieldBrief({
                   </span>
                   <span className="qd-action-copy">
                     {index === 0 && (
-                      <small className="qd-first">Start here</small>
+                      <small className="qd-first">{t("Start here")}</small>
                     )}
-                    <strong>{action.title}</strong>
-                    <span>{action.detail}</span>
+                    <strong>{brief.source === "fallback" ? t(action.title) : action.title}</strong>
+                    <span>{brief.source === "fallback" ? t(action.detail) : action.detail}</span>
                   </span>
                 </label>
-                <span className="qd-labor">{action.labor} effort</span>
+                <span className="qd-labor">{t(action.labor)}{t(" effort")}</span>
               </li>
             ))}
           </ol>
           <div className="qd-path-heading">
             <Sprout size={23} aria-hidden="true" />
             <div>
-              <h3>Explore crop pathways</h3>
-              <p>Compare what each option asks of your water.</p>
+              <h3>{t("Explore crop pathways")}</h3>
+              <p>{t("Compare what each option asks of your water.")}</p>
             </div>
           </div>
           <div className="qd-pathways" data-testid="dryland-pathways">
             {brief.pathways.map((path) => (
               <article key={path.id} data-pathway={path.id}>
-                <h4>{path.name}</h4>
-                <p>{path.why}</p>
+                <h4>{t(path.name)}</h4>
+                <p>{brief.source === "fallback" ? t(path.why) : path.why}</p>
                 <span>
                   <Droplets size={16} aria-hidden="true" />
-                  {path.water_note}
+                  {t(path.water_note)}
                 </span>
               </article>
             ))}
           </div>
           <details className="qd-receipt" data-testid="dryland-receipt">
-            <summary>
-              Evidence & execution receipt ·{" "}
-              {brief.source === "model" ? "model composition" : "field rules"}{" "}
+            <summary>{t("Evidence & execution receipt ·")}{" "}
+              {brief.source === "model" ? t("model composition") : t("field rules")}{" "}
               <ChevronRight size={16} />
             </summary>
-            <p>
-              This reference scenario is prepared for exploring the workflow.
-              Soil and weather values are example inputs, separate from a
-              forecast loaded on the map. ISRIC SoilGrids and FAO are not called
-              by this example.
-            </p>
+            <p>{t("This reference scenario is prepared for exploring the workflow. Soil and weather values are example inputs, separate from a forecast loaded on the map. ISRIC SoilGrids and FAO are not called by this example.")}</p>
             <dl>
               <div>
-                <dt>Evidence</dt>
-                <dd>{place?.label} · reference table</dd>
+                <dt>{t("Evidence")}</dt>
+                <dd>{place ? t(place.label) : ""}{t(" · reference table")}</dd>
               </div>
               <div>
                 <dt>
                   {brief.source === "model"
-                    ? "Validated model wording"
-                    : "Model wording"}
+                    ? t("Validated model wording")
+                    : t("Model wording")}
                 </dt>
                 <dd>
                   {brief.source === "model"
-                    ? `${result.receipt.modelActions ?? 0} action details`
-                    : "None — field rules"}
+                    ? `${result.receipt.modelActions ?? 0} ${locale === "es" ? "detalles de acciones" : "action details"}`
+                    : t("None — field rules")}
                 </dd>
               </div>
               <div>
-                <dt>Payload fingerprint</dt>
+                <dt>{t("Payload fingerprint")}</dt>
                 <dd>
-                  {result.receipt.payloadHash ?? "Shown after composition"}
+                  {result.receipt.payloadHash ?? t("Shown after composition")}
                 </dd>
               </div>
               <div>
-                <dt>Calculation owner</dt>
-                <dd>Python · soil and water bands</dd>
+                <dt>{t("Calculation owner")}</dt>
+                <dd>{t("Python · soil and water bands")}</dd>
               </div>
               <div>
-                <dt>Weather scenario</dt>
-                <dd>{scenario === "dry" ? "Dry week" : "Rain may return"}</dd>
+                <dt>{t("Weather scenario")}</dt>
+                <dd>{scenario === "dry" ? t("Dry week") : t("Rain may return")}</dd>
               </div>
               <div>
-                <dt>Composition</dt>
-                <dd>{outcomes[result.receipt.outcome]}</dd>
+                <dt>{t("Composition")}</dt>
+                <dd>{t(outcomes[result.receipt.outcome])}</dd>
               </div>
               <div>
-                <dt>Server duration</dt>
+                <dt>{t("Server duration")}</dt>
                 <dd>{result.receipt.latencyMs} ms</dd>
               </div>
               {result.receipt.model && (
                 <div>
-                  <dt>Model identifier</dt>
+                  <dt>{t("Model identifier")}</dt>
                   <dd>{result.receipt.model}</dd>
                 </div>
               )}
               <div>
-                <dt>Model attempt</dt>
+                <dt>{t("Model attempt")}</dt>
                 <dd>
-                  {result.receipt.attempt}
+                  {t(result.receipt.attempt)}
                   {result.receipt.reserved === "unknown"
                     ? ""
-                    : ` · reserved ${result.receipt.reserved}`}
+                    : ` · ${locale === "es" ? "reservado" : "reserved"} ${result.receipt.reserved}`}
                 </dd>
               </div>
               <div>
-                <dt>Steps observed</dt>
+                <dt>{t("Steps observed")}</dt>
                 <dd>{result.receipt.transitions}</dd>
               </div>
               <div>
-                <dt>Inference path</dt>
+                <dt>{t("Inference path")}</dt>
                 <dd>
                   {result.receipt.inference === "nebius_live"
                     ? "Nebius Token Factory"
                     : result.receipt.inference === "provider_stub"
-                      ? "Test composition"
-                      : "Field rules only"}
+                      ? t("Test composition")
+                      : t("Field rules only")}
                 </dd>
               </div>
               {result.receipt.attempt !== "none" && (
                 <div>
-                  <dt>Generation limit</dt>
-                  <dd>350 output tokens · 3-second model deadline</dd>
+                  <dt>{t("Generation limit")}</dt>
+                  <dd>{t("350 output tokens · 3-second model deadline")}</dd>
                 </div>
               )}
             </dl>
-            <p>
-              Checklist marks stay in this browser tab and reset when you build
-              another brief. They record your choices, not completed work on the
-              land.
-            </p>
+            <p>{t("Checklist marks stay in this browser tab and reset when you build another brief. They record your choices, not completed work on the land.")}</p>
           </details>
         </div>
       )}
