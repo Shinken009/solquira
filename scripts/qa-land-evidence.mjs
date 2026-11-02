@@ -46,6 +46,7 @@ try {
       if (url.pathname.endsWith('/studio/evidence')) {
         calls.inventory++;
         assert(verifiedLocal, 'Only a verified provider/source-disabled service may run this test');
+        if (mode === 'not-found') return route.fulfill({ status: 404, contentType: 'application/json', json: { detail: 'Declared previous-service version without the inventory route.' } });
         if (mode === 'error') return route.fulfill({ status: 503, contentType: 'application/json', json: { detail: 'Declared inventory transport fixture unavailable.' } });
         const response = await route.fetch(), value = await response.json();
         assert.equal(response.status(), 200, 'The genuine inventory API must admit the session and CSRF');
@@ -84,6 +85,7 @@ try {
     const panel = page.getByTestId('land-evidence-panel');
     const load = page.getByTestId('land-evidence-load');
     const result = page.getByTestId('land-evidence-result');
+    const noContext = page.getByTestId('land-evidence-no-context');
     const error = page.getByTestId('land-evidence-error');
     await page.getByTestId('area-tab-guidance').click();
     await page.getByTestId('land-evidence-empty').waitFor();
@@ -101,30 +103,30 @@ try {
     await page.getByTestId('area-tab-guidance').click();
     assert.equal(calls.inventory, 0, 'Point confirmation and opening the panel must not load inventory');
     await load.focus(); await load.press('Enter');
-    await result.waitFor();
+    await noContext.waitFor();
+    assert.equal(await result.count(), 0, 'Source absence must not render a successful evidence card');
     assert.equal(calls.inventory, 1);
     assert.equal(lastRealInventory.location.latitude, 52.520008, 'Inventory retains original coordinates, not forecast rounding');
     assert.equal(lastRealInventory.location.longitude, 13.404954);
-    for (const id of ['forecast_context', 'land_cover_change', 'soil_organic_carbon']) {
-      await page.getByTestId(`evidence-slot-${id}`).waitFor();
-      assert.match(await page.getByTestId(`evidence-state-${id}`).innerText(), /missing|not included|not available|not yet/i);
-    }
+    assert.equal(await panel.locator('[data-testid^="evidence-slot-"]').count(), 0, 'Inactive evidence functions must not be presented as cards');
+    assert.equal(await noContext.getAttribute('data-forecast-state'), 'missing');
     const panelText = await panel.innerText();
-    assert.match(panelText, /not.*diagnos|not.*validated|not.*susceptib|no.*index|not.*MEDALUS/i, 'Scientific limits must be visible, not only hidden in metadata');
+    assert.match(panelText, /not.*conclu|cannot.*conclu|no.*conclu|no.*source|not.*diagnos/i, 'No environmental conclusion may be implied by a reference-free response');
+    assert.doesNotMatch(panelText, /Not included|coming soon|próximamente/i, 'Do not advertise inactive functions');
     assert.doesNotMatch(panelText, /1970-01-01|Invalid Date|\b0\s*(?:mm|%|m³)/, 'Null metadata must not become zero measurements or epoch dates');
-    const otherGaps = panel.locator('.le-other');
-    await otherGaps.locator(':scope > summary').click();
-    for (const id of ids) {
-      const card = page.getByTestId(`evidence-slot-${id}`);
-      assert.equal(await card.getAttribute('data-state'), 'missing');
-      await card.locator('.le-metadata > summary').click();
-      const metadataText = await card.locator('.le-metadata').innerText();
-      assert.match(metadataText, /No source included|No source/i);
-      assert.match(metadataText, /Not supplied|No period supplied/i);
-      assert.doesNotMatch(metadataText, /1970-01-01|Invalid Date|\b0\s*(?:mm|%|m³)/);
-      await card.locator('.le-metadata > summary').click();
-    }
-    await otherGaps.locator(':scope > summary').click();
+    await page.getByTestId('land-evidence-observation').waitFor();
+    const beforeActions = {...calls};
+    await page.getByTestId('land-evidence-review-forecast').click();
+    await page.locator('.qs-studio[data-active-area="territory"]').waitFor();
+    for (const key of ['inventory', 'forecast', 'history', 'model']) assert.equal(calls[key], beforeActions[key], 'The forecast action navigates to existing controls without data or model acquisition');
+    await page.getByTestId('area-tab-guidance').click();
+    await noContext.waitFor();
+    await page.getByTestId('land-evidence-open-record').click();
+    await page.getByTestId('land-record-start').waitFor();
+    assert.equal(calls.inventory, beforeActions.inventory);
+    assert.equal(calls.forecast, 0);
+    assert.equal(calls.history, 0);
+    assert.equal(calls.model, 0);
     const beforeNavigation = { ...calls };
     for (const area of ['territory', 'anticipation', 'evidence', 'guidance', 'territory', 'guidance', 'anticipation', 'guidance', 'territory', 'guidance']) {
       await page.getByTestId(`area-tab-${area}`).click();
@@ -132,20 +134,27 @@ try {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, `No overflow at ${width}/${area}`);
     }
     assert.equal(calls.inventory, beforeNavigation.inventory, 'Navigation must not refetch inventory');
-    await result.waitFor();
+    await noContext.waitFor();
     assert(await canvas.evaluate(el => el.isConnected && el === document.querySelector('.qg-map canvas')), 'Cesium must not remount');
     await panel.scrollIntoViewIfNeeded();
     await panel.screenshot({ path: `${output}/inventory-${width}.png`, animations: 'disabled' });
     await page.screenshot({ path: `${output}/inventory-viewport-${width}.png`, animations: 'disabled' });
 
-    mode = 'stale'; await load.click(); await result.waitFor();
-    await page.locator('[data-testid="evidence-slot-forecast_context"][data-state="stale"]').waitFor();
-    assert.match(await page.getByTestId('evidence-state-forecast_context').innerText(), /stale|expired|out of date|fresh check/i);
-    assert.doesNotMatch(await result.innerText(), /1970-01-01|Invalid Date/);
-    mode = 'unavailable'; await load.click(); await result.waitFor();
-    await page.getByTestId('evidence-state-forecast_context').filter({ hasText: /unavailable|could not|not available/i }).waitFor();
+    mode = 'stale'; await load.click();
+    await page.locator('[data-testid="land-evidence-no-context"][data-forecast-state="stale"]').waitFor();
+    assert.equal(await result.count(), 0);
+    assert.doesNotMatch(await panel.innerText(), /1970-01-01|Invalid Date|Not included|coming soon|próximamente/i);
+    mode = 'unavailable'; await load.click();
+    await page.locator('[data-testid="land-evidence-no-context"][data-forecast-state="unavailable"]').waitFor();
+    assert.equal(await result.count(), 0);
+    assert.equal(await panel.locator('[data-testid^="evidence-slot-"]').count(), 0);
     mode = 'error'; await load.click(); await error.waitFor();
     assert.equal(await result.count(), 0, 'Transport failure must not leave a successful previous inventory');
+    assert.equal(await noContext.count(), 0, 'Transport failure must clear the previous response, not appear as a fresh absence check');
+    mode = 'not-found'; await load.click(); await error.waitFor();
+    assert.equal(await result.count(), 0, 'A missing route must not produce a result or a feature placeholder');
+    assert.equal(await noContext.count(), 0);
+    assert.doesNotMatch(await panel.innerText(), /Not included|coming soon|próximamente/i);
     mode = 'malformed'; await load.click(); await error.waitFor();
     assert.equal(await result.count(), 0, 'An unknown status cannot render an authoritative inventory');
     mode = 'mismatched'; await load.click(); await error.waitFor();
@@ -165,17 +174,20 @@ try {
     await page.locator('[data-testid="geo-point-review"][data-confirmed="true"]').waitFor();
     await page.getByTestId('area-tab-guidance').click();
     assert.equal(await result.count(), 0, 'Newly confirmed point requires another explicit inventory request');
-    mode = 'real'; await load.click(); await result.waitFor();
+    mode = 'real'; await load.click(); await noContext.waitFor();
+    assert.equal(await result.count(), 0);
+    assert.equal(await panel.locator('[data-testid^="evidence-slot-"]').count(), 0);
     assert.equal(lastRealInventory.location.latitude, -1.286389);
     assert.equal(lastRealInventory.location.longitude, 36.817223);
-    assert.equal(calls.inventory, 8, 'Exactly eight explicit inventory requests, never a hidden retry');
+    assert.equal(calls.inventory, 9, 'Exactly nine explicit inventory requests, never a hidden retry');
     assert.equal(calls.forecast, 0, 'Inventory must not activate geographic acquisition');
     assert.equal(calls.history, 0);
     assert.equal(calls.model, 0);
     assert.equal(await page.evaluate(() => window.__evidenceQAGps), 0);
     checks.push({ width, realSessionAndInventory: true, pointRequired: true, rawCoordinatesPreserved: true, manualOnly: true,
-      sevenMissingSlotsHonest: true, nullsNotMeasurements: true, scientificLimitsVisible: true, staleAndUnavailableShown: true,
-      transportAndMalformedRejected: true, mismatchedPointRejected: true, obsoleteRequestIgnored: true, sameCesiumCanvas: true,
+      sevenMissingSlotsInternalOnly: true, noInactiveCards: true, noComingSoonLabels: true, workingForecastAndRecordActions: true,
+      nullsNotMeasurements: true, noFalseEnvironmentalConclusion: true, staleAndUnavailableStayWithoutConclusion: true,
+      missingRouteHandled: true, transportAndMalformedRejected: true, mismatchedPointRejected: true, obsoleteRequestIgnored: true, sameCesiumCanvas: true,
       tenAreaChangesNoRefetch: true, noOverflow: true, keyboardAction: true, ...calls });
     await context.close();
   }
