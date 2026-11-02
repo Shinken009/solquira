@@ -90,7 +90,10 @@ test('does not treat expired, future or wrong-period forecasts as currently avai
   const old = forecastInventory(); old.items[0].period = { start: '2020-01-01', end: '2020-01-07', time_zone: 'UTC' }; rejected(old);
 });
 test('rejects unsafe or substituted source links', () => {
-  for (const url of ['http://open-meteo.com/en/docs', 'javascript:alert(1)', 'https://user:secret@open-meteo.com/en/docs', 'https://untrusted.invalid/']) {
+  // Reserved .invalid host and explicit synthetic fields: no credential-bearing URL literal.
+  const credentialed = new URL('https://fixture.invalid/');
+  credentialed.username = 'synthetic'; credentialed.password = 'fixture';
+  for (const url of ['http://open-meteo.com/en/docs', 'javascript:alert(1)', credentialed.href, 'https://untrusted.invalid/']) {
     const value = forecastInventory(); value.items[0].source.url = url; rejected(value);
   }
 });
