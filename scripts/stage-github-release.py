@@ -72,6 +72,7 @@ def sources(root):
         "qa-environment-navigation.mjs",
         "qa-territorial-journey.mjs",
         "qa-land-evidence.mjs",
+        "qa-cesium-selection.mjs",
         "test-land-evidence-client.mjs",
         "qa-studio.mjs",
         "qa-solquira-experience.mjs",
