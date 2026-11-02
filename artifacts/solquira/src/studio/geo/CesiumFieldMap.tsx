@@ -1,3 +1,5 @@
+import { useStudioCopy } from "../StudioPreferences";
+import { GEO_COPY } from "./geo-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Cartesian2,
@@ -56,6 +58,7 @@ export default function CesiumFieldMap({
   nasaEnabled: boolean;
   onImageryState: (state: string) => void;
 }) {
+  const { t } = useStudioCopy(GEO_COPY);
   const container = useRef<HTMLDivElement>(null);
   const credits = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<CesiumWidget | null>(null);
@@ -557,50 +560,47 @@ export default function CesiumFieldMap({
       <div
         className="qg-map"
         ref={container}
-        aria-label="Interactive Cesium landscape: enable Select a place, then tap the earth; coordinates are available as a keyboard alternative"
+        aria-label={t("Interactive Cesium landscape: enable Select a place, then tap the earth; coordinates are available as a keyboard alternative")}
       />
       {state === "unavailable" ? (
         <div className="qg-map-fallback" role="status">
-          <strong>The interactive map is unavailable.</strong>
+          <strong>{t("The interactive map is unavailable.")}</strong>
           <p>
-            You can still select coordinates and read the forecast. Try a
-            browser with WebGL enabled or use the 2D view.
-          </p>
+            {t("You can still select coordinates and read the forecast. Try a browser with WebGL enabled or use the 2D view.")}</p>
         </div>
       ) : (
         <div className="qg-map-toolbar">
-          <span title={basemapConfig.warning ?? notice}>{title}</span>
+          <span title={t(basemapConfig.warning ?? notice)}>{t(title)}</span>
           <button
             type="button"
             disabled={state !== "ready" || morphing || !point}
             onClick={recenter}
           >
-            Back to point
-          </button>
+            {t("Back to point")}</button>
           <button
             type="button"
             aria-label={
-              view === "2d" ? "Switch to 3D view" : "Switch to 2D view"
+              view === "2d" ? t("Switch to 3D view") : t("Switch to 2D view")
             }
             disabled={state !== "ready" || morphing}
             onClick={changeView}
           >
             {morphing
-              ? "Changing view…"
+              ? t("Changing view…")
               : view === "2d"
-                ? "3D view"
-                : "2D view"}
+                ? t("3D view")
+                : t("2D view")}
           </button>
         </div>
       )}
       <div
         className="qg-map-credits"
         ref={credits}
-        aria-label="Map attribution"
+        aria-label={t("Map attribution")}
       />
       {notice ? (
         <p className="qg-map-notice" role="status">
-          {notice}
+          {t(notice)}
         </p>
       ) : null}
     </div>

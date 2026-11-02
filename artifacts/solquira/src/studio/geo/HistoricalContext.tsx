@@ -1,3 +1,5 @@
+import { useStudioCopy } from "../StudioPreferences";
+import { GEO_COPY } from "./geo-copy";
 import { useEffect, useRef, useState } from "react";
 import type { Point } from "./client";
 
@@ -122,6 +124,8 @@ export default function HistoricalContext({
   enabled: boolean;
   csrf: string;
 }) {
+  const { t, locale } = useStudioCopy(GEO_COPY);
+  const number = (value: number | undefined) => value === undefined ? t("Not available") : new Intl.NumberFormat(locale === "es" ? "es-CL" : "en-US", {minimumFractionDigits: 1, maximumFractionDigits: 1}).format(value);
   const [result, setResult] = useState<HistoryResult | null>(null);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -171,13 +175,10 @@ export default function HistoricalContext({
       data-testid="historical-context"
       aria-busy={busy}
     >
-      <h3 id="qg-history-title">Look beyond the forecast</h3>
+      <h3 id="qg-history-title">{t("Compare with previous years")}</h3>
       <p>
-        Compare the latest available complete month of precipitation with the
-        same calendar month in 1991–2020. This is a separate reanalysis, not a
-        station observation or a desertification diagnosis.
-      </p>
-      <button
+        {t("See how rainfall in the latest complete month compares with the same month in 1991–2020.")}</p>
+      {point && enabled && csrf ? <button
         type="button"
         className="qg-open"
         data-testid="history-load"
@@ -185,22 +186,19 @@ export default function HistoricalContext({
         onClick={load}
       >
         {busy
-          ? "Loading historical precipitation…"
+          ? t("Loading historical precipitation…")
           : result
-            ? "Refresh historical comparison"
-            : "Load historical precipitation"}
-      </button>
-      <p className="qg-source-note">
-        Open-Meteo · ERA5 reanalysis · loaded only when requested. No model
-        composition. {!point && "Choose a point in Territorio first."}
-      </p>
-      <p className="qg-source-note">
-        Large historical lookups use additional source quota; recent results may
-        be cached. Missing data are not zero precipitation.
-      </p>
+            ? t("Refresh historical comparison")
+            : t("Load historical precipitation")}
+      </button> : <p className="qg-source-note">{t("Confirm a place in Territory to compare its historical rainfall.")}</p>}
+      <details className="qg-method">
+        <summary>{t("Historical source, quota & method")}</summary>
+        <p>{t("Open-Meteo · ERA5 reanalysis · loaded only when requested. No AI request. This is a separate model reanalysis, not a station observation or a desertification diagnosis.")}</p>
+        <p>{t("Large historical lookups use additional source quota; recent results may be cached. Missing data are not zero precipitation.")}</p>
+      </details>
       {error && (
         <p role="alert" className="qg-error">
-          {error}
+          {t(error)}
         </p>
       )}
       {history && (history.state === "ready" || history.state === "cached") ? (
@@ -209,46 +207,45 @@ export default function HistoricalContext({
             <strong>
               {history.target_period?.start}–{history.target_period?.end}
             </strong>{" "}
-            · UTC ·{" "}
-            {history.state === "cached" ? "Cached source" : "Source received"}
+            {t("· UTC ·")}{" "}
+            {history.state === "cached" ? t("Cached source") : t("Source received")}
           </p>
           <dl className="qg-indicator-grid">
             <div>
-              <dt>Month precipitation</dt>
+              <dt>{t("Month precipitation")}</dt>
               <dd>
-                {history.precipitation_mm?.toFixed(1)} <small>mm</small>
+                {number(history.precipitation_mm)} <small>{t("mm")}</small>
               </dd>
             </div>
             <div>
-              <dt>Same-month baseline mean</dt>
+              <dt>{t("Same-month baseline mean")}</dt>
               <dd>
-                {history.baseline_mean_mm?.toFixed(1)} <small>mm</small>
+                {number(history.baseline_mean_mm)} <small>{t("mm")}</small>
               </dd>
-              <p>1991–2020 · 30 complete years</p>
+              <p>{t("1991–2020 · 30 complete years")}</p>
             </div>
             <div>
-              <dt>Difference from baseline</dt>
+              <dt>{t("Difference from baseline")}</dt>
               <dd>
-                {history.anomaly_mm?.toFixed(1)} <small>mm</small>
+                {number(history.anomaly_mm)} <small>{t("mm")}</small>
               </dd>
               <p>
                 {history.anomaly_percent === null
-                  ? "Relative difference is undefined for a zero baseline."
-                  : `${history.anomaly_percent?.toFixed(1)}% relative to the baseline mean.`}
+                  ? t("Relative difference is undefined for a zero baseline.")
+                  : `${number(history.anomaly_percent)}${t("% relative to the baseline mean.")}`}
               </p>
             </div>
           </dl>
           <details className="qg-method">
-            <summary>Historical coverage & limits</summary>
+            <summary>{t("Historical coverage & limits")}</summary>
             <p>
-              {history.coverage?.target_days} of{" "}
-              {history.coverage?.target_expected_days} target days;{" "}
-              {history.coverage?.baseline_complete_years} complete baseline
-              years. Retrieved {result?.retrieved_at}.
+              {history.coverage?.target_days} {t("of")}{" "}{" "}
+              {history.coverage?.target_expected_days} {t("target days;")}{" "}{" "}
+              {history.coverage?.baseline_complete_years} {t("complete baseline years. Retrieved")}{" "}{result?.retrieved_at}.
             </p>
             <ul>
               {history.limitations?.map((item) => (
-                <li key={item}>{item}</li>
+                <li key={item}>{t(item)}</li>
               ))}
             </ul>
             <a
@@ -256,14 +253,12 @@ export default function HistoricalContext({
               target="_blank"
               rel="noreferrer"
             >
-              Historical source and attribution
-            </a>
+              {t("Historical source and attribution")}</a>
           </details>
         </div>
       ) : history ? (
         <p className="qg-weather-empty" data-testid="history-unavailable">
-          {history.note ??
-            "A complete historical comparison is unavailable; no anomaly has been invented."}
+          {t(history.note ?? "A complete historical comparison is unavailable; no anomaly has been invented.")}
         </p>
       ) : null}
     </section>
