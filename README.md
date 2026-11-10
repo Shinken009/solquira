@@ -261,3 +261,23 @@ It blocks external requests and never confirms the fixture point or calls a mode
 ## License
 
 Apache License 2.0 — see `LICENSE`. Third-party attributions are listed in `NOTICE`.
+
+## Public contribution boundary
+
+Before publishing a commit, PR description, comment or attachment:
+
+- Keep reproducible source paths relative to the repository, source commit hashes,
+  dependency versions, test scope/results, scientific limitations and attribution.
+  Public application URLs, provider names and author metadata are not credentials.
+- Keep credentials, session/CSRF tokens, personal observations, private host addresses,
+  absolute operator paths, access instructions and live ledger contents out of public text.
+  Use clearly fictitious placeholders in configuration examples, never production values.
+- Keep deployment-specific identifiers, rollback targets and operator logs in private
+  release records. Publish the relevant verification outcome, not the operational receipt.
+- Review the staged diff and public-facing PR text separately; secret-pattern matches
+  require human classification. Never execute inference merely to validate a text change.
+- Preserve review findings, accurate validation claims, licenses and scientific boundaries.
+  An editorial cleanup must not imply new capabilities or additional scientific validation.
+- Editing a PR or removing a file from the current tree does not erase earlier revisions.
+  Any historical removal needs a verified backup, explicit approval, a reviewed dry run,
+  collaborator coordination and a recovery plan; do not rewrite history for cosmetic cleanup.
