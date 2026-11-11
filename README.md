@@ -12,6 +12,23 @@ Built for the **Nebius × NVIDIA Global AI Hackathon**, **Best Apps and Agents**
 This repository documents the implemented code, local execution, tests, data provenance
 and scientific limits. Planned integrations are identified separately from working features.
 
+## Practical rotation checks
+
+Guidance offers three starting goals: understand the place, prepare a visit or
+prepare a crop rotation. The rotation path uses an offline WCFP v2 reference
+(932 taxa, 129 families); selected common names in English and Spanish are search
+aliases, not agronomic recommendations. Unknown or local crop names remain usable.
+
+Four deterministic checks compare a user-entered local sowing window, botanical
+families, estimated irrigation-turn supply and reported ponding where relevant.
+Flow in L/min multiplied by available minutes and divided by 1000 gives supply
+in m³. A requirement is compared only after confirming the same plot, delivery
+point and turn. None of these checks prescribes irrigation or chooses a seed
+variety. Missing inputs lead to a suggested observation, not a rejected journey.
+Notes transfer only into empty fields in the existing local field record.
+Sources and the reproducible catalogue derivation are described in NOTICE.
+No model request or new environmental lookup is made by these checks.
+
 ## The experience
 
 The header offers **Español / English** and **Light / Dark** controls. The first

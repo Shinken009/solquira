@@ -4236,6 +4236,27 @@
 .qj-question-grid legend { display: flex; gap: 10px; align-items: center; float: none; width: 100%; padding: 0; margin-bottom: 14px; font-size: 16px; line-height: 1.5; font-weight: 600; }
 .qj-question-grid legend > span { display: inline-flex; flex-shrink: 0; justify-content: center; align-items: center; width: 28px; height: 28px; border: 1px solid #bbcbb1; border-radius: 50%; color: #69805e; font-size: 10px; font-variant-numeric: tabular-nums; }
 .qj-question-grid fieldset > p { margin: -5px 0 12px 38px; font-size: 12px; color: #65725f; }
+.qj-intents { border: 0; margin: 18px 0 0; padding: 0; min-inline-size: 0; }
+.qj-intents legend { font-weight: 700; margin-bottom: 10px; }
+.qj-rotation { max-inline-size: 42rem; margin-block: 16px; }
+.qj-rotation-card { border: 1px solid var(--ui-line-strong); background: var(--ui-surface); border-radius: 10px; padding: 4px 12px 8px; margin-block: 8px; }
+.qj-rotation-card summary { padding-block: 8px; cursor: pointer; }
+.qj-rotation-card summary span { font-size: .8em; margin-inline-start: 6px; color: var(--ui-muted); }
+.qj-rotation-card summary[data-status="attention"] span { font-weight: 750; color: var(--ui-ink); text-decoration: underline; }
+.qj-rotation-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 10px; }
+.qj-rotation-fields label { display: grid; gap: 4px; min-inline-size: 0; font-size: .9em; }
+.qj-rotation-fields :is(input:not([type="checkbox"]), select) { min-inline-size: 0; inline-size: 100%; min-block-size: 42px; font: inherit; color: var(--ui-ink); background: var(--ui-surface); border: 1px solid var(--ui-line-strong); border-radius: 8px; padding: 6px 8px; }
+.qj-rotation-fields .qj-rotation-confirm { display: flex; align-items: flex-start; gap: 8px; grid-column: 1 / -1; }
+.qj-rotation-confirm input { margin-block-start: 4px; }
+.qj-crop-selected svg { display: inline-block; }
+.qj-crop { max-inline-size: 42rem; min-inline-size: 0; margin-block: 18px; }
+.qj-crop > label { display: block; font-weight: 700; margin-block-end: 6px; }
+.qj-crop > input { box-sizing: border-box; inline-size: 100%; min-block-size: 44px; padding: 8px 12px; border: 1px solid var(--ui-line-strong); border-radius: 8px; background: var(--ui-surface); color: var(--ui-ink); font: inherit; }
+.qj-crop > input:focus-visible, .qj-crop-options button:focus-visible { outline: 3px solid var(--ui-focus); outline-offset: 2px; }
+.qj-crop-options { list-style: none; padding: 0; margin-block: 8px 12px; }
+.qj-crop-options button { inline-size: 100%; text-align: start; font-family: inherit; color: inherit; overflow-wrap: anywhere; }
+.qj-crop-selected { color: var(--ui-ink); overflow-wrap: anywhere; }
+.qj-crop-selected svg { color: var(--ui-leaf); vertical-align: middle; }
 .qj-choices { display: grid; gap: 8px; }
 .qj-choice { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px 13px; border: 1px solid #d7dfce; border-radius: 10px; background: #fffef9; cursor: pointer; font-size: 13px; line-height: 1.45; transition: background .15s, border-color .15s; }
 .qj-choice:hover { border-color: #839d77; }

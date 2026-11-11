@@ -948,18 +948,12 @@ export default function Studio() {
                 : t("Choose and confirm a place to begin.")}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() =>
-              navigateArea(
-                briefPoint ? "anticipation" : "territory",
-                briefPoint ? "qs-anticipation" : "qs-landscape",
-              )
-            }
-          >
-            {briefPoint ? t("Next: read the forecast") : t("Choose a place")}
-            <ArrowRight size={16} aria-hidden="true" />
-          </button>
+          {briefPoint && area === "anticipation" && (
+            <button type="button" onClick={() => navigateArea("guidance", "qj-exploration-title")}>
+              {t("Next: choose what to check")}
+              <ArrowRight size={16} aria-hidden="true" />
+            </button>
+          )}
         </section>
         <div className="qs-area-intro" hidden={area !== "territory"}>
           <section className="qs-intro" aria-labelledby="qs-title">

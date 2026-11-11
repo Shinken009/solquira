@@ -74,6 +74,8 @@ try {
     });
     await page.goto(target,{waitUntil:'networkidle'});
     await page.getByTestId('studio-ready').waitFor();
+    await page.getByTestId('locale-en').click();
+    await page.getByTestId('theme-light').click();
     assert.equal(providerDisabled,true,'Local bootstrap must show inference disabled');
     assert.equal(await page.evaluate(()=>window.__qaGpsRequests),0,'No location permission requested on mounting');
     assert.equal(calls.forecast,0);
@@ -85,7 +87,7 @@ try {
     await page.getByTestId('geo-use-location').click();
     await page.getByRole('alert').filter({hasText:'Location was not shared'}).waitFor();
     assert.equal(calls.forecast,0,'Denied GPS must not select a fallback city');
-    assert.match(await page.getByTestId('geo-selected-point').innerText(),/No point confirmed/);
+    assert.equal(await page.locator('[data-testid="geo-point-review"][data-confirmed="true"]').count(),0);
     await page.getByTestId('geo-manual').locator('summary').click();
     await page.getByTestId('geo-lat').fill('52.520008');
     await page.getByTestId('geo-lon').fill('13.404954');
@@ -100,7 +102,142 @@ try {
     await page.screenshot({path:`${output}/territory-${width}.png`,fullPage:true,animations:'disabled'});
     await page.screenshot({path:`${output}/territory-viewport-${width}.png`,animations:'disabled'});
     await page.getByTestId('geo-next-guidance').click();
+    await page.getByTestId('journey-next-step').getByRole('button',{name:/choose what to check/}).click();
     const wizard=page.getByTestId('guided-exploration');
+    const quickAction=page.getByTestId('guided-quick-action');
+    const intent = value => wizard.locator(`input[name="guided-intent"][value="${value}"]`);
+    assert.equal(await quickAction.count(),0,'No action until a goal is selected');
+    await intent('understand').check();
+    await quickAction.click();
+    await page.locator('.qs-studio[data-active-area="anticipation"]').waitFor();
+    await page.getByTestId('journey-next-step').getByRole('button',{name:/choose what to check/}).click();
+    assert.equal(await intent('understand').isChecked(),true);
+    await page.getByTestId('locale-es').click();
+    await page.getByTestId('theme-dark').click();
+    await intent('rotation').check();
+    assert.match(await quickAction.innerText(),/Preparar mi nota de rotación/);
+    assert.match(await page.getByTestId('guided-quick-result').innerText(),/Puedes dejar datos en blanco/);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
+    await wizard.screenshot({path:`${output}/quick-es-dark-${width}.png`,animations:'disabled'});
+    await quickAction.click();
+    const noteField=page.getByTestId('land-record-note');
+    const nextCheckField=page.getByTestId('land-record-next-check');
+    const waitForDraft = (text) => page.waitForFunction(
+      (expected) => document.querySelector('[data-testid="land-record-note"]')?.value.includes(expected),
+      text,
+    );
+    await waitForDraft('Aún no se registran');
+    assert.match(await noteField.inputValue(),/Aún no se registran/);
+    assert.match(await nextCheckField.inputValue(),/cultivo anterior/);
+    assert.equal(await page.getByTestId('land-record-cover').inputValue(),'');
+    const cropSearch = page.getByTestId('rotation-crop-search');
+    const cropOptions = page.getByTestId('rotation-crop-options');
+    await cropSearch.fill('arroz');
+    assert.equal(await cropOptions.getByRole('button').count(),2,'Ambiguous common names must offer distinct taxa');
+    assert.equal(await page.getByTestId('rotation-crop-selected').count(),0,'A match must never select itself');
+    await cropSearch.fill('maiz');
+    await cropOptions.getByRole('button',{name:/Zea mays/}).click();
+    assert.match(await page.getByTestId('rotation-crop-selected').innerText(),/Poaceae/);
+    assert.equal(await cropSearch.inputValue(),'Maíz');
+    await noteField.fill('');
+    await nextCheckField.fill('');
+    await quickAction.click();
+    await waitForDraft('Zea mays');
+    assert.match(await noteField.inputValue(),/Cultivo anterior declarado: Maíz \(Zea mays\).*Poaceae.*WCFP v2/);
+    assert.match(await nextCheckField.inputValue(),/qué temporada/);
+    await wizard.screenshot({path:`${output}/crop-es-dark-${width}.png`,animations:'disabled'});
+    await page.getByTestId('locale-en').click();
+    await page.getByTestId('theme-light').click();
+    assert.equal(await intent('rotation').isChecked(),true,'Preferences must preserve the current goal');
+    assert.equal(await cropSearch.inputValue(),'Maize','Switching locale must preserve the taxon');
+    for (const [term, scientific] of [['cassava','Manihot esculenta'], ['teff','Eragrostis tef'], ['Coffea arabica','Coffea arabica']]) {
+      await cropSearch.fill(term);
+      assert.match(await cropOptions.innerText(),new RegExp(scientific));
+    }
+    await cropSearch.fill('My local crop XYZ');
+    assert.match(await page.getByTestId('rotation-crop-status').innerText(),/continue with the name you wrote/);
+    assert.equal(await page.getByTestId('rotation-crop-selected').count(),0,'Typing clears the previous taxon');
+    await noteField.fill('');
+    await nextCheckField.fill('');
+    await quickAction.click();
+    await waitForDraft('My local crop XYZ');
+    assert.match(await noteField.inputValue(),/My local crop XYZ.*no taxonomic identification/);
+    assert.doesNotMatch(await noteField.inputValue(),/Poaceae|WCFP/);
+    await cropSearch.fill('potato');
+    await cropOptions.getByRole('button',{name:/Solanum tuberosum/}).click();
+    await page.getByTestId('rotation-candidate-search').fill('tomate');
+    await page.getByTestId('rotation-candidate-options').getByRole('button',{name:/Solanum lycopersicum/}).click();
+    const openCheck = key => page.getByTestId(`rotation-check-${key}`).locator('summary').click();
+    await openCheck('history');
+    assert.match(await page.getByTestId('rotation-result-history').innerText(),/share a family/);
+    await openCheck('window');
+    await page.getByTestId('rotation-planned').fill('2027-02-02');
+    await page.getByTestId('rotation-start').fill('2026-12-01');
+    await page.getByTestId('rotation-end').fill('2027-01-31');
+    assert.match(await page.getByTestId('guided-quick-result').getByRole('paragraph').first().innerText(),/outside the window/);
+    await page.getByTestId('rotation-planned').fill('2027-01-01');
+    assert.match(await page.getByTestId('rotation-result-window').innerText(),/inside the window/);
+    await openCheck('water');
+    await page.getByTestId('rotation-water').selectOption('turn');
+    await page.getByTestId('rotation-flowLpm').fill('12,5');
+    await page.getByTestId('rotation-minutes').fill('80');
+    await page.getByTestId('rotation-requiredM3').fill('1.2');
+    assert.match(await page.getByTestId('rotation-water-estimate').innerText(),/1 m³/);
+    assert.doesNotMatch(await page.getByTestId('rotation-result-water').innerText(),/below/);
+    await page.getByTestId('rotation-same-basis').check();
+    assert.match(await page.getByTestId('rotation-result-water').innerText(),/below/);
+    await openCheck('soil');
+    await page.getByTestId('rotation-drainage').selectOption('required');
+    await page.getByTestId('rotation-ponding').selectOption('seen');
+    assert.match(await page.getByTestId('rotation-result-soil').innerText(),/guide calls for good drainage/);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
+    await page.getByTestId('rotation-open-next').click();
+    assert.equal(await page.getByTestId('rotation-check-water').evaluate(el => el.open && el.querySelector('summary') === document.activeElement),true,'Next check must open and receive keyboard focus');
+    for (const locale of ['es','en']) for (const theme of ['light','dark']) {
+      await page.getByTestId(`locale-${locale}`).click();
+      await page.getByTestId(`theme-${theme}`).click();
+      const spanish=locale==='es';
+      assert.equal(await page.locator('html').getAttribute('lang'),locale);
+      assert.match(await page.getByTestId('rotation-result-window').innerText(),spanish?/dentro de la ventana/:/inside the window/);
+      assert.match(await page.getByTestId('rotation-result-history').innerText(),spanish?/comparten familia/:/share a family/);
+      assert.match(await page.getByTestId('rotation-result-water').innerText(),spanish?/por debajo/:/below/);
+      assert.match(await page.getByTestId('rotation-result-soil').innerText(),spanish?/guía pide buen drenaje/:/guide calls for good drainage/);
+      assert.match(await page.getByTestId('guided-quick-action').innerText(),spanish?/Preparar mi nota de rotación/:/Prepare my rotation note/);
+      assert.equal(await page.getByTestId('rotation-planned').inputValue(),'2027-01-01');
+      assert.equal(await page.getByTestId('rotation-same-basis').isChecked(),true);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
+      const contrast=await page.getByTestId('guided-quick-action').evaluate(el => {
+        const style=getComputedStyle(el), rgb=s=>s.match(/[\d.]+/g).slice(0,3).map(Number);
+        const luminance=c=>c.map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
+        const a=luminance(rgb(style.color)),b=luminance(rgb(style.backgroundColor));
+        return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+      });
+      assert(contrast>=4.5,`Primary action contrast ${contrast} for ${locale}/${theme}`);
+      await wizard.screenshot({path:`${output}/rotation-${locale}-${theme}-${width}.png`,animations:'disabled'});
+    }
+    await page.getByTestId('locale-en').click();
+    await page.getByTestId('theme-light').click();
+    await wizard.screenshot({path:`${output}/rotation-checks-${width}.png`,animations:'disabled'});
+    await page.getByTestId('rotation-candidate-search').fill('local crop replacement');
+    assert.equal(await page.getByTestId('rotation-start').inputValue(),'');
+    assert.equal(await page.getByTestId('rotation-requiredM3').inputValue(),'');
+    assert.equal(await page.getByTestId('rotation-drainage').inputValue(),'');
+    assert.equal(await page.getByTestId('rotation-ponding').inputValue(),'seen','Field observations belong to the point, not to the crop');
+    assert.match(await page.getByTestId('rotation-result-history').innerText(),/confirm the family locally/);
+    await intent('visit').check();
+    assert.equal(await quickAction.count(),1);
+    assert.match(await quickAction.innerText(),/Prepare my field note/);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
+    await wizard.screenshot({path:`${output}/quick-en-light-${width}.png`,animations:'disabled'});
+    await noteField.fill('My own observation');
+    await quickAction.click();
+    assert.equal(await noteField.inputValue(),'My own observation','An existing field note must survive a new guide action');
+    // Reset through the actual record action before starting a separate transfer
+    // scenario. Do not depend on timing of successive controlled input clears.
+    await page.getByRole('button',{name:'Clear this record',exact:true}).click();
+    await page.getByTestId('guided-mode').click();
+    assert.equal(await quickAction.count(),0,'Detailed and quick actions must not compete');
+
     await wizard.locator('input[name="guided-land-use"][value="restoration"]').check();
     await wizard.locator('input[name="guided-concern"][value="soil"]').check();
     await wizard.locator('input[name="guided-signal"][value="soil_unknown"]').check();
@@ -110,7 +247,9 @@ try {
     await page.getByTestId('guided-prepare').click();
     const result=page.getByTestId('guided-result'); await result.waitFor();
     assert.match(await result.innerText(),/Keep the check short/);
+    await result.locator('summary').click();
     assert.match(await result.innerText(),/not a forecast or a diagnosis/);
+    await result.locator('summary').click();
     assert.equal(calls.forecast,1,'Answering questions must not query a weather source');
     assert.equal(calls.history,0);
     for (const area of ['territory','anticipation','evidence','guidance','territory','guidance','anticipation','guidance','territory','guidance']) {
@@ -125,6 +264,7 @@ try {
     await page.screenshot({path:`${output}/guided-result-${width}.png`,fullPage:true,animations:'disabled'});
     await page.screenshot({path:`${output}/guided-result-viewport-${width}.png`,animations:'disabled'});
     await page.getByTestId('guided-to-record').click();
+    await waitForDraft('Self-reported; not a field measurement');
     const note=await page.getByTestId('land-record-note').inputValue();
     assert.match(note,/Self-reported; not a field measurement/);
     assert.match(note,/I am not sure/);
@@ -141,8 +281,11 @@ try {
     await page.getByTestId('geo-load-context').click();
     await page.waitForFunction(()=>document.querySelector('[data-testid="geo-weather"]')?.getAttribute('data-state')==='ready');
     await page.getByTestId('geo-next-guidance').click();
+    await page.getByTestId('journey-next-step').getByRole('button',{name:/choose what to check/}).click();
     assert.equal(await wizard.locator('input[name="guided-land-use"]:checked').count(),0,'The new place must start without old answers');
     assert.equal(await result.count(),0);
+    assert.equal(await wizard.locator('input[name="guided-intent"]:checked').count(),0,'A new point clears the quick goal');
+    await page.getByTestId('guided-mode').click();
     await wizard.locator('input[name="guided-land-use"][value="natural"]').check();
     await wizard.locator('input[name="guided-concern"][value="explore"]').check();
     await wizard.locator('input[name="guided-signal"][value="explore_history"]').check();
@@ -157,7 +300,7 @@ try {
     assert.equal(calls.forecast,2,'Only the two explicit confirmations may request a forecast');
     assert.equal(calls.model,0,'No brief or agent endpoint may be called');
     checks.push({width,noGpsOnMount:true,gpsDeniedWithoutFallback:true,internationalPoints:true,sixChoiceConcernRoute:true,fourChoiceExploreRoute:true,
-      noFabricatedMeasurements:true,existingLandRecordReused:true,pointChangeResetsWizard:true,sameCesiumCanvas:true,tenAreaChangesPreserveWizard:true,
+      threeQuickGoals:true,globalCropSearch:true,fullRotationEsEnLightDark:true,primaryActionContrastAA:true,nextCheckKeyboardFocus:true,rotationChecksWithMissingAndEnteredData:true,candidateChangeClearsReferenceEvidence:true,explicitTaxonSelection:true,localCropWithoutTaxonomy:true,spanishDarkAndEnglishLight:true,unknownRotationDataAllowed:true,existingNotePreserved:true,noFabricatedMeasurements:true,existingLandRecordReused:true,pointChangeResetsWizard:true,sameCesiumCanvas:true,tenAreaChangesPreserveWizard:true,
       noHorizontalOverflow:true,forecastRequests:calls.forecast,historyRequests:calls.history,modelRequests:calls.model,blockedExternalRequests:calls.blockedExternal});
     await context.close();
   }
@@ -167,6 +310,6 @@ try {
   console.log(JSON.stringify(result,null,2));
 } catch(error) {
   if(activePage&&!activePage.isClosed()) await activePage.screenshot({path:`${output}/failure.png`,fullPage:true,animations:'disabled'}).catch(()=>{});
-  writeFileSync(`${output}/failure.json`,JSON.stringify({error:String(error),checks,errors},null,2));
+  writeFileSync(`${output}/failure.json`,JSON.stringify({error:String(error),checks,errors,localFieldNote:activePage&&!activePage.isClosed()?await activePage.getByTestId('land-record-note').inputValue().catch(()=>null):null},null,2));
   console.error(error);process.exitCode=1;
 } finally {await browser.close();}

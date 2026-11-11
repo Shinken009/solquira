@@ -290,6 +290,7 @@ export const studioCopy: Record<string, string> = {
   "Choose and confirm a place to begin.": "Elige y confirma un lugar para comenzar.",
   "The forecasts and examples stay separate.": "El pronóstico y los ejemplos se mantienen separados.",
   "See forecast": "Ver pronóstico",
+  "Next: choose what to check": "Siguiente: elige qué observar",
   "Next: read the forecast": "Siguiente: revisar el pronóstico",
   "Then: prepare your next visit": "Después: preparar tu próxima visita",
   "Page not found": "Página no encontrada",
