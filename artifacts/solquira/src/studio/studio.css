@@ -4236,6 +4236,8 @@
 .qj-question-grid legend { display: flex; gap: 10px; align-items: center; float: none; width: 100%; padding: 0; margin-bottom: 14px; font-size: 16px; line-height: 1.5; font-weight: 600; }
 .qj-question-grid legend > span { display: inline-flex; flex-shrink: 0; justify-content: center; align-items: center; width: 28px; height: 28px; border: 1px solid #bbcbb1; border-radius: 50%; color: #69805e; font-size: 10px; font-variant-numeric: tabular-nums; }
 .qj-question-grid fieldset > p { margin: -5px 0 12px 38px; font-size: 12px; color: #65725f; }
+.qj-intents { border: 0; margin: 18px 0 0; padding: 0; min-inline-size: 0; }
+.qj-intents legend { font-weight: 700; margin-bottom: 10px; }
 .qj-choices { display: grid; gap: 8px; }
 .qj-choice { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px 13px; border: 1px solid #d7dfce; border-radius: 10px; background: #fffef9; cursor: pointer; font-size: 13px; line-height: 1.45; transition: background .15s, border-color .15s; }
 .qj-choice:hover { border-color: #839d77; }

@@ -74,6 +74,8 @@ try {
     });
     await page.goto(target,{waitUntil:'networkidle'});
     await page.getByTestId('studio-ready').waitFor();
+    await page.getByTestId('locale-en').click();
+    await page.getByTestId('theme-light').click();
     assert.equal(providerDisabled,true,'Local bootstrap must show inference disabled');
     assert.equal(await page.evaluate(()=>window.__qaGpsRequests),0,'No location permission requested on mounting');
     assert.equal(calls.forecast,0);
@@ -85,7 +87,7 @@ try {
     await page.getByTestId('geo-use-location').click();
     await page.getByRole('alert').filter({hasText:'Location was not shared'}).waitFor();
     assert.equal(calls.forecast,0,'Denied GPS must not select a fallback city');
-    assert.match(await page.getByTestId('geo-selected-point').innerText(),/No point confirmed/);
+    assert.equal(await page.locator('[data-testid="geo-point-review"][data-confirmed="true"]').count(),0);
     await page.getByTestId('geo-manual').locator('summary').click();
     await page.getByTestId('geo-lat').fill('52.520008');
     await page.getByTestId('geo-lon').fill('13.404954');
@@ -100,7 +102,45 @@ try {
     await page.screenshot({path:`${output}/territory-${width}.png`,fullPage:true,animations:'disabled'});
     await page.screenshot({path:`${output}/territory-viewport-${width}.png`,animations:'disabled'});
     await page.getByTestId('geo-next-guidance').click();
+    await page.getByTestId('journey-next-step').getByRole('button',{name:/choose what to check/}).click();
     const wizard=page.getByTestId('guided-exploration');
+    const quickAction=page.getByTestId('guided-quick-action');
+    const intent = value => wizard.locator(`input[name="guided-intent"][value="${value}"]`);
+    assert.equal(await quickAction.count(),0,'No action until a goal is selected');
+    await intent('understand').check();
+    await quickAction.click();
+    await page.locator('.qs-studio[data-active-area="anticipation"]').waitFor();
+    await page.getByTestId('journey-next-step').getByRole('button',{name:/choose what to check/}).click();
+    assert.equal(await intent('understand').isChecked(),true);
+    await page.getByTestId('locale-es').click();
+    await page.getByTestId('theme-dark').click();
+    await intent('rotation').check();
+    assert.match(await quickAction.innerText(),/Preparar mi nota de rotación/);
+    assert.match(await page.getByTestId('guided-quick-result').innerText(),/Puedes dejar datos en blanco/);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
+    await wizard.screenshot({path:`${output}/quick-es-dark-${width}.png`,animations:'disabled'});
+    await quickAction.click();
+    const noteField=page.getByTestId('land-record-note');
+    const nextCheckField=page.getByTestId('land-record-next-check');
+    assert.match(await noteField.inputValue(),/Aún no se registran/);
+    assert.match(await nextCheckField.inputValue(),/último cultivo/);
+    assert.equal(await page.getByTestId('land-record-cover').inputValue(),'');
+    await page.getByTestId('locale-en').click();
+    await page.getByTestId('theme-light').click();
+    assert.equal(await intent('rotation').isChecked(),true,'Preferences must preserve the current goal');
+    await intent('visit').check();
+    assert.equal(await quickAction.count(),1);
+    assert.match(await quickAction.innerText(),/Prepare my field note/);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
+    await wizard.screenshot({path:`${output}/quick-en-light-${width}.png`,animations:'disabled'});
+    await noteField.fill('My own observation');
+    await quickAction.click();
+    assert.equal(await noteField.inputValue(),'My own observation','An existing field note must survive a new guide action');
+    await noteField.fill('');
+    await nextCheckField.fill('');
+    await page.getByTestId('guided-mode').click();
+    assert.equal(await quickAction.count(),0,'Detailed and quick actions must not compete');
+
     await wizard.locator('input[name="guided-land-use"][value="restoration"]').check();
     await wizard.locator('input[name="guided-concern"][value="soil"]').check();
     await wizard.locator('input[name="guided-signal"][value="soil_unknown"]').check();
@@ -110,7 +150,9 @@ try {
     await page.getByTestId('guided-prepare').click();
     const result=page.getByTestId('guided-result'); await result.waitFor();
     assert.match(await result.innerText(),/Keep the check short/);
+    await result.locator('summary').click();
     assert.match(await result.innerText(),/not a forecast or a diagnosis/);
+    await result.locator('summary').click();
     assert.equal(calls.forecast,1,'Answering questions must not query a weather source');
     assert.equal(calls.history,0);
     for (const area of ['territory','anticipation','evidence','guidance','territory','guidance','anticipation','guidance','territory','guidance']) {
@@ -141,8 +183,11 @@ try {
     await page.getByTestId('geo-load-context').click();
     await page.waitForFunction(()=>document.querySelector('[data-testid="geo-weather"]')?.getAttribute('data-state')==='ready');
     await page.getByTestId('geo-next-guidance').click();
+    await page.getByTestId('journey-next-step').getByRole('button',{name:/choose what to check/}).click();
     assert.equal(await wizard.locator('input[name="guided-land-use"]:checked').count(),0,'The new place must start without old answers');
     assert.equal(await result.count(),0);
+    assert.equal(await wizard.locator('input[name="guided-intent"]:checked').count(),0,'A new point clears the quick goal');
+    await page.getByTestId('guided-mode').click();
     await wizard.locator('input[name="guided-land-use"][value="natural"]').check();
     await wizard.locator('input[name="guided-concern"][value="explore"]').check();
     await wizard.locator('input[name="guided-signal"][value="explore_history"]').check();
@@ -157,7 +202,7 @@ try {
     assert.equal(calls.forecast,2,'Only the two explicit confirmations may request a forecast');
     assert.equal(calls.model,0,'No brief or agent endpoint may be called');
     checks.push({width,noGpsOnMount:true,gpsDeniedWithoutFallback:true,internationalPoints:true,sixChoiceConcernRoute:true,fourChoiceExploreRoute:true,
-      noFabricatedMeasurements:true,existingLandRecordReused:true,pointChangeResetsWizard:true,sameCesiumCanvas:true,tenAreaChangesPreserveWizard:true,
+      threeQuickGoals:true,spanishDarkAndEnglishLight:true,unknownRotationDataAllowed:true,existingNotePreserved:true,noFabricatedMeasurements:true,existingLandRecordReused:true,pointChangeResetsWizard:true,sameCesiumCanvas:true,tenAreaChangesPreserveWizard:true,
       noHorizontalOverflow:true,forecastRequests:calls.forecast,historyRequests:calls.history,modelRequests:calls.model,blockedExternalRequests:calls.blockedExternal});
     await context.close();
   }
