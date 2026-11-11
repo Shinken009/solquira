@@ -4238,6 +4238,17 @@
 .qj-question-grid fieldset > p { margin: -5px 0 12px 38px; font-size: 12px; color: #65725f; }
 .qj-intents { border: 0; margin: 18px 0 0; padding: 0; min-inline-size: 0; }
 .qj-intents legend { font-weight: 700; margin-bottom: 10px; }
+.qj-rotation { max-inline-size: 42rem; margin-block: 16px; }
+.qj-rotation-card { border: 1px solid var(--ui-line-strong); background: var(--ui-surface); border-radius: 10px; padding: 4px 12px 8px; margin-block: 8px; }
+.qj-rotation-card summary { padding-block: 8px; cursor: pointer; }
+.qj-rotation-card summary span { font-size: .8em; margin-inline-start: 6px; color: var(--ui-muted); }
+.qj-rotation-card summary[data-status="attention"] span { font-weight: 750; color: var(--ui-ink); text-decoration: underline; }
+.qj-rotation-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 10px; }
+.qj-rotation-fields label { display: grid; gap: 4px; min-inline-size: 0; font-size: .9em; }
+.qj-rotation-fields :is(input:not([type="checkbox"]), select) { min-inline-size: 0; inline-size: 100%; min-block-size: 42px; font: inherit; color: var(--ui-ink); background: var(--ui-surface); border: 1px solid var(--ui-line-strong); border-radius: 8px; padding: 6px 8px; }
+.qj-rotation-fields .qj-rotation-confirm { display: flex; align-items: flex-start; gap: 8px; grid-column: 1 / -1; }
+.qj-rotation-confirm input { margin-block-start: 4px; }
+.qj-crop-selected svg { display: inline-block; }
 .qj-crop { max-inline-size: 42rem; min-inline-size: 0; margin-block: 18px; }
 .qj-crop > label { display: block; font-weight: 700; margin-block-end: 6px; }
 .qj-crop > input { box-sizing: border-box; inline-size: 100%; min-block-size: 44px; padding: 8px 12px; border: 1px solid var(--ui-line-strong); border-radius: 8px; background: var(--ui-surface); color: var(--ui-ink); font: inherit; }

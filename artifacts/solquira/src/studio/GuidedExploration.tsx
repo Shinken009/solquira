@@ -2,7 +2,9 @@ import { usePanelCopy } from "./panel-copy";
 import { useState } from "react";
 import { ArrowRight, Check, CloudSun, Droplets, Leaf, MapPin, Sprout, UsersRound, Waves } from "lucide-react";
 import PreviousCropPicker from "./PreviousCropPicker";
-import { previousCropNote, type CropReference } from "./crop-reference";
+import RotationChecks, { rotationMessages } from "./RotationChecks";
+import { emptyRotationInputs, evaluateRotation } from "./rotation-checks";
+import { cropName, previousCropNote, type CropReference } from "./crop-reference";
 import type { Point } from "./geo/client";
 
 type Concern = "water" | "soil" | "erosion" | "vegetation" | "explore";
@@ -94,12 +96,22 @@ export default function GuidedExploration({ point, onChoosePlace, onWeather, onR
   const [intent, setIntent] = useState<Intent | null>(null);
   const [cropText, setCropText] = useState("");
   const [previousCrop, setPreviousCrop] = useState<CropReference | null>(null);
+  const [candidateText, setCandidateText] = useState("");
+  const [candidate, setCandidate] = useState<CropReference | null>(null);
+  const [rotationInputs, setRotationInputs] = useState(emptyRotationInputs);
+  const resetCandidateEvidence = () => setRotationInputs(current => ({
+    ...current, start: "", end: "", requiredM3: "", sameBasis: false, drainage: "",
+  }));
   const [detailed, setDetailed] = useState(false);
   const step = intent ? intentSteps[intent] : null;
   const cropNote = intent === "rotation" ? previousCropNote(previousCrop, cropText, locale) : null;
-  const check = step && (cropNote
-    ? copy("Check when this crop was grown. If you do not remember, use your notes or ask someone who worked the plot.", "Confirma en qué temporada se cultivó. Si no lo recuerdas, revisa tus notas o consulta a quien trabajó la parcela.")
-    : copy(step.check[0], step.check[1]));
+  const candidateName = candidate ? cropName(candidate, locale) : candidateText.trim();
+  const rotationResult = evaluateRotation(rotationInputs, previousCrop?.family, candidate?.family);
+  const messages = rotationMessages(rotationResult, Boolean(previousCrop), Boolean(candidate));
+  const check = !step ? "" : intent !== "rotation" ? copy(step.check[0], step.check[1])
+    : cropNote && !candidateName && !rotationInputs.planned && !rotationInputs.start && !rotationInputs.end && !rotationInputs.water && !rotationInputs.ponding && !rotationInputs.drainage
+      ? copy("Check when this crop was grown. If you do not remember, use your notes or ask someone who worked the plot.", "Confirma en qué temporada se cultivó. Si no lo recuerdas, revisa tus notas o consulta a quien trabajó la parcela.")
+      : copy(...messages[rotationResult.next]);
   const [landUse, setLandUse] = useState("");
   const [concern, setConcern] = useState<Concern | "">("");
   const [signal, setSignal] = useState("");
@@ -147,15 +159,27 @@ export default function GuidedExploration({ point, onChoosePlace, onWeather, onR
             <h3>{copy("Your next step", "Tu próximo paso")}</h3>
             <p className="qj-next-check">{check}</p>
           </div>
-          {intent === "rotation" && <PreviousCropPicker
+          {intent === "rotation" && <><PreviousCropPicker
             text={cropText}
             selection={previousCrop}
             onText={value => { setPreviousCrop(null); setCropText(value); }}
             onSelect={setPreviousCrop}
-          />}
+          />
+          <PreviousCropPicker
+            role="candidate"
+            text={candidateText}
+            selection={candidate}
+            onText={value => { setCandidate(null); setCandidateText(value); resetCandidateEvidence(); }}
+            onSelect={crop => { setCandidate(crop); resetCandidateEvidence(); }}
+          />
+          <RotationChecks input={rotationInputs} onChange={changes => setRotationInputs(current => ({ ...current, ...changes }))} result={rotationResult} messages={messages} />
+          </>}
           <div className="qj-actions"><button type="button" className="qj-primary" data-testid="guided-quick-action" onClick={() => {
             if (intent === "understand") onWeather();
-            else if (check) onRecord({ id: Date.now(), note: cropNote ?? copy(step.note[0], step.note[1]), nextCheck: check, constraint: "" });
+            else {
+              const candidateNote = intent === "rotation" && candidateName ? copy(` Crop considered: ${candidateName}.`, ` Cultivo en evaluación: ${candidateName}.`) : "";
+              onRecord({ id: Date.now(), note: (cropNote ?? copy(step.note[0], step.note[1])) + candidateNote, nextCheck: check, constraint: "" });
+            }
           }}>{copy(step.action[0], step.action[1])}<ArrowRight size={17} aria-hidden="true" /></button></div>
         </div>}
       </div>}

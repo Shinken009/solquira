@@ -128,7 +128,7 @@ try {
     );
     await waitForDraft('Aún no se registran');
     assert.match(await noteField.inputValue(),/Aún no se registran/);
-    assert.match(await nextCheckField.inputValue(),/último cultivo/);
+    assert.match(await nextCheckField.inputValue(),/cultivo anterior/);
     assert.equal(await page.getByTestId('land-record-cover').inputValue(),'');
     const cropSearch = page.getByTestId('rotation-crop-search');
     const cropOptions = page.getByTestId('rotation-crop-options');
@@ -163,6 +163,41 @@ try {
     await waitForDraft('My local crop XYZ');
     assert.match(await noteField.inputValue(),/My local crop XYZ.*no taxonomic identification/);
     assert.doesNotMatch(await noteField.inputValue(),/Poaceae|WCFP/);
+    await cropSearch.fill('potato');
+    await cropOptions.getByRole('button',{name:/Solanum tuberosum/}).click();
+    await page.getByTestId('rotation-candidate-search').fill('tomate');
+    await page.getByTestId('rotation-candidate-options').getByRole('button',{name:/Solanum lycopersicum/}).click();
+    const openCheck = key => page.getByTestId(`rotation-check-${key}`).locator('summary').click();
+    await openCheck('history');
+    assert.match(await page.getByTestId('rotation-result-history').innerText(),/share a family/);
+    await openCheck('window');
+    await page.getByTestId('rotation-planned').fill('2027-02-02');
+    await page.getByTestId('rotation-start').fill('2026-12-01');
+    await page.getByTestId('rotation-end').fill('2027-01-31');
+    assert.match(await page.getByTestId('guided-quick-result').getByRole('paragraph').first().innerText(),/outside the window/);
+    await page.getByTestId('rotation-planned').fill('2027-01-01');
+    assert.match(await page.getByTestId('rotation-result-window').innerText(),/inside the window/);
+    await openCheck('water');
+    await page.getByTestId('rotation-water').selectOption('turn');
+    await page.getByTestId('rotation-flowLpm').fill('12,5');
+    await page.getByTestId('rotation-minutes').fill('80');
+    await page.getByTestId('rotation-requiredM3').fill('1.2');
+    assert.match(await page.getByTestId('rotation-water-estimate').innerText(),/1 m³/);
+    assert.doesNotMatch(await page.getByTestId('rotation-result-water').innerText(),/below/);
+    await page.getByTestId('rotation-same-basis').check();
+    assert.match(await page.getByTestId('rotation-result-water').innerText(),/below/);
+    await openCheck('soil');
+    await page.getByTestId('rotation-drainage').selectOption('required');
+    await page.getByTestId('rotation-ponding').selectOption('seen');
+    assert.match(await page.getByTestId('rotation-result-soil').innerText(),/guide calls for good drainage/);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
+    await wizard.screenshot({path:`${output}/rotation-checks-${width}.png`,animations:'disabled'});
+    await page.getByTestId('rotation-candidate-search').fill('local crop replacement');
+    assert.equal(await page.getByTestId('rotation-start').inputValue(),'');
+    assert.equal(await page.getByTestId('rotation-requiredM3').inputValue(),'');
+    assert.equal(await page.getByTestId('rotation-drainage').inputValue(),'');
+    assert.equal(await page.getByTestId('rotation-ponding').inputValue(),'seen','Field observations belong to the point, not to the crop');
+    assert.match(await page.getByTestId('rotation-result-history').innerText(),/confirm the family locally/);
     await intent('visit').check();
     assert.equal(await quickAction.count(),1);
     assert.match(await quickAction.innerText(),/Prepare my field note/);
@@ -238,7 +273,7 @@ try {
     assert.equal(calls.forecast,2,'Only the two explicit confirmations may request a forecast');
     assert.equal(calls.model,0,'No brief or agent endpoint may be called');
     checks.push({width,noGpsOnMount:true,gpsDeniedWithoutFallback:true,internationalPoints:true,sixChoiceConcernRoute:true,fourChoiceExploreRoute:true,
-      threeQuickGoals:true,globalCropSearch:true,explicitTaxonSelection:true,localCropWithoutTaxonomy:true,spanishDarkAndEnglishLight:true,unknownRotationDataAllowed:true,existingNotePreserved:true,noFabricatedMeasurements:true,existingLandRecordReused:true,pointChangeResetsWizard:true,sameCesiumCanvas:true,tenAreaChangesPreserveWizard:true,
+      threeQuickGoals:true,globalCropSearch:true,rotationChecksWithMissingAndEnteredData:true,candidateChangeClearsReferenceEvidence:true,explicitTaxonSelection:true,localCropWithoutTaxonomy:true,spanishDarkAndEnglishLight:true,unknownRotationDataAllowed:true,existingNotePreserved:true,noFabricatedMeasurements:true,existingLandRecordReused:true,pointChangeResetsWizard:true,sameCesiumCanvas:true,tenAreaChangesPreserveWizard:true,
       noHorizontalOverflow:true,forecastRequests:calls.forecast,historyRequests:calls.history,modelRequests:calls.model,blockedExternalRequests:calls.blockedExternal});
     await context.close();
   }
