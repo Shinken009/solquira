@@ -206,8 +206,9 @@ try {
     await noteField.fill('My own observation');
     await quickAction.click();
     assert.equal(await noteField.inputValue(),'My own observation','An existing field note must survive a new guide action');
-    await noteField.fill('');
-    await nextCheckField.fill('');
+    // Reset through the actual record action before starting a separate transfer
+    // scenario. Do not depend on timing of successive controlled input clears.
+    await page.getByRole('button',{name:'Clear this record',exact:true}).click();
     await page.getByTestId('guided-mode').click();
     assert.equal(await quickAction.count(),0,'Detailed and quick actions must not compete');
 
@@ -283,6 +284,6 @@ try {
   console.log(JSON.stringify(result,null,2));
 } catch(error) {
   if(activePage&&!activePage.isClosed()) await activePage.screenshot({path:`${output}/failure.png`,fullPage:true,animations:'disabled'}).catch(()=>{});
-  writeFileSync(`${output}/failure.json`,JSON.stringify({error:String(error),checks,errors},null,2));
+  writeFileSync(`${output}/failure.json`,JSON.stringify({error:String(error),checks,errors,localFieldNote:activePage&&!activePage.isClosed()?await activePage.getByTestId('land-record-note').inputValue().catch(()=>null):null},null,2));
   console.error(error);process.exitCode=1;
 } finally {await browser.close();}
