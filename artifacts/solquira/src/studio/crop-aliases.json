@@ -1,0 +1,571 @@
+{
+  "Allium cepa": {
+    "en": [
+      "Onion"
+    ],
+    "es": [
+      "Cebolla"
+    ]
+  },
+  "Allium sativum": {
+    "en": [
+      "Garlic"
+    ],
+    "es": [
+      "Ajo"
+    ]
+  },
+  "Ananas comosus": {
+    "en": [
+      "Pineapple"
+    ],
+    "es": [
+      "Piña",
+      "ananá"
+    ]
+  },
+  "Arachis hypogaea": {
+    "en": [
+      "Peanut",
+      "groundnut"
+    ],
+    "es": [
+      "Maní",
+      "cacahuate",
+      "cacahuete"
+    ]
+  },
+  "Avena sativa": {
+    "en": [
+      "Oat",
+      "oats"
+    ],
+    "es": [
+      "Avena"
+    ]
+  },
+  "Beta vulgaris": {
+    "en": [
+      "Beet",
+      "sugar beet",
+      "chard"
+    ],
+    "es": [
+      "Remolacha",
+      "betarraga",
+      "acelga"
+    ]
+  },
+  "Brassica napus": {
+    "en": [
+      "Rapeseed",
+      "canola"
+    ],
+    "es": [
+      "Colza",
+      "canola"
+    ]
+  },
+  "Brassica oleracea": {
+    "en": [
+      "Cabbage",
+      "broccoli",
+      "cauliflower",
+      "kale"
+    ],
+    "es": [
+      "Repollo",
+      "col",
+      "brócoli",
+      "coliflor"
+    ]
+  },
+  "Cajanus cajan": {
+    "en": [
+      "Pigeon pea"
+    ],
+    "es": [
+      "Gandul",
+      "guandú"
+    ]
+  },
+  "Camellia sinensis": {
+    "en": [
+      "Tea"
+    ],
+    "es": [
+      "Té"
+    ]
+  },
+  "Capsicum annuum": {
+    "en": [
+      "Sweet pepper",
+      "bell pepper"
+    ],
+    "es": [
+      "Pimiento",
+      "morrón"
+    ]
+  },
+  "Carica papaya": {
+    "en": [
+      "Papaya"
+    ],
+    "es": [
+      "Papaya"
+    ]
+  },
+  "Cenchrus americanus": {
+    "en": [
+      "Pearl millet",
+      "Pennisetum glaucum"
+    ],
+    "es": [
+      "Mijo perla"
+    ]
+  },
+  "Chenopodium quinoa": {
+    "en": [
+      "Quinoa"
+    ],
+    "es": [
+      "Quinua",
+      "quinoa"
+    ]
+  },
+  "Cicer arietinum": {
+    "en": [
+      "Chickpea"
+    ],
+    "es": [
+      "Garbanzo"
+    ]
+  },
+  "Citrullus lanatus": {
+    "en": [
+      "Watermelon"
+    ],
+    "es": [
+      "Sandía"
+    ]
+  },
+  "Cocos nucifera": {
+    "en": [
+      "Coconut"
+    ],
+    "es": [
+      "Coco"
+    ]
+  },
+  "Coffea arabica": {
+    "en": [
+      "Arabica coffee"
+    ],
+    "es": [
+      "Café arábica"
+    ]
+  },
+  "Coffea canephora": {
+    "en": [
+      "Robusta coffee"
+    ],
+    "es": [
+      "Café robusta"
+    ]
+  },
+  "Colocasia esculenta": {
+    "en": [
+      "Taro"
+    ],
+    "es": [
+      "Taro"
+    ]
+  },
+  "Cucumis melo": {
+    "en": [
+      "Melon"
+    ],
+    "es": [
+      "Melón"
+    ]
+  },
+  "Cucumis sativus": {
+    "en": [
+      "Cucumber"
+    ],
+    "es": [
+      "Pepino"
+    ]
+  },
+  "Cucurbita pepo": {
+    "en": [
+      "Zucchini",
+      "courgette"
+    ],
+    "es": [
+      "Calabacín",
+      "zapallito italiano"
+    ]
+  },
+  "Daucus carota": {
+    "en": [
+      "Carrot"
+    ],
+    "es": [
+      "Zanahoria"
+    ]
+  },
+  "Dioscorea alata": {
+    "en": [
+      "Greater yam",
+      "water yam"
+    ],
+    "es": [
+      "Ñame alado",
+      "ñame de agua"
+    ]
+  },
+  "Eleusine coracana": {
+    "en": [
+      "Finger millet"
+    ],
+    "es": [
+      "Mijo dedo"
+    ]
+  },
+  "Eragrostis tef": {
+    "en": [
+      "Teff",
+      "tef"
+    ],
+    "es": [
+      "Teff",
+      "tef"
+    ]
+  },
+  "Fagopyrum esculentum": {
+    "en": [
+      "Buckwheat"
+    ],
+    "es": [
+      "Trigo sarraceno",
+      "alforfón"
+    ]
+  },
+  "Glycine max": {
+    "en": [
+      "Soybean",
+      "soya"
+    ],
+    "es": [
+      "Soja",
+      "soya"
+    ]
+  },
+  "Helianthus annuus": {
+    "en": [
+      "Sunflower"
+    ],
+    "es": [
+      "Girasol"
+    ]
+  },
+  "Hordeum vulgare": {
+    "en": [
+      "Barley"
+    ],
+    "es": [
+      "Cebada"
+    ]
+  },
+  "Ipomoea batatas": {
+    "en": [
+      "Sweet potato"
+    ],
+    "es": [
+      "Camote",
+      "batata",
+      "boniato"
+    ]
+  },
+  "Lactuca sativa": {
+    "en": [
+      "Lettuce"
+    ],
+    "es": [
+      "Lechuga"
+    ]
+  },
+  "Lathyrus oleraceus": {
+    "en": [
+      "Pea",
+      "Pisum sativum"
+    ],
+    "es": [
+      "Arveja",
+      "guisante",
+      "chícharo"
+    ]
+  },
+  "Mangifera indica": {
+    "en": [
+      "Mango"
+    ],
+    "es": [
+      "Mango"
+    ]
+  },
+  "Manihot esculenta": {
+    "en": [
+      "Cassava",
+      "manioc"
+    ],
+    "es": [
+      "Yuca",
+      "mandioca"
+    ]
+  },
+  "Medicago sativa": {
+    "en": [
+      "Alfalfa",
+      "lucerne"
+    ],
+    "es": [
+      "Alfalfa"
+    ]
+  },
+  "Musa acuminata": {
+    "en": [
+      "Banana (Musa acuminata)",
+      "banana"
+    ],
+    "es": [
+      "Banano (Musa acuminata)",
+      "banana",
+      "plátano",
+      "banano"
+    ]
+  },
+  "Musa × paradisiaca": {
+    "en": [
+      "Hybrid plantain",
+      "plantain",
+      "banana"
+    ],
+    "es": [
+      "Plátano híbrido",
+      "plátano",
+      "banano"
+    ]
+  },
+  "Olea europaea": {
+    "en": [
+      "Olive"
+    ],
+    "es": [
+      "Olivo"
+    ]
+  },
+  "Oryza glaberrima": {
+    "en": [
+      "African rice",
+      "rice"
+    ],
+    "es": [
+      "Arroz africano",
+      "arroz"
+    ]
+  },
+  "Oryza sativa": {
+    "en": [
+      "Asian rice",
+      "rice"
+    ],
+    "es": [
+      "Arroz asiático",
+      "arroz"
+    ]
+  },
+  "Persea americana": {
+    "en": [
+      "Avocado"
+    ],
+    "es": [
+      "Palta",
+      "aguacate"
+    ]
+  },
+  "Phaseolus vulgaris": {
+    "en": [
+      "Common bean",
+      "beans"
+    ],
+    "es": [
+      "Frijol común",
+      "poroto",
+      "judía",
+      "habichuela"
+    ]
+  },
+  "Saccharum officinarum": {
+    "en": [
+      "Noble sugarcane",
+      "sugarcane"
+    ],
+    "es": [
+      "Caña de azúcar"
+    ]
+  },
+  "Secale cereale": {
+    "en": [
+      "Rye"
+    ],
+    "es": [
+      "Centeno"
+    ]
+  },
+  "Sesamum indicum": {
+    "en": [
+      "Sesame"
+    ],
+    "es": [
+      "Sésamo",
+      "ajonjolí"
+    ]
+  },
+  "Setaria italica": {
+    "en": [
+      "Foxtail millet"
+    ],
+    "es": [
+      "Mijo cola de zorro"
+    ]
+  },
+  "Solanum lycopersicum": {
+    "en": [
+      "Tomato"
+    ],
+    "es": [
+      "Tomate"
+    ]
+  },
+  "Solanum melongena": {
+    "en": [
+      "Eggplant",
+      "aubergine"
+    ],
+    "es": [
+      "Berenjena"
+    ]
+  },
+  "Solanum tuberosum": {
+    "en": [
+      "Potato"
+    ],
+    "es": [
+      "Papa",
+      "patata"
+    ]
+  },
+  "Sorghum bicolor": {
+    "en": [
+      "Sorghum"
+    ],
+    "es": [
+      "Sorgo"
+    ]
+  },
+  "Theobroma cacao": {
+    "en": [
+      "Cacao",
+      "cocoa"
+    ],
+    "es": [
+      "Cacao"
+    ]
+  },
+  "Trifolium pratense": {
+    "en": [
+      "Red clover"
+    ],
+    "es": [
+      "Trébol rojo"
+    ]
+  },
+  "Triticum aestivum": {
+    "en": [
+      "Bread wheat",
+      "wheat"
+    ],
+    "es": [
+      "Trigo panificable",
+      "trigo"
+    ]
+  },
+  "Vicia faba": {
+    "en": [
+      "Fava bean",
+      "broad bean"
+    ],
+    "es": [
+      "Haba"
+    ]
+  },
+  "Vicia lens": {
+    "en": [
+      "Lentil",
+      "Lens culinaris"
+    ],
+    "es": [
+      "Lenteja"
+    ]
+  },
+  "Vigna radiata": {
+    "en": [
+      "Mung bean"
+    ],
+    "es": [
+      "Frijol mungo",
+      "judía mungo"
+    ]
+  },
+  "Vigna subterranea": {
+    "en": [
+      "Bambara groundnut"
+    ],
+    "es": [
+      "Frijol bambara"
+    ]
+  },
+  "Vigna unguiculata": {
+    "en": [
+      "Cowpea",
+      "black-eyed pea"
+    ],
+    "es": [
+      "Caupí",
+      "frijol de ojo negro"
+    ]
+  },
+  "Vitis vinifera": {
+    "en": [
+      "Grapevine",
+      "grape"
+    ],
+    "es": [
+      "Vid",
+      "uva"
+    ]
+  },
+  "Zea mays": {
+    "en": [
+      "Maize",
+      "corn"
+    ],
+    "es": [
+      "Maíz",
+      "choclo",
+      "elote"
+    ]
+  }
+}

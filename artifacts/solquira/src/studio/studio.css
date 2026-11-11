@@ -4238,6 +4238,14 @@
 .qj-question-grid fieldset > p { margin: -5px 0 12px 38px; font-size: 12px; color: #65725f; }
 .qj-intents { border: 0; margin: 18px 0 0; padding: 0; min-inline-size: 0; }
 .qj-intents legend { font-weight: 700; margin-bottom: 10px; }
+.qj-crop { max-inline-size: 42rem; min-inline-size: 0; margin-block: 18px; }
+.qj-crop > label { display: block; font-weight: 700; margin-block-end: 6px; }
+.qj-crop > input { box-sizing: border-box; inline-size: 100%; min-block-size: 44px; padding: 8px 12px; border: 1px solid var(--ui-line-strong); border-radius: 8px; background: var(--ui-surface); color: var(--ui-ink); font: inherit; }
+.qj-crop > input:focus-visible, .qj-crop-options button:focus-visible { outline: 3px solid var(--ui-focus); outline-offset: 2px; }
+.qj-crop-options { list-style: none; padding: 0; margin-block: 8px 12px; }
+.qj-crop-options button { inline-size: 100%; text-align: start; font-family: inherit; color: inherit; overflow-wrap: anywhere; }
+.qj-crop-selected { color: var(--ui-ink); overflow-wrap: anywhere; }
+.qj-crop-selected svg { color: var(--ui-leaf); vertical-align: middle; }
 .qj-choices { display: grid; gap: 8px; }
 .qj-choice { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px 13px; border: 1px solid #d7dfce; border-radius: 10px; background: #fffef9; cursor: pointer; font-size: 13px; line-height: 1.45; transition: background .15s, border-color .15s; }
 .qj-choice:hover { border-color: #839d77; }

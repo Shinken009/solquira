@@ -1,6 +1,8 @@
 import { usePanelCopy } from "./panel-copy";
 import { useState } from "react";
 import { ArrowRight, Check, CloudSun, Droplets, Leaf, MapPin, Sprout, UsersRound, Waves } from "lucide-react";
+import PreviousCropPicker from "./PreviousCropPicker";
+import { previousCropNote, type CropReference } from "./crop-reference";
 import type { Point } from "./geo/client";
 
 type Concern = "water" | "soil" | "erosion" | "vegetation" | "explore";
@@ -90,8 +92,14 @@ export default function GuidedExploration({ point, onChoosePlace, onWeather, onR
   const { t, locale } = usePanelCopy();
   const copy = (en: string, es: string) => locale === "es" ? es : en;
   const [intent, setIntent] = useState<Intent | null>(null);
+  const [cropText, setCropText] = useState("");
+  const [previousCrop, setPreviousCrop] = useState<CropReference | null>(null);
   const [detailed, setDetailed] = useState(false);
   const step = intent ? intentSteps[intent] : null;
+  const cropNote = intent === "rotation" ? previousCropNote(previousCrop, cropText, locale) : null;
+  const check = step && (cropNote
+    ? copy("Check when this crop was grown. If you do not remember, use your notes or ask someone who worked the plot.", "Confirma en qué temporada se cultivó. Si no lo recuerdas, revisa tus notas o consulta a quien trabajó la parcela.")
+    : copy(step.check[0], step.check[1]));
   const [landUse, setLandUse] = useState("");
   const [concern, setConcern] = useState<Concern | "">("");
   const [signal, setSignal] = useState("");
@@ -137,11 +145,17 @@ export default function GuidedExploration({ point, onChoosePlace, onWeather, onR
         {step && <div className="qj-result" data-testid="guided-quick-result">
           <div aria-live="polite">
             <h3>{copy("Your next step", "Tu próximo paso")}</h3>
-            <p className="qj-next-check">{copy(step.check[0], step.check[1])}</p>
+            <p className="qj-next-check">{check}</p>
           </div>
+          {intent === "rotation" && <PreviousCropPicker
+            text={cropText}
+            selection={previousCrop}
+            onText={value => { setPreviousCrop(null); setCropText(value); }}
+            onSelect={setPreviousCrop}
+          />}
           <div className="qj-actions"><button type="button" className="qj-primary" data-testid="guided-quick-action" onClick={() => {
             if (intent === "understand") onWeather();
-            else onRecord({ id: Date.now(), note: copy(step.note[0], step.note[1]), nextCheck: copy(step.check[0], step.check[1]), constraint: "" });
+            else if (check) onRecord({ id: Date.now(), note: cropNote ?? copy(step.note[0], step.note[1]), nextCheck: check, constraint: "" });
           }}>{copy(step.action[0], step.action[1])}<ArrowRight size={17} aria-hidden="true" /></button></div>
         </div>}
       </div>}

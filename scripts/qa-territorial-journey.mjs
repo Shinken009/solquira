@@ -122,12 +122,47 @@ try {
     await quickAction.click();
     const noteField=page.getByTestId('land-record-note');
     const nextCheckField=page.getByTestId('land-record-next-check');
+    const waitForDraft = (text) => page.waitForFunction(
+      (expected) => document.querySelector('[data-testid="land-record-note"]')?.value.includes(expected),
+      text,
+    );
+    await waitForDraft('Aún no se registran');
     assert.match(await noteField.inputValue(),/Aún no se registran/);
     assert.match(await nextCheckField.inputValue(),/último cultivo/);
     assert.equal(await page.getByTestId('land-record-cover').inputValue(),'');
+    const cropSearch = page.getByTestId('rotation-crop-search');
+    const cropOptions = page.getByTestId('rotation-crop-options');
+    await cropSearch.fill('arroz');
+    assert.equal(await cropOptions.getByRole('button').count(),2,'Ambiguous common names must offer distinct taxa');
+    assert.equal(await page.getByTestId('rotation-crop-selected').count(),0,'A match must never select itself');
+    await cropSearch.fill('maiz');
+    await cropOptions.getByRole('button',{name:/Zea mays/}).click();
+    assert.match(await page.getByTestId('rotation-crop-selected').innerText(),/Poaceae/);
+    assert.equal(await cropSearch.inputValue(),'Maíz');
+    await noteField.fill('');
+    await nextCheckField.fill('');
+    await quickAction.click();
+    await waitForDraft('Zea mays');
+    assert.match(await noteField.inputValue(),/Cultivo anterior declarado: Maíz \(Zea mays\).*Poaceae.*WCFP v2/);
+    assert.match(await nextCheckField.inputValue(),/qué temporada/);
+    await wizard.screenshot({path:`${output}/crop-es-dark-${width}.png`,animations:'disabled'});
     await page.getByTestId('locale-en').click();
     await page.getByTestId('theme-light').click();
     assert.equal(await intent('rotation').isChecked(),true,'Preferences must preserve the current goal');
+    assert.equal(await cropSearch.inputValue(),'Maize','Switching locale must preserve the taxon');
+    for (const [term, scientific] of [['cassava','Manihot esculenta'], ['teff','Eragrostis tef'], ['Coffea arabica','Coffea arabica']]) {
+      await cropSearch.fill(term);
+      assert.match(await cropOptions.innerText(),new RegExp(scientific));
+    }
+    await cropSearch.fill('My local crop XYZ');
+    assert.match(await page.getByTestId('rotation-crop-status').innerText(),/continue with the name you wrote/);
+    assert.equal(await page.getByTestId('rotation-crop-selected').count(),0,'Typing clears the previous taxon');
+    await noteField.fill('');
+    await nextCheckField.fill('');
+    await quickAction.click();
+    await waitForDraft('My local crop XYZ');
+    assert.match(await noteField.inputValue(),/My local crop XYZ.*no taxonomic identification/);
+    assert.doesNotMatch(await noteField.inputValue(),/Poaceae|WCFP/);
     await intent('visit').check();
     assert.equal(await quickAction.count(),1);
     assert.match(await quickAction.innerText(),/Prepare my field note/);
@@ -167,6 +202,7 @@ try {
     await page.screenshot({path:`${output}/guided-result-${width}.png`,fullPage:true,animations:'disabled'});
     await page.screenshot({path:`${output}/guided-result-viewport-${width}.png`,animations:'disabled'});
     await page.getByTestId('guided-to-record').click();
+    await waitForDraft('Self-reported; not a field measurement');
     const note=await page.getByTestId('land-record-note').inputValue();
     assert.match(note,/Self-reported; not a field measurement/);
     assert.match(note,/I am not sure/);
@@ -202,7 +238,7 @@ try {
     assert.equal(calls.forecast,2,'Only the two explicit confirmations may request a forecast');
     assert.equal(calls.model,0,'No brief or agent endpoint may be called');
     checks.push({width,noGpsOnMount:true,gpsDeniedWithoutFallback:true,internationalPoints:true,sixChoiceConcernRoute:true,fourChoiceExploreRoute:true,
-      threeQuickGoals:true,spanishDarkAndEnglishLight:true,unknownRotationDataAllowed:true,existingNotePreserved:true,noFabricatedMeasurements:true,existingLandRecordReused:true,pointChangeResetsWizard:true,sameCesiumCanvas:true,tenAreaChangesPreserveWizard:true,
+      threeQuickGoals:true,globalCropSearch:true,explicitTaxonSelection:true,localCropWithoutTaxonomy:true,spanishDarkAndEnglishLight:true,unknownRotationDataAllowed:true,existingNotePreserved:true,noFabricatedMeasurements:true,existingLandRecordReused:true,pointChangeResetsWizard:true,sameCesiumCanvas:true,tenAreaChangesPreserveWizard:true,
       noHorizontalOverflow:true,forecastRequests:calls.forecast,historyRequests:calls.history,modelRequests:calls.model,blockedExternalRequests:calls.blockedExternal});
     await context.close();
   }
