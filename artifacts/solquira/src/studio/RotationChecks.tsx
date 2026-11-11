@@ -12,10 +12,10 @@ const headings = {
 const statusCopy = {
   attention: ["Review first", "Revisar primero"],
   check: ["Check or estimate", "Comprobar o estimar"],
-  reference: ["Compared", "Comparado"],
+  reference: ["Data compared", "Datos comparados"],
 } as const;
 
-export function rotationMessages(result: Result, previousKnown: boolean, candidateKnown: boolean) {
+export function rotationMessages(result: Result, previousKnown: boolean, candidateKnown: boolean, previousReported = false) {
   const window: Record<Result["window"], Copy> = {
     unknown: ["Find a local sowing window for this crop and season. Ask a grower or use an extension calendar for your zone.", "Busca una ventana de siembra para este cultivo y temporada. Consulta a un productor o un calendario de tu zona."],
     needDate: ["Enter a tentative sowing date to compare it with the window.", "Anota una fecha tentativa para compararla con la ventana de siembra."],
@@ -24,7 +24,9 @@ export function rotationMessages(result: Result, previousKnown: boolean, candida
     inside: ["Your date is inside the window you entered. Confirm it applies to your variety, site and season.", "La fecha está dentro de la ventana ingresada. Confirma que aplica a tu variedad, terreno y temporada."],
   };
   const history: Record<Result["history"], Copy> = {
-    unknown: !previousKnown
+    unknown: !previousKnown && previousReported
+      ? ["Keep the local name you entered. Ask the grower or a local adviser to identify its family before comparing rotations.", "Conserva el nombre local que escribiste. Consulta a quien cultivó o a un asesor local para identificar su familia antes de comparar rotaciones."]
+      : !previousKnown
       ? ["Identify the previous crop and its season from notes or someone who worked the plot. Leave unknown details blank.", "Identifica el cultivo anterior y su temporada con tus notas o con quien trabajó la parcela. Puedes dejar datos en blanco."]
       : !candidateKnown
         ? ["Choose the crop you are considering. If its name is not listed, record it and confirm the family locally.", "Anota el cultivo que estás considerando. Si el nombre no aparece, regístralo y confirma su familia localmente."]
@@ -68,8 +70,8 @@ export default function RotationChecks({ input, onChange, result, messages }: {
   </label>;
   return <section className="qj-rotation" data-testid="rotation-checks" aria-label={copy("Rotation checks", "Comprobaciones de rotación")}>
     <p>{copy("Open any check you can answer. You can leave the rest blank and continue. Changing the crop clears its reference dates and requirements.", "Abre la comprobación que puedas responder. Puedes dejar lo demás en blanco. Si cambias el cultivo, se limpian sus fechas de referencia y requisitos.")}</p>
-    {(Object.keys(headings) as (keyof typeof headings)[]).map(key => <details className="qj-rotation-card" key={key} data-testid={`rotation-check-${key}`}>
-      <summary data-status={result.statuses[key]}><strong>{label(headings[key])}</strong> <span>{label(statusCopy[result.statuses[key]])}</span></summary>
+    {(Object.keys(headings) as (keyof typeof headings)[]).map(key => <details className="qj-rotation-card" key={key} id={`rotation-check-${key}`} data-testid={`rotation-check-${key}`}>
+      <summary tabIndex={0} data-status={result.statuses[key]}><strong>{label(headings[key])}</strong> <span>{label(statusCopy[result.statuses[key]])}</span></summary>
       <p data-testid={`rotation-result-${key}`} aria-live="polite">{label(messages[key])}</p>
       {key === "window" && <>
         <p>{copy("Use dates for this season from local advice or a calendar covering your crop and zone.", "Usa fechas de esta temporada: consulta a alguien de tu zona o un calendario que cubra tu cultivo y territorio.")}{" "}
@@ -80,6 +82,10 @@ export default function RotationChecks({ input, onChange, result, messages }: {
           {date("end", ["Local window closes", "Fin de la ventana local"])}
         </div>
       </>}
+      {key === "water" && <p className="qj-retention">{copy(
+        "To estimate a small flow safely: litres collected ÷ seconds × 60 = L/min. For example, 10 L in 30 seconds is 20 L/min. Only measure at an accessible outlet with permission.",
+        "Para estimar un caudal pequeño con seguridad: litros recogidos ÷ segundos × 60 = L/min. Por ejemplo, 10 L en 30 segundos son 20 L/min. Mide solo en una salida accesible y con permiso.",
+      )}</p>}
       {key === "water" && <div className="qj-rotation-fields">
         <label>{copy("Water source at establishment", "Fuente de agua al establecer el cultivo")}
           <select data-testid="rotation-water" value={input.water} onChange={e => onChange({ water: e.target.value as RotationInputs["water"], sameBasis: false })}>

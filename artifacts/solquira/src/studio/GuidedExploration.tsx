@@ -107,9 +107,9 @@ export default function GuidedExploration({ point, onChoosePlace, onWeather, onR
   const cropNote = intent === "rotation" ? previousCropNote(previousCrop, cropText, locale) : null;
   const candidateName = candidate ? cropName(candidate, locale) : candidateText.trim();
   const rotationResult = evaluateRotation(rotationInputs, previousCrop?.family, candidate?.family);
-  const messages = rotationMessages(rotationResult, Boolean(previousCrop), Boolean(candidate));
+  const messages = rotationMessages(rotationResult, Boolean(previousCrop), Boolean(candidate), Boolean(cropText.trim()));
   const check = !step ? "" : intent !== "rotation" ? copy(step.check[0], step.check[1])
-    : cropNote && !candidateName && !rotationInputs.planned && !rotationInputs.start && !rotationInputs.end && !rotationInputs.water && !rotationInputs.ponding && !rotationInputs.drainage
+    : previousCrop && !candidateName && !rotationInputs.planned && !rotationInputs.start && !rotationInputs.end && !rotationInputs.water && !rotationInputs.ponding && !rotationInputs.drainage
       ? copy("Check when this crop was grown. If you do not remember, use your notes or ask someone who worked the plot.", "Confirma en qué temporada se cultivó. Si no lo recuerdas, revisa tus notas o consulta a quien trabajó la parcela.")
       : copy(...messages[rotationResult.next]);
   const [landUse, setLandUse] = useState("");
@@ -159,6 +159,14 @@ export default function GuidedExploration({ point, onChoosePlace, onWeather, onR
             <h3>{copy("Your next step", "Tu próximo paso")}</h3>
             <p className="qj-next-check">{check}</p>
           </div>
+          {intent === "rotation" && <button type="button" className="qj-secondary" data-testid="rotation-open-next" onClick={() => {
+            const panel = document.getElementById(`rotation-check-${rotationResult.next}`) as HTMLDetailsElement | null;
+            if (panel) {
+              panel.open = true;
+              panel.querySelector("summary")?.focus();
+              panel.scrollIntoView({ block: "center" });
+            }
+          }}>{copy("Review this check", "Revisar esta comprobación")}</button>}
           {intent === "rotation" && <><PreviousCropPicker
             text={cropText}
             selection={previousCrop}

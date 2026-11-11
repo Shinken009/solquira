@@ -191,6 +191,32 @@ try {
     await page.getByTestId('rotation-ponding').selectOption('seen');
     assert.match(await page.getByTestId('rotation-result-soil').innerText(),/guide calls for good drainage/);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
+    await page.getByTestId('rotation-open-next').click();
+    assert.equal(await page.getByTestId('rotation-check-water').evaluate(el => el.open && el.querySelector('summary') === document.activeElement),true,'Next check must open and receive keyboard focus');
+    for (const locale of ['es','en']) for (const theme of ['light','dark']) {
+      await page.getByTestId(`locale-${locale}`).click();
+      await page.getByTestId(`theme-${theme}`).click();
+      const spanish=locale==='es';
+      assert.equal(await page.locator('html').getAttribute('lang'),locale);
+      assert.match(await page.getByTestId('rotation-result-window').innerText(),spanish?/dentro de la ventana/:/inside the window/);
+      assert.match(await page.getByTestId('rotation-result-history').innerText(),spanish?/comparten familia/:/share a family/);
+      assert.match(await page.getByTestId('rotation-result-water').innerText(),spanish?/por debajo/:/below/);
+      assert.match(await page.getByTestId('rotation-result-soil').innerText(),spanish?/guía pide buen drenaje/:/guide calls for good drainage/);
+      assert.match(await page.getByTestId('guided-quick-action').innerText(),spanish?/Preparar mi nota de rotación/:/Prepare my rotation note/);
+      assert.equal(await page.getByTestId('rotation-planned').inputValue(),'2027-01-01');
+      assert.equal(await page.getByTestId('rotation-same-basis').isChecked(),true);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
+      const contrast=await page.getByTestId('guided-quick-action').evaluate(el => {
+        const style=getComputedStyle(el), rgb=s=>s.match(/[\d.]+/g).slice(0,3).map(Number);
+        const luminance=c=>c.map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
+        const a=luminance(rgb(style.color)),b=luminance(rgb(style.backgroundColor));
+        return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+      });
+      assert(contrast>=4.5,`Primary action contrast ${contrast} for ${locale}/${theme}`);
+      await wizard.screenshot({path:`${output}/rotation-${locale}-${theme}-${width}.png`,animations:'disabled'});
+    }
+    await page.getByTestId('locale-en').click();
+    await page.getByTestId('theme-light').click();
     await wizard.screenshot({path:`${output}/rotation-checks-${width}.png`,animations:'disabled'});
     await page.getByTestId('rotation-candidate-search').fill('local crop replacement');
     assert.equal(await page.getByTestId('rotation-start').inputValue(),'');
@@ -274,7 +300,7 @@ try {
     assert.equal(calls.forecast,2,'Only the two explicit confirmations may request a forecast');
     assert.equal(calls.model,0,'No brief or agent endpoint may be called');
     checks.push({width,noGpsOnMount:true,gpsDeniedWithoutFallback:true,internationalPoints:true,sixChoiceConcernRoute:true,fourChoiceExploreRoute:true,
-      threeQuickGoals:true,globalCropSearch:true,rotationChecksWithMissingAndEnteredData:true,candidateChangeClearsReferenceEvidence:true,explicitTaxonSelection:true,localCropWithoutTaxonomy:true,spanishDarkAndEnglishLight:true,unknownRotationDataAllowed:true,existingNotePreserved:true,noFabricatedMeasurements:true,existingLandRecordReused:true,pointChangeResetsWizard:true,sameCesiumCanvas:true,tenAreaChangesPreserveWizard:true,
+      threeQuickGoals:true,globalCropSearch:true,fullRotationEsEnLightDark:true,primaryActionContrastAA:true,nextCheckKeyboardFocus:true,rotationChecksWithMissingAndEnteredData:true,candidateChangeClearsReferenceEvidence:true,explicitTaxonSelection:true,localCropWithoutTaxonomy:true,spanishDarkAndEnglishLight:true,unknownRotationDataAllowed:true,existingNotePreserved:true,noFabricatedMeasurements:true,existingLandRecordReused:true,pointChangeResetsWizard:true,sameCesiumCanvas:true,tenAreaChangesPreserveWizard:true,
       noHorizontalOverflow:true,forecastRequests:calls.forecast,historyRequests:calls.history,modelRequests:calls.model,blockedExternalRequests:calls.blockedExternal});
     await context.close();
   }
