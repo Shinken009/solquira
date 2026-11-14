@@ -15,7 +15,10 @@
   font-size: 16px;
   line-height: 1.55;
 }
-.qs-studio [hidden] {
+/* hidden="until-found" panels are hidden by the UA itself (content-visibility)
+   and stay discoverable by find-in-page; forcing display:none on them here
+   would break that. Boolean hidden keeps the previous hard hide. */
+.qs-studio [hidden]:not([hidden="until-found"]) {
   display: none !important;
 }
 .qs-area-nav {

@@ -24,6 +24,11 @@
 .qlr-fields label>small { color:#4d645d; font-size:12px; font-weight:400; }
 .qlr-fields input,.qlr-fields select,.qlr-fields textarea { display:block; width:100%; min-width:0; min-height:44px; padding:10px; border:1px solid #9bb6a4; border-radius:6px; background:#fffef9; color:#173d36; font-size:14px!important; font-weight:400; }
 .qlr-fields textarea { resize:vertical; overflow-wrap:anywhere; }
+/* field-sizing grows the note with its text (Baseline 2026-06). The min/max
+   bounds keep it usable; unsupported browsers keep the fixed-size textarea. */
+@supports (field-sizing: content) {
+  .qlr-fields textarea { field-sizing: content; min-block-size: 3lh; max-block-size: 10lh; }
+}
 .qlr-wide { grid-column:1/-1; }
 .qlr-questions { margin-top:20px; padding:15px 18px; border-left:3px solid #117f88; background:#e5f1ec; }
 .qlr-questions h3 { font-size:14px; margin:0; }

@@ -60,6 +60,7 @@ import FieldContext from "./geo/FieldContext";
 import FieldBrief from "./FieldBrief";
 import EvidenceSynthesis from "./EvidenceSynthesis";
 import DrylandFieldBrief from "./DrylandFieldBrief";
+import { useHiddenUntilFound } from "./hidden-until-found";
 import type { FieldRecord } from "./types";
 
 import BrandMark from "./BrandMark";
@@ -310,6 +311,9 @@ export default function Studio() {
       ? areaForTarget(window.location.hash.slice(1))
       : "territory",
   );
+  // Inactive area panels stay searchable by find-in-page (tabs guide).
+  const guidancePanelRef = useHiddenUntilFound<HTMLElement>(area !== "guidance");
+  const evidencePanelRef = useHiddenUntilFound<HTMLElement>(area !== "evidence");
   const navigateArea = useCallback((next: WorkspaceArea, target?: string) => {
     setArea(next);
     requestAnimationFrame(() => {
@@ -372,6 +376,22 @@ export default function Studio() {
     window.addEventListener("hashchange", changed);
     return () => window.removeEventListener("hashchange", changed);
   }, [navigateArea]);
+  useEffect(() => {
+    // Find-in-page revealing an inactive until-found panel activates its area
+    // without scrolling: the UA is already scrolling to the matched content.
+    const onBeforeMatch = (event: Event) => {
+      const panel = (event.target as HTMLElement | null)?.closest<HTMLElement>(
+        "[data-beforematch-area]",
+      );
+      const next = panel?.dataset.beforematchArea as WorkspaceArea | null;
+      if (!next || next === area) return;
+      setArea(next);
+      const target = areas.find((item) => item.id === next)!.target;
+      history.replaceState(null, "", `#${target}`);
+    };
+    document.addEventListener("beforematch", onBeforeMatch);
+    return () => document.removeEventListener("beforematch", onBeforeMatch);
+  }, [area]);
   const [mode, setMode] = useState<"service" | "offline">(
     STATIC_STUDIO ? "offline" : "service",
   );
@@ -1065,8 +1085,9 @@ export default function Studio() {
           role="tabpanel"
           aria-labelledby="qs-area-tab-guidance"
           tabIndex={0}
-          hidden={area !== "guidance"}
           data-testid="area-guidance"
+          data-beforematch-area="guidance"
+          ref={guidancePanelRef}
         >
           <GuidedExploration
             key={
@@ -1820,8 +1841,9 @@ export default function Studio() {
           role="tabpanel"
           aria-labelledby="qs-area-tab-evidence"
           tabIndex={0}
-          hidden={area !== "evidence"}
           data-testid="area-evidence"
+          data-beforematch-area="evidence"
+          ref={evidencePanelRef}
         >
           <section
             className="qs-connections"

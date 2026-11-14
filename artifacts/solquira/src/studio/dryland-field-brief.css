@@ -11,6 +11,9 @@
   background: #fffef9;
   scroll-margin-top: 24px;
   color: var(--qd-ink);
+  /* The brief adapts to the space its column actually gives it, not just to
+     the viewport (modern-web-guidance "responsive-design"). */
+  container: qd / inline-size;
 }
 .qd-heading, .qd-result-heading, .qd-check-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
 .qd-heading h2 { font-family: var(--qs-display); font-size: clamp(28px,3vw,36px); line-height: 1.15; letter-spacing: -.8px; }
@@ -77,8 +80,12 @@
 .qd-receipt[open] summary svg { transform: rotate(90deg); }
 .qd-actions [data-updated="true"] .qd-action-copy > span { animation: qd-arrive 200ms ease-out both; }
 @keyframes qd-arrive { from { transform: translateY(3px); } to { transform: translateY(0); } }
+/* Container queries cannot style the container itself, so the .qd-workspace
+   padding stays in the viewport media queries. */
 @media (max-width: 760px) {
   .qd-workspace { padding: 24px; }
+}
+@container qd (max-width: 760px) {
   .qd-heading { align-items: flex-start; }
   .qd-setup { align-items: stretch; flex-direction: column; gap: 16px; }
   .qd-build { align-self: flex-start; }
@@ -93,6 +100,8 @@
 }
 @media (max-width: 480px) {
   .qd-workspace { padding: 24px 16px; border-radius: 4px 16px 16px 16px; }
+}
+@container qd (max-width: 480px) {
   .qd-heading { flex-wrap: wrap; gap: 12px; }
   .qd-heading h2 { font-size: 28px; }
   .qd-build { width: 100%; }
