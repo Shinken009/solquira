@@ -1,0 +1,34 @@
+name: Solquira build preflight
+on:
+  push:
+    branches:
+      - "fix/vercel-lockfile-preflight-*"
+  pull_request:
+    branches: ["main"]
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.0.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+      - name: Verify monorepo root and frozen lockfile
+        run: |
+          test -s pnpm-lock.yaml
+          test -s pnpm-workspace.yaml
+          test -s package.json
+          pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: pnpm run typecheck
+      - name: Build production Studio
+        run: |
+          pnpm --filter @workspace/solquira build
+          test -s artifacts/solquira/dist/public/index.html
